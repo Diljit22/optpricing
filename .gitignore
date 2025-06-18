@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Data and Logs
+*.csv
+*.json
+*.parquet
+*.log
+
+#/backtest_logs/
+#/calibrated_params/
+#/calibration_logs/
+#/historical_data/
+#/market_data_snapshots/
+
+# IDEs and Tools
+.vscode/
+.idea/
+.DS_Store
+
