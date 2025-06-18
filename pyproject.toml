@@ -37,27 +37,19 @@ dev = [
     "ruff",
     "mkdocs",
     "mkdocs-material",
+    "line_profiler",
+    "numba",
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/Diljit22/qf"
+
 [project.scripts]
-# pytest, ruff and mkdocs already install their own CLIs, so you can skip them if you like
-# but here’s how you’d alias them too:
-test        = "pytest:main"
-lint        = "ruff:main"
-docs        = "mkdocs.cli:build"
-
-# Benchmarking
-bench-full      = "quantfin.benchmark.run_all_benchmarks:main"
-bench-report    = "quantfin.benchmark.run_consolidated_benchmarks:main"
-
-# Workflows
-daily-calib     = "quantfin.workflows.run_calib:main"
-backtest        = "quantfin.workflows.run_backtest:main"
-
-# Your custom scripts
-calibrate-dashboard = "quantfin.scripts.calibration_dashboard:main"
-run-everything      = "quantfin.scripts.run_everything:main"
-dashboard = "quantfin.scripts.launch_dashboard:main"
+dashboard           = "quantfin.scripts.launch_dashboard:main"
+bench-full          = "quantfin.benchmark.run_all_benchmarks:main"
+bench-report        = "quantfin.benchmark.run_consolidated_benchmarks:main"
+daily-calib         = "quantfin.workflows.run_calib:main"
+backtest            = "quantfin.workflows.run_backtest:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -66,4 +58,11 @@ where = ["src"]
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
+select = ["E", "F", "W", "I", "UP"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --cov=quantfin --cov-report=term-missing"
+testpaths = [
+    "tests",
+]
