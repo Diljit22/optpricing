@@ -1,0 +1,31 @@
+Additions
+    ☐ Lattice: American + Bermuda
+    ☐ MC Tech: American + Bermuda
+    ☐ COS
+    ☐ Lewis Carrol
+    ☐ Rates models
+    ☐ Use pricingResult
+
+Dashboard
+    ☐ live pricing via polygon
+    ☐ Some more graphs
+    ☐ Let user choose params for model
+    ☐ Implied rate and put call results 
+    ☐ Faster results too
+
+House Cleaning
+    ☐ pytests
+    ☐ Misc Files
+    ☐ Documentation
+    ☐ mkdocs file 
+    ☐ Download stock jump data
+
+Touch Ups
+    ☐ Consistant BSM usage
+    ☐ Parrallelize GreekMixing
+    ☐ Vectorize code
+    ☐ Fix computation issues
+    ☐ Remove support for things that dont work
+        CGMY MC for Y != 1 is too hard
+        FFT for VG and Hyperbolic
+        Hyperbolic mc
