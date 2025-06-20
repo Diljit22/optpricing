@@ -22,3 +22,5 @@ Dashboard
     ☐ Expose model/technique selector, parameter inputs, real-time pricing
     ☐ IV surface viewer, implied-rate & put-call-parity widgets
     ☐ Faster results too
+
+streamlit run scripts/app.py

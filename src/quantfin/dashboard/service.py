@@ -4,12 +4,12 @@ import pandas as pd
 from typing import Dict, Any
 
 # Use our new, clean data managers
+from quantfin.calibration.technique_selector import select_fastest_technique
 from quantfin.data.market_data_manager import load_market_snapshot, get_live_option_chain
 from quantfin.workflows import DailyWorkflow
 from quantfin.calibration import VolatilitySurface
 from quantfin.atoms import Stock, Rate
 from quantfin.calibration import fit_rate_and_dividend
-from quantfin.techniques import select_fastest_technique
 from quantfin.dashboard.plots import plot_smiles_by_expiry, plot_iv_surface_3d
 
 class DashboardService:

@@ -5,6 +5,8 @@ from quantfin.atoms import Option, Stock, Rate
 from quantfin.models import BaseModel
 from quantfin.techniques.base.pricing_result import PricingResult
 
+import numpy as np
+
 class BaseTechnique(ABC):
     """
     Abstract base class for all pricing methodologies.
@@ -13,7 +15,14 @@ class BaseTechnique(ABC):
     'atoms' (Option, Stock, Rate) and a given financial 'Model'.
     """
     @abstractmethod
-    def price(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs) -> PricingResult:
+    def price(
+        self,
+        option: Option | np.ndarray,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs
+        ) -> PricingResult | np.ndarray:
         """
         Calculate the price of an option.
 
@@ -34,3 +43,4 @@ class BaseTechnique(ABC):
             An object containing the calculated price and potentially other metrics.
         """
         raise NotImplementedError
+    
