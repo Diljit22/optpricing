@@ -48,6 +48,10 @@ class BaseModel(ABC):
     has_variance_process: bool = False
     is_pure_levy: bool = False
     has_jumps: bool = False
+    
+    # TODO: Rename cf_kwargs to something more specific like `pricing_args`
+    # as it's used by more than just the characteristic function.
+    cf_kwargs: Tuple[str, ...] = ()  # <<< ADD THIS LINE BACK
 
     __slots__ = ("params",)
 

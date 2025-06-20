@@ -1,22 +1,30 @@
-from __future__ import annotations
+# src/quantfin/data/__init__.py
 
-from .data_manager import (
-    get_option_chain,
-    get_current_price,
+__doc__ = """
+The `data` package provides a clean, unified interface for fetching, loading,
+and saving all market and historical data required by the quantfin library.
+"""
+
+# --- Functions for option chain snapshots ---
+from .market_data_manager import (
+    get_live_option_chain,
     save_market_snapshot,
-    get_available_snapshot_dates,
     load_market_snapshot,
+    get_available_snapshot_dates,
 )
-from .historical_data   import get_historical_log_returns
-from .historical_manager import save_historical_returns, load_historical_returns
 
+# --- Functions for historical time-series data ---
+from .historical_manager import (
+    save_historical_returns,
+    load_historical_returns,
+)
+
+# --- Define the public API for the data package ---
 __all__ = [
-    "get_option_chain",
-    "get_current_price",
+    "get_live_option_chain",
     "save_market_snapshot",
-    "get_available_snapshot_dates",
     "load_market_snapshot",
-    "get_historical_log_returns",
+    "get_available_snapshot_dates",
     "save_historical_returns",
     "load_historical_returns",
 ]

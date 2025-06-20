@@ -12,7 +12,7 @@ class BlacksApproxModel(BaseModel):
     """
     name: str = "Black's Approximation"
     has_closed_form: bool = True
-
+    cf_kwargs = BaseModel.cf_kwargs + ("discrete_dividends", "ex_div_times")
     def __init__(self, params: dict[str, float]):
         super().__init__(params)
         # Composition: Create a BSMModel instance to handle the core pricing.

@@ -73,7 +73,7 @@ from .techniques.monte_carlo import MonteCarloTechnique
 from .techniques.crr import CRRLatticeTechnique
 from .techniques.leisen_reimer import LeisenReimerTechnique
 from .techniques.topm import TOPMLatticeTechnique
-from .techniques.pde import PDESolverTechnique
+from .techniques.pde import PDETechnique
 
 # Closed-Form & Specialized
 from .techniques.closed_form import ClosedFormTechnique

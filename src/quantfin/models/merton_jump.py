@@ -61,9 +61,7 @@ class MertonJumpModel(BaseModel):
             
         return total_price
 
-    # _cf_impl and _sde_impl remain the same as your original implementation
     def _cf_impl(self, *, t: float, spot: float, r: float, q: float) -> CF:
-        # ... (code is correct, no changes needed)
         p = self.params
         sigma, lambda_, mu_j, sigma_j = p["sigma"], p["lambda"], p["mu_j"], p["sigma_j"]
         drift = r - q - 0.5 * sigma**2
@@ -75,7 +73,6 @@ class MertonJumpModel(BaseModel):
         return phi
 
     def _sde_impl(self):
-        # ... (code is correct, no changes needed)
         p = self.params
         sigma, mu_j, sigma_j, lambda_ = p["sigma"], p["mu_j"], p["sigma_j"], p["lambda"]
         compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)

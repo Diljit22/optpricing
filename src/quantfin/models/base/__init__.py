@@ -1,11 +1,10 @@
+from __future__ import annotations
+
 __doc__ = """
 This module provides the foundational abstract classes and utilities for all
 financial models in the library, including the abstract `BaseModel` and
 parameter validation tools.
 """
-
-from __future__ import annotations
-
 from .base_model import BaseModel, CF, PDECoeffs
 from .validators import ParamValidator
 

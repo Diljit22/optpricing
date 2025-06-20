@@ -1,68 +1,82 @@
-from __future__ import annotations
+# src/quantfin/parity/implied_rate.py
 
+from __future__ import annotations
 import math
-from typing import Any
+from typing import Any, Dict
 
 from scipy.optimize import brentq
 
 from quantfin.models.base import BaseModel, ParamValidator
 
 class ImpliedRateModel(BaseModel):
-    """Risk-free rate implied by put-call parity for European options."""
+    """
+    Calculates the risk-free rate implied by put-call parity for European options.
 
-    name = "Implied Rate"
-    supports_cf = False
-    supports_sde = False
-    supports_pde = False
-    has_closed_form = True
-    supported_lattices: set[str] = set()
-    cf_kwargs = BaseModel.cf_kwargs + ("call_price", "put_price")
-
+    This model solves for the risk-free rate `r` that satisfies the equation:
+    C - P = S*exp(-qT) - K*exp(-rT)
+    """
+    name: str = "Implied Rate"
+    has_closed_form: bool = True
+    
+    # Define the required inputs for the closed-form solver.
+    cf_kwargs = ("call_price", "put_price")
 
     def _validate_params(self) -> None:
-        ParamValidator.require(self.params, ["eps", "max_iter"], model=self.name)
-        ParamValidator.positive(self.params, ["eps", "max_iter"], model=self.name)
+        """This model has no intrinsic parameters to validate."""
+        pass
 
-    def _closed_form_impl(
-        self,
-        *,
-        call_price: float,
-        put_price: float,
-        spot: float,
-        strike: float,
-        t: float,
-        q: float = 0.0,
-    ) -> float:
-        eps = float(self.params["eps"])
-        max_iter = int(self.params["max_iter"])
+    def _closed_form_impl(self, *, call_price: float, put_price: float, spot: float, strike: float, t: float, q: float = 0.0, **_: Any) -> float:
+        """
+        Solves for the implied risk-free rate using a root-finding algorithm.
 
-        lhs = spot * math.exp(-q * t)  # discounted underlying
-        diff = call_price - put_price  # C - P
+        Parameters
+        ----------
+        call_price : float
+            The market price of the call option.
+        put_price : float
+            The market price of the put option.
+        spot : float
+            The current price of the underlying asset.
+        strike : float
+            The strike price of the options.
+        t : float
+            The time to maturity of the options.
+        q : float, optional
+            The continuously compounded dividend yield, by default 0.0.
 
-        def f(r: float) -> float:
-            return lhs - strike * math.exp(-r * t) - diff
+        Returns
+        -------
+        float
+            The implied continuously compounded risk-free rate.
 
-        low, high = -1.0, 1.0
-        fl, fh = f(low), f(high)
-        cnt = 0
-        while fl * fh > 0 and cnt < max_iter:
-            if abs(fl) < abs(fh):
-                low -= 0.5
-                fl = f(low)
-            else:
-                high += 0.5
-                fh = f(high)
-            cnt += 1
-        if fl * fh > 0:
-            raise ValueError("Unable to bracket implied rate.")
+        Raises
+        ------
+        ValueError
+            If a root cannot be bracketed within a reasonable range.
+        """
+        discounted_spot = spot * math.exp(-q * t)
+        price_difference = call_price - put_price
 
-        return brentq(f, low, high, xtol=eps, maxiter=max_iter)
+        def objective_func(r: float) -> float:
+            """The put-call parity equation rearranged to equal zero."""
+            return discounted_spot - strike * math.exp(-r * t) - price_difference
 
-    def _cf_impl(self, *args: Any, **kwargs: Any) -> Any:
-        raise NotImplementedError(f"{self.name} characteristic function not implemented")
+        # Attempt to find a bracket for the root
+        low, high = -0.5, 0.5  # Start with a reasonable range for interest rates
+        f_low, f_high = objective_func(low), objective_func(high)
+        
+        for _ in range(10): # Try up to 10 times to expand the bracket
+            if f_low * f_high < 0:
+                break
+            low -= 0.5
+            high += 0.5
+            f_low, f_high = objective_func(low), objective_func(high)
+        else:
+            raise ValueError("Unable to bracket a root for the implied rate. Check input prices for arbitrage.")
 
-    def _sde_impl(self) -> Any:
-        raise NotImplementedError(f"{self.name} SDE not implemented")
+        return brentq(objective_func, low, high, xtol=1e-9, maxiter=100)
 
-    def _pde_impl(self) -> Any:
-        raise NotImplementedError(f"{self.name} PDE not implemented")
+    # --- Abstract Method Implementations ---
+    def _cf_impl(self, *args: Any, **kwargs: Any) -> Any: raise NotImplementedError
+    def _sde_impl(self) -> Any: raise NotImplementedError
+    def _pde_impl(self) -> Any: raise NotImplementedError

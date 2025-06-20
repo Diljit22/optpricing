@@ -113,12 +113,11 @@ class BSMModel(BaseModel):
             return log_s_t + drift + diffusion
         return stepper
 
+
     def _pde_impl(self) -> PDECoeffs:
-        """Returns the Black-Scholes PDE coefficients A(S), B(S), C(S)."""
+        """Returns the Black-Scholes PDE coefficients."""
         sigma = self.params["sigma"]
         def coeffs(S: np.ndarray, r: float, q: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-            A = 0.5 * sigma**2 * S**2
-            B = (r - q) * S
-            C = -r * np.ones_like(S)
-            return A, B, C
+            # Returns sigma^2*S^2, (r-q)*S, and -r
+            return sigma**2 * S**2, (r - q) * S, -r * np.ones_like(S)
         return coeffs

@@ -27,7 +27,8 @@ dependencies = [
     "matplotlib==3.10.1",
     "numpy==2.2.5",
     "yfinance==0.2.63",
-    "plotly==6.1.2"
+    "plotly==6.1.2",
+    "numba"
 ]
 
 [project.optional-dependencies]
