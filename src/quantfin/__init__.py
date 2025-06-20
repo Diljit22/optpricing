@@ -77,7 +77,7 @@ from .techniques.pde import PDESolverTechnique
 
 # Closed-Form & Specialized
 from .techniques.closed_form import ClosedFormTechnique
-from .techniques.bsm_iv_solver import BSMIVSolver
+from .calibration.bsm_iv_solver import BSMIVSolver
 
 __all__ = [
     # Atoms

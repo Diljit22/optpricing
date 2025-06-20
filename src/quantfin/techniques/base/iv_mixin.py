@@ -1,64 +1,43 @@
+from __future__ import annotations
 from scipy.optimize import brentq
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import numpy as np
-from quantfin.models.bsm import BSMModel
+
+from quantfin.models import BSMModel
+
+if TYPE_CHECKING:
+    from quantfin.atoms import Option, Stock, Rate
+    from quantfin.models import BaseModel
 
 class IVMixin:
     """
     Calculates Black-Scholes implied volatility for a given price.
-    It works by creating a temporary BSM model and finding the 'sigma'
-    that matches the target price, regardless of which model generated that price.
+
+    This mixin uses a root-finding algorithm (Brent's method) to find the
+    volatility ('sigma') in a BSM model that matches a given target price.
+    It is a generic, model-agnostic way to compute IV.
     """
-    def implied_volatility(
-        self,
-        option: Any,
-        stock:  Any,
-        model:  Any, # The original model (e.g., Heston) - will NOT be modified.
-        rate:   Any,
-        target_price: float,
-        low:    float = 1e-6,
-        high:   float = 5.0,
-        tol:    float = 1e-8,
-        max_iter: int = 200,
-        initial_guess: float = 0.3,
-        **kwargs: Any # Captures v0, etc., but we will NOT use it for the BSM price.
-    ) -> float:
-        
-        bsm_solver_model = BSMModel(params={"sigma": initial_guess})
+    def implied_volatility(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, target_price: float, low: float = 1e-6, high: float = 5.0, tol: float = 1e-8, **kwargs: Any) -> float:
+        """
+        Finds the implied volatility that matches the target_price.
+        """
+        # We create a temporary BSM model for the solver.
+        bsm_solver_model = BSMModel(params={"sigma": 0.3})
 
-        def bsm_price_for_iv(vol: float) -> float:
+        def bsm_price_minus_target(vol: float) -> float:
+            """Objective function for the root finder."""
             if vol <= 0: return -target_price
-            bsm_solver_model.params["sigma"] = vol
             
-            # --- THIS IS THE FIX ---
-            # When pricing with the BSM model for the solver, we do NOT pass
-            # the extra kwargs (like v0) that were meant for the original model.
-            # The BSM model doesn't need them and will crash if it gets them.
-            p = self.price(option, stock, bsm_solver_model, rate).price
-            # Note: No **kwargs in the line above.
+            # Create a new BSM model with the current volatility guess.
+            current_bsm_model = bsm_solver_model.with_params(sigma=vol)
             
-            return p - target_price
+            # Price using the same technique but with the BSM model.
+            price = self.price(option, stock, current_bsm_model, rate).price
+            return price - target_price
 
-        iv = np.nan
         try:
-            iv = brentq(bsm_price_for_iv, low, high, xtol=tol, disp=False)
-        except ValueError:
-            try:
-                iv = self._secant_iv(bsm_price_for_iv, initial_guess, tol, max_iter)
-            except (ValueError, RuntimeError):
-                iv = np.nan
+            iv = brentq(bsm_price_minus_target, low, high, xtol=tol, disp=False)
+        except (ValueError, RuntimeError):
+            iv = np.nan
         
         return iv
-
-    @staticmethod
-    def _secant_iv(fn: Any, x0: float, tol: float, max_iter: int) -> float:
-        x1 = x0 * 1.1
-        fx0 = fn(x0)
-        for _ in range(max_iter):
-            fx1 = fn(x1)
-            if abs(fx1) < tol: return x1
-            denom = fx1 - fx0
-            if abs(denom) < 1e-14: break
-            x2 = x1 - fx1 * (x1 - x0) / denom
-            x0, x1, fx0 = x1, x2, fx1
-        return x1

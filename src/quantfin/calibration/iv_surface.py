@@ -8,7 +8,7 @@ from quantfin.atoms.rate                     import Rate
 from quantfin.atoms.option                   import Option, OptionType
 from quantfin.techniques.base.base_technique import BaseTechnique
 from quantfin.techniques.base.iv_mixin       import IVMixin
-from quantfin.techniques.bsm_iv_solver       import BSMIVSolver
+from quantfin.calibration.bsm_iv_solver       import BSMIVSolver
 
 class VolatilitySurface:
     def __init__(self, option_data: pd.DataFrame):

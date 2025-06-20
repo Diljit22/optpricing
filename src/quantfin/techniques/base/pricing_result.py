@@ -1,7 +1,20 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Dict
 
 @dataclass(frozen=True)
 class PricingResult:
+    """
+    A container for the results of a pricing operation.
+
+    Attributes
+    ----------
+    price : float
+        The calculated price of the instrument.
+    greeks : Dict[str, float], optional
+        A dictionary containing calculated Greek values (e.g., 'delta', 'gamma').
+    implied_vol : float, optional
+        The calculated Black-Scholes implied volatility.
+    """
     price: float
-    Greeks: dict[str, float] | None = None
-    implied_vol: float   | None = None
+    greeks: Dict[str, float] = field(default_factory=dict)
+    implied_vol: float | None = None

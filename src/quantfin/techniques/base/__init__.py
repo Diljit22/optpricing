@@ -1,15 +1,9 @@
-from __future__ import annotations
-
-from .base_technique import BaseTechnique
-from .greek_mixin   import GreekMixin
-from .iv_mixin      import IVMixin
+__doc__ = """
+Provides the base classes and mixins for all pricing techniques.
+"""
 from .pricing_result import PricingResult
-from .random_utils   import crn
+from .base_technique import BaseTechnique
+from .greek_mixin import GreekMixin
+from .iv_mixin import IVMixin
 
-__all__ = [
-    "BaseTechnique",
-    "GreekMixin",
-    "IVMixin",
-    "PricingResult",
-    "crn",
-]
+__all__ = ["PricingResult", "BaseTechnique", "GreekMixin", "IVMixin"]

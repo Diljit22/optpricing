@@ -1,9 +1,16 @@
+__doc__ = """
+The `models` package contains all financial models for option pricing.
+
+It provides the abstract `BaseModel` and a suite of concrete implementations,
+from the standard Black-Scholes-Merton to advanced stochastic volatility
+and jump-diffusion models.
+"""
 from __future__ import annotations
 
-# -- expose the base classes & utilities
+# Base classes and utilities
 from .base import BaseModel, CF, PDECoeffs, ParamValidator
 
-# -- concrete models
+# Concrete model implementations
 from .bates import BatesModel
 from .blacks_approx import BlacksApproxModel
 from .bsm import BSMModel
@@ -16,16 +23,27 @@ from .kou import KouModel
 from .merton_jump import MertonJumpModel
 from .nig import NIGModel
 from .perpetual_put import PerpetualPutModel
-from .sabr_jump import SABRJumpModel
+from .sabr import SABRJumpModel
 from .sabr import SABRModel
 from .vg import VarianceGammaModel
 
 __all__ = [
-    # base
-    "BaseModel", "CF", "ParamValidator", "PDECoeffs"
-    # models
-    "BatesModel", "BlacksApproxModel", "BSMModel", "CEVModel",
-    "CGMYModel", "DupireLocalVolModel", "HestonModel", "HyperbolicModel",
-    "KouModel", "MertonJumpModel", "NIGModel", "PerpetualPutModel",
-    "SABRJumpModel", "SABRModel", "VarianceGammaModel",
+    # Base
+    "BaseModel", "CF", "PDECoeffs", "ParamValidator",
+    # Models
+    "BatesModel",
+    "BlacksApproxModel",
+    "BSMModel",
+    "CEVModel",
+    "CGMYModel",
+    "DupireLocalVolModel",
+    "HestonModel",
+    "HyperbolicModel",
+    "KouModel",
+    "MertonJumpModel",
+    "NIGModel",
+    "PerpetualPutModel",
+    "SABRJumpModel",
+    "SABRModel",
+    "VarianceGammaModel",
 ]

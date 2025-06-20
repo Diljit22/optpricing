@@ -3,101 +3,185 @@ from abc import ABC, abstractmethod
 from typing import Callable, Any, Dict, Set, Tuple
 import numpy as np
 
-CF = Callable[[complex], complex]
-PDECoeffs = Callable[[np.ndarray, float, float], Tuple[np.ndarray, np.ndarray, np.ndarray]]
+__doc__ = """
+Defines the abstract base class for all option pricing models.
+"""
+
+CF = Callable[[np.ndarray], np.ndarray]
+PDECoeffs = Callable[[np.ndarray, float], Tuple[np.ndarray, np.ndarray, np.ndarray]]
 
 class BaseModel(ABC):
     """
-    Abstract base class for all pricing models.
+    Abstract base class for all financial pricing models.
 
-    Attributes:
-        name: Identifier for the model class.
-        supports_cf: Whether the model provides a characteristic function.
-        supports_sde: Whether the model provides an SDE sampler.
-        supports_pde: Whether the model provides a PDE solver.
-        has_closed_form: Whether the model has a closed-form pricing method.
-        supported_lattices: Set of lattice names this model can use.
+    This class defines a common interface for all models, including parameter
+    validation, metadata flags for supported features (e.g., characteristic
+    function, SDE), and methods for creating modified model instances.
+
+    Attributes
+    ----------
+    name : str
+        A string identifier for the model (e.g., "Black-Scholes-Merton").
+    params : Dict[str, float]
+        A dictionary holding the model's parameters.
+    supports_cf : bool
+        Flag indicating if the model implements a characteristic function.
+    supports_sde : bool
+        Flag indicating if the model implements an SDE simulation path.
+    supports_pde : bool
+        Flag indicating if the model provides PDE coefficients.
+    has_closed_form : bool
+        Flag indicating if a closed-form solution is available.
+    has_variance_process : bool
+        Flag for stochastic volatility models (e.g., Heston, SABR).
+    is_pure_levy : bool
+        Flag for pure Levy models where the terminal value can be sampled directly.
+    has_jumps : bool
+        Flag for models that include a jump component.
     """
     name: str = "BaseModel"
+    params: Dict[str, float]
     supports_cf: bool = False
     supports_sde: bool = False
     supports_pde: bool = False
     has_closed_form: bool = False
-    supported_lattices: Set[str] = set()
-    cf_kwargs: Tuple[str, ...] = ("spot", "strike", "r", "q", "t", "call")
-    has_variance_process: bool = False # For Heston, Bates, SABR, ...
-    is_pure_levy: bool = False #For VG, NIG, CGMY, ... (terminal sampling)
-    has_jumps: bool = False # For Merton, Kou, Bates
+    has_variance_process: bool = False
+    is_pure_levy: bool = False
+    has_jumps: bool = False
+
+    __slots__ = ("params",)
 
     def __init__(self, params: Dict[str, float]) -> None:
         """
-        Initialize with a dict of parameter names to values.
-        Validates parameters via `_validate_params`.
+        Initializes the model and validates its parameters.
+
+        Parameters
+        ----------
+        params : Dict[str, float]
+            A dictionary of parameter names to values for the model.
         """
         self.params = params
         self._validate_params()
 
     @abstractmethod
     def _validate_params(self) -> None:
-        """Ensure required parameters are present and valid."""
+        """
+        Abstract method for subclasses to validate their specific parameters.
+
+        This method should be implemented by all concrete model classes to ensure
+        that the provided `self.params` dictionary contains all required keys
+        and that their values are valid.
+        """
         raise NotImplementedError
 
     def cf(self, **kwargs: Any) -> CF:
         """
-        Public-facing method to get the characteristic function.
-        It accepts arbitrary keyword arguments and passes them to the implementation.
+        Return the characteristic function of the log-price process.
+
+        Raises
+        ------
+        NotImplementedError
+            If the model does not support a characteristic function.
         """
         if not self.supports_cf:
             raise NotImplementedError(f"{self.name} does not support characteristic functions.")
-        # Pass all provided keyword arguments directly to the implementation
         return self._cf_impl(**kwargs)
 
     @abstractmethod
     def _cf_impl(self, **kwargs: Any) -> CF:
-        """
-        Internal implementation of the characteristic function.
-        Must be able to handle all necessary keyword arguments.
-        """
+        """Internal implementation of the characteristic function."""
         ...
 
-    def sde(self) -> Any:
+    def get_sde_sampler(self, **kwargs: Any) -> Callable:
+        """
+        Return a function that can be used to sample paths from the model's SDE.
+
+        Raises
+        ------
+        NotImplementedError
+            If the model does not support SDE sampling.
+        """
         if not self.supports_sde:
             raise NotImplementedError(f"{self.name} does not support SDE sampling.")
-        return self._sde_impl()
+        return self._sde_impl(**kwargs)
 
     @abstractmethod
-    def _sde_impl(self) -> Any:
-        """Return an SDE sampler object or interface for the model."""
+    def _sde_impl(self, **kwargs: Any) -> Callable:
+        """Internal implementation for returning an SDE sampler."""
         ...
 
-    def pde(self) -> Any:
+    def get_pde_coeffs(self, **kwargs: Any) -> PDECoeffs:
+        """
+        Return the coefficients for the pricing PDE.
+
+        Raises
+        ------
+        NotImplementedError
+            If the model does not support PDE solving.
+        """
         if not self.supports_pde:
             raise NotImplementedError(f"{self.name} does not support PDE solving.")
-        return self._pde_impl()
+        return self._pde_impl(**kwargs)
+
+
 
     @abstractmethod
-    def _pde_impl(self) -> Any:
-        """Return a PDE solver interface for the model."""
+    def _pde_impl(self, **kwargs: Any) -> PDECoeffs:
+        """Internal implementation for returning PDE coefficients."""
         ...
 
-    def closed_form(self, *args, **kwargs) -> Any:
+    def price_closed_form(self, *args, **kwargs) -> float:
+        """
+        Compute the option price using a closed-form solution, if available.
+
+        Raises
+        ------
+        NotImplementedError
+            If the model does not have a closed-form solution.
+        """
         if not self.has_closed_form:
             raise NotImplementedError(f"{self.name} does not have a closed-form solution.")
         return self._closed_form_impl(*args, **kwargs)
 
     @abstractmethod
-    def _closed_form_impl(self, *args, **kwargs) -> Any:
-        """Compute option price in closed-form, if available."""
+    def _closed_form_impl(self, *args, **kwargs) -> float:
+        """Internal implementation of the closed-form pricing formula."""
         ...
 
-    def with_params(self, **upd: float) -> BaseModel:
-        """Return a new instance with updated parameters."""
-        new_params = {**self.params, **upd}
+    def with_params(self, **updated_params: float) -> BaseModel:
+        """
+        Create a new model instance with updated parameters.
+
+        This is useful for calibration and sensitivity analysis.
+
+        Parameters
+        ----------
+        **updated_params : float
+            Keyword arguments for the parameters to update.
+
+        Returns
+        -------
+        BaseModel
+            A new instance of the model with the updated parameters.
+        """
+        new_params = {**self.params, **updated_params}
         return self.__class__(params=new_params)
 
-    def __hashable_state__(self) -> tuple[tuple[str, float], ...]:
-        """Provide a hashable representation for caching or dict keys."""
-        return tuple(sorted(self.params.items()))
-
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.params})"
+        """Provide a formal string representation of the model."""
+        param_str = ", ".join(f"{k}={v:.4f}" for k, v in self.params.items())
+        return f"{self.__class__.__name__}({param_str})"
+    
+    def __eq__(self, other: object) -> bool:
+        """
+        Check for equality based on class type and parameters.
+        """
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.params == other.params
+
+    def __hash__(self) -> int:
+        """
+        Provide a hash for the model, making it usable in sets and dict keys.
+        """
+        return hash((self.__class__, tuple(sorted(self.params.items()))))
