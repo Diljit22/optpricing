@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field
-from typing import List, Any, Dict
-from quantfin.atoms.option     import Option, OptionType
-from quantfin.atoms.stock      import Stock
-from quantfin.atoms.rate       import Rate
-from quantfin.models.base      import BaseModel
+from typing import Any, Dict, List
+
+from quantfin.atoms.option import Option
+from quantfin.atoms.rate import Rate
+from quantfin.atoms.stock import Stock
+from quantfin.models.base import BaseModel
 
 
 @dataclass

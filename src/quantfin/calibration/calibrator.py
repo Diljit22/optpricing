@@ -1,11 +1,14 @@
+from typing import Dict, List
+
 import numpy as np
-from scipy.optimize import minimize, minimize_scalar
-from typing import List, Dict, Any
 import pandas as pd
+from scipy.optimize import minimize, minimize_scalar
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
+from quantfin.models import BaseModel
 
 from .technique_selector import select_fastest_technique
-from quantfin.models import BaseModel
-from quantfin.atoms import Option, OptionType, Stock, Rate
+
 
 class Calibrator:
     """A generic class for calibrating financial models to market data."""
@@ -35,7 +38,7 @@ class Calibrator:
             option = Option(strike=row['strike'], maturity=row['maturity'], option_type=OptionType.CALL if row['optionType'] == 'call' else OptionType.PUT)
             model_price = self.technique.price(option, self.stock, temp_model, self.rate, **current_params).price
             total_error += (model_price - row['marketPrice'])**2
-            
+
         print(f"  --> Total Error: {total_error:.4f}")
         return total_error
 

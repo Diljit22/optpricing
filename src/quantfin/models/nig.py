@@ -1,8 +1,11 @@
 from __future__ import annotations
-import numpy as np
-from typing import Any, Callable, Dict
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+from typing import Any, Callable
+
+import numpy as np
+
+from quantfin.models.base import CF, BaseModel, ParamValidator
+
 
 class NIGModel(BaseModel):
     """Normal Inverse Gaussian (NIG) model, a pure-jump Lévy process."""
@@ -36,7 +39,7 @@ class NIGModel(BaseModel):
             term2 = delta * t * (np.sqrt(alpha**2 - beta**2) - np.sqrt(alpha**2 - (beta + 1j * u)**2))
             return np.exp(term1 + term2)
         return phi
-    
+
     def raw_cf(self, *, t: float) -> Callable:
         """Returns the CF of the raw NIG process, without drift or spot."""
         p = self.params

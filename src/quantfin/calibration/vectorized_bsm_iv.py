@@ -1,7 +1,9 @@
 import numpy as np
-from scipy.stats import norm
 import pandas as pd
-from quantfin.atoms import Stock, Rate
+from scipy.stats import norm
+
+from quantfin.atoms import Rate, Stock
+
 
 class BSMIVSolver:
     """High-performance, vectorized Newton-Raphson solver for BSM implied volatility."""

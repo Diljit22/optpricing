@@ -1,10 +1,13 @@
 from __future__ import annotations
-import numpy as np
+
 from typing import Any, Callable, Dict
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+import numpy as np
+
+from quantfin.models.base import CF, BaseModel, ParamValidator
 from quantfin.models.heston import HestonModel
 from quantfin.models.merton_jump import MertonJumpModel
+
 
 class BatesModel(BaseModel):
     """
@@ -65,7 +68,7 @@ class BatesModel(BaseModel):
 
             return heston_part * jump_part
         return phi
-    
+
     def get_sde_stepper(self) -> Callable:
         """Returns the SDE stepper function for the Bates model."""
         p = self.params

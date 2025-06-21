@@ -1,7 +1,9 @@
 from __future__ import annotations
-import traceback
-from typing import List, Dict, Any
+
+from typing import Any, Dict, List
+
 from quantfin.atoms.option import OptionType
+
 
 def print_consolidated_report(all_run_results: List[Dict[str, Any]]) -> None:
     """
@@ -29,7 +31,7 @@ def print_consolidated_report(all_run_results: List[Dict[str, Any]]) -> None:
         results = run_result['results']
         timings = run_result['timings']
         options = run_result['options']
-        
+
         col_width = 14
         header = f"{'Metric':<12}" + "".join([f"{name:^{col_width}}" for name in techniques])
         print(header)

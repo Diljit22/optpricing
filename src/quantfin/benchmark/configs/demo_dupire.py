@@ -1,19 +1,12 @@
 import numpy as np
 
-from quantfin.atoms.option                               import Option, OptionType
-from quantfin.atoms.stock                                import Stock
-from quantfin.atoms.rate                                 import Rate
-from quantfin.models.bsm                                 import BSMModel
+from quantfin.atoms.option import Option, OptionType
+from quantfin.atoms.rate import Rate
+from quantfin.atoms.stock import Stock
+from quantfin.benchmark.configs.base_config import BenchmarkConfig
 from quantfin.models.dupire_local import DupireLocalVolModel
-from quantfin.techniques.closed_form                      import ClosedFormTechnique
-from quantfin.techniques.crr                              import CRRLatticeTechnique
-from quantfin.techniques.leisen_reimer                    import LeisenReimerTechnique
-from quantfin.techniques.pde                              import PDESolverTechnique
-from quantfin.techniques.topm                             import TOPMLatticeTechnique
-from quantfin.benchmark.configs.base_config               import BenchmarkConfig
-from quantfin.techniques.integration                      import IntegrationTechnique
-from quantfin.techniques.fft                              import FFTTechnique
-from quantfin.techniques.monte_carlo                      import MonteCarloTechnique
+from quantfin.techniques.monte_carlo import MonteCarloTechnique
+
 
 # Define a mock volatility surface ---
 # In a real application, this would be a 2D interpolator object
@@ -21,13 +14,13 @@ from quantfin.techniques.monte_carlo                      import MonteCarloTechn
 # This surface has a "smile": vol is higher for low/high strikes.
 def mock_vol_surface(t: float, s: np.ndarray) -> np.ndarray:
     """A simple smile function: vol = 0.2 - 0.1*(S-100)/100 + 0.2*((S-100)/100)^2"""
-    
+
     # Add a small epsilon to prevent log(0) errors.
     # This ensures that even if a path hits exactly zero, we get a
     # valid (though large) log-moneyness instead of -inf.
     epsilon = 1e-12
     safe_s = np.maximum(s, epsilon)
-    
+
     log_moneyness = np.log(safe_s / 100.0)
     return 0.20 + 0.1 * log_moneyness + 0.5 * log_moneyness**2
 # Create the Dupire Model ---

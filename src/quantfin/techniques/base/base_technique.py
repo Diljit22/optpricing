@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
-from quantfin.atoms import Option, Stock, Rate
+import numpy as np
+
+from quantfin.atoms import Option, Rate, Stock
 from quantfin.models import BaseModel
 from quantfin.techniques.base.pricing_result import PricingResult
 
-import numpy as np
 
 class BaseTechnique(ABC):
     """
@@ -43,4 +45,3 @@ class BaseTechnique(ABC):
             An object containing the calculated price and potentially other metrics.
         """
         raise NotImplementedError
-    

@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 from dataclasses import replace
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 
 from quantfin.techniques.base.random_utils import crn
 
 if TYPE_CHECKING:
-    from quantfin.atoms import Option, Stock, Rate
+    from quantfin.atoms import Option, Rate, Stock
     from quantfin.models import BaseModel
 
 class GreekMixin:
@@ -20,7 +22,7 @@ class GreekMixin:
         h = stock.spot * h_frac
         stock_up = replace(stock, spot=stock.spot + h)
         stock_dn = replace(stock, spot=stock.spot - h)
-        
+
         rng = getattr(self, "rng", None)
         if isinstance(rng, np.random.Generator):
             with crn(rng): p_up = self.price(option, stock_up, model, rate, **kwargs).price
@@ -28,7 +30,7 @@ class GreekMixin:
         else:
             p_up = self.price(option, stock_up, model, rate, **kwargs).price
             p_dn = self.price(option, stock_dn, model, rate, **kwargs).price
-            
+
         return (p_up - p_dn) / (2 * h)
 
     def gamma(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, h_frac: float = 1e-3, **kw: Any) -> float:

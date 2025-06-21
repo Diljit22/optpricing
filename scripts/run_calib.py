@@ -1,7 +1,12 @@
 import pandas as pd
+
 from quantfin.data import get_available_snapshot_dates, load_market_snapshot
 from quantfin.workflows import DailyWorkflow
-from quantfin.workflows.configs import BSM_WORKFLOW_CONFIG, MERTON_WORKFLOW_CONFIG, HESTON_WORKFLOW_CONFIG
+from quantfin.workflows.configs import (
+    BSM_WORKFLOW_CONFIG,
+    HESTON_WORKFLOW_CONFIG,
+    MERTON_WORKFLOW_CONFIG,
+)
 
 WORKFLOWS_TO_RUN = [
     BSM_WORKFLOW_CONFIG,
@@ -24,7 +29,7 @@ def main(ticker: str, snapshot_date: str = None):
         workflow = DailyWorkflow(market_data=market_data, model_config=model_config)
         workflow.run()
         all_results.append(workflow.results)
-    
+
     print("\n\n" + "="*80)
     print(f"--- FINAL SUMMARY: {ticker} on {snapshot_date} ---")
     print("="*80)

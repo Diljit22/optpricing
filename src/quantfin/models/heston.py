@@ -1,8 +1,11 @@
 from __future__ import annotations
-import numpy as np
+
 from typing import Any, Callable, Dict
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+import numpy as np
+
+from quantfin.models.base import CF, BaseModel, ParamValidator
+
 
 class HestonModel(BaseModel):
     """
@@ -60,7 +63,7 @@ class HestonModel(BaseModel):
             D = ((kappa - rho * vol_of_vol * u * 1j - d) / vol_of_vol**2) * ((1 - np.exp(-d * t)) / (1 - g * np.exp(-d * t)))
             return np.exp(C + D * v0 + 1j * u * np.log(spot))
         return phi
-    
+
     def get_sde_stepper(self) -> Callable:
         """
         Returns the SDE stepper function for the Heston model.
@@ -70,7 +73,7 @@ class HestonModel(BaseModel):
         """
         p = self.params
         kappa, theta, rho, vol_of_vol = p["kappa"], p["theta"], p["rho"], p["vol_of_vol"]
-        
+
         def stepper(log_s_t: np.ndarray, v_t: np.ndarray, r: float, q: float, dt: float, dw_s: np.ndarray, dw_v: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
             v_t_pos = np.maximum(v_t, 0)
             v_sqrt = np.sqrt(v_t_pos)

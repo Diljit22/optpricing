@@ -1,7 +1,9 @@
-import yfinance as yf
 import numpy as np
 import pandas as pd
+import yfinance as yf
+
 from quantfin.config import HISTORICAL_DIR
+
 
 def save_historical_returns(tickers: list[str], period: str = "10y"):
     """Fetches and saves historical log returns for a list of tickers."""
@@ -26,7 +28,7 @@ def load_historical_returns(ticker: str, period: str = "10y") -> pd.Series:
     if not filename.exists():
         print(f"No historical data found for {ticker}. Fetching and saving now...")
         save_historical_returns([ticker], period)
-    
+
     if not filename.exists():
          raise FileNotFoundError(f"Could not find or save historical data for {ticker}.")
 

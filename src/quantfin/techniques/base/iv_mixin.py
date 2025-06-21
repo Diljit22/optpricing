@@ -1,13 +1,15 @@
 
 from __future__ import annotations
-from scipy.optimize import brentq
-from typing import Any, TYPE_CHECKING
+
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
+from scipy.optimize import brentq
 
 from quantfin.models import BSMModel
 
 if TYPE_CHECKING:
-    from quantfin.atoms import Option, Stock, Rate
+    from quantfin.atoms import Option, Rate, Stock
     from quantfin.models import BaseModel
 
 class IVMixin:
@@ -22,7 +24,7 @@ class IVMixin:
             try:
                 with np.errstate(all='ignore'):
                     price = self.price(option, stock, current_bsm_model, rate).price
-                if not np.isfinite(price): return 1e6 
+                if not np.isfinite(price): return 1e6
                 return price - target_price
             except (ZeroDivisionError, OverflowError):
                 return 1e6
@@ -36,7 +38,7 @@ class IVMixin:
                 iv = self._secant_iv(bsm_price_minus_target, 0.2, tol, 100)
             except (ValueError, RuntimeError):
                 iv = np.nan
-        
+
         return iv
 
     @staticmethod

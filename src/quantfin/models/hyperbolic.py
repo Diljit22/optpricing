@@ -1,10 +1,13 @@
 from __future__ import annotations
+
+from typing import Any, Callable
+
 import numpy as np
 from scipy.special import kv
-from typing import Any, Callable
 from scipy.stats import genhyperbolic
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+from quantfin.models.base import CF, BaseModel, ParamValidator
+
 
 class HyperbolicModel(BaseModel):
     """Hyperbolic pure-jump Lévy model."""

@@ -8,13 +8,13 @@ from the standard Black-Scholes-Merton to advanced stochastic volatility
 and jump-diffusion models.
 """
 
-from .base import BaseModel, CF, PDECoeffs, ParamValidator
-
+from .base import CF, BaseModel, ParamValidator, PDECoeffs
 from .bates import BatesModel
 from .blacks_approx import BlacksApproxModel
 from .bsm import BSMModel
 from .cev import CEVModel
 from .cgmy import CGMYModel
+from .cir import CIRModel
 from .dupire_local import DupireLocalVolModel
 from .heston import HestonModel
 from .hyperbolic import HyperbolicModel
@@ -22,11 +22,11 @@ from .kou import KouModel
 from .merton_jump import MertonJumpModel
 from .nig import NIGModel
 from .perpetual_put import PerpetualPutModel
-from .sabr_jump import SABRJumpModel
 from .sabr import SABRModel
-from .vg import VarianceGammaModel
+from .sabr_jump import SABRJumpModel
 from .vasicek import VasicekModel
-from .cir import CIRModel
+from .vg import VarianceGammaModel
+
 __all__ = [
     # Base
     "BaseModel", "CF", "PDECoeffs", "ParamValidator",

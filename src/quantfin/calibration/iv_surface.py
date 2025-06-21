@@ -1,11 +1,13 @@
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
+from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
-from quantfin.atoms import Stock, Rate, Option, OptionType
 from quantfin.techniques.base import BaseTechnique
+
 from .vectorized_bsm_iv import BSMIVSolver
+
 
 class VolatilitySurface:
     """A class to compute and hold market and model-implied volatility surfaces."""
@@ -36,7 +38,7 @@ class VolatilitySurface:
     def calculate_model_iv(self, stock: Stock, rate: Rate, model: BaseModel, technique: BaseTechnique) -> 'VolatilitySurface':
         """Calculates a model's IV surface by pricing all options and inverting."""
         print(f"Calculating {model.name} implied volatility surface...")
-        
+
         model_prices = np.array([
             technique.price(
                 Option(strike=row.strike, maturity=row.maturity, option_type=OptionType.CALL if row.optionType == 'call' else OptionType.PUT),
@@ -44,7 +46,7 @@ class VolatilitySurface:
             ).price
             for _, row in self.data.iterrows()
         ])
-        
+
         model_ivs = self._calculate_ivs(stock, rate, pd.Series(model_prices, index=self.data.index))
         self.surface = self.data.copy()
         self.surface['iv'] = model_ivs

@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import math
-from typing import Tuple, Any, Optional
+from typing import Any, Tuple
 
 from quantfin.models.base import BaseModel
+
 
 class ParityModel(BaseModel):
     """
@@ -14,7 +16,7 @@ class ParityModel(BaseModel):
     """
     name: str = "Put-Call Parity"
     has_closed_form: bool = True
-    
+
     # Define inputs for the closed-form solver.
     cf_kwargs = ("option_price",)
 
@@ -50,7 +52,7 @@ class ParityModel(BaseModel):
         """
         discounted_spot = spot * math.exp(-q * t)
         discounted_strike = strike * math.exp(-r * t)
-        
+
         # Parity: C - P = S*exp(-qT) - K*exp(-rT)
         parity_difference = discounted_spot - discounted_strike
 
@@ -65,14 +67,14 @@ class ParityModel(BaseModel):
         Return absolute (lower, upper) no-arbitrage bounds implied by parity.
         """
         discounted_strike = strike * math.exp(-r * t)
-        
+
         if call:
             lower_bound = max(0, spot - discounted_strike)
             upper_bound = spot
         else: # Put
             lower_bound = max(0, discounted_strike - spot)
             upper_bound = discounted_strike
-            
+
         return lower_bound, upper_bound
 
     def lower_bound_rate(self, *, call_price: float, put_price: float, spot: float, strike: float, t: float) -> float:

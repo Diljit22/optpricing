@@ -1,28 +1,44 @@
-import time
 import math
+import time
+from typing import Any, Dict
+
 import numpy as np
-from quantfin.models.base.base_model import BaseModel
-
 from tabulate import tabulate
-from typing import Dict, Any, List
 
-from quantfin.atoms import Option, OptionType, Stock, Rate
+from quantfin.atoms import Option, OptionType, Rate, Stock, ZeroCouponBond
 from quantfin.models import (
-    BSMModel, MertonJumpModel, HestonModel, BatesModel, VarianceGammaModel,
-    KouModel, CGMYModel, NIGModel, HyperbolicModel, CEVModel, SABRModel,
-    SABRJumpModel, DupireLocalVolModel
+    BatesModel,
+    BSMModel,
+    CEVModel,
+    CGMYModel,
+    CIRModel,
+    HestonModel,
+    HyperbolicModel,
+    KouModel,
+    MertonJumpModel,
+    NIGModel,
+    SABRJumpModel,
+    SABRModel,
+    VarianceGammaModel,
+    VasicekModel,
 )
+from quantfin.models.base.base_model import BaseModel
 from quantfin.techniques import (
-    ClosedFormTechnique, IntegrationTechnique, FFTTechnique, PDETechnique,
-    CRRTechnique, LeisenReimerTechnique, TOPMTechnique, MonteCarloTechnique
+    ClosedFormTechnique,
+    CRRTechnique,
+    FFTTechnique,
+    IntegrationTechnique,
+    LeisenReimerTechnique,
+    MonteCarloTechnique,
+    PDETechnique,
+    TOPMTechnique,
 )
-from quantfin.atoms import ZeroCouponBond
-from quantfin.models import VasicekModel, CIRModel
+
 
 def profile_all_metrics(technique: Any, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs):
     """Helper to run and profile all calculations for a given technique."""
     results = {}
-    
+
     # Price
     start = time.perf_counter()
     try:
@@ -55,7 +71,7 @@ def profile_all_metrics(technique: Any, option: Option, stock: Stock, model: Bas
         iv_val = np.nan
     end = time.perf_counter()
     results['ImpliedVol'] = (iv_val, end - start)
-    
+
     return results
 
 def run_benchmark(config: Dict[str, Any]):
@@ -65,7 +81,7 @@ def run_benchmark(config: Dict[str, Any]):
     rate = config['rate']
     techniques = config['techniques']
     kwargs = config.get('kwargs', {})
-    
+
     print("\n" + "="*80)
     print(f" {config['model_name']} ".center(80, "="))
     print("="*80)
@@ -77,17 +93,17 @@ def run_benchmark(config: Dict[str, Any]):
 
     for option_type in [OptionType.CALL, OptionType.PUT]:
         option = Option(strike=100.0, maturity=1.0, option_type=option_type)
-        
+
         # Special handling for Dupire strikes
         if model.name == "Dupire Local Volatility":
             option = config['options'][option_type]
 
         print("\n" + f" OPTION: {option.option_type.value.upper()} | K={option.strike} | T={option.maturity} ".center(80, "-"))
-        
+
         tech_results = {}
         for name, tech_instance in techniques.items():
             tech_results[name] = profile_all_metrics(tech_instance, option, stock, model, rate, **kwargs)
-        
+
         all_results[option_type.value] = tech_results
 
         # Format and print the results table
@@ -102,7 +118,7 @@ def run_benchmark(config: Dict[str, Any]):
             table_data.append(row)
         print(tabulate(table_data, headers=headers, tablefmt="grid", stralign="center"))
 
-    # Put-Call Parity Error 
+    # Put-Call Parity Error
     if model.name != "Dupire Local Volatility": # Parity doesn't apply if strikes differ
         print("\n" + " Put-Call Parity Errors: ".center(80, "-"))
         parity_errors = {}
@@ -117,18 +133,18 @@ def run_benchmark(config: Dict[str, Any]):
                 parity_errors[tech_name] = call_price - put_price - expected_diff
             else:
                 parity_errors[tech_name] = np.nan
-        
+
         headers = list(parity_errors.keys())
         error_data = [[f"{err:.4e}" for err in parity_errors.values()]]
         print(tabulate(error_data, headers=headers, tablefmt="plain", stralign="center"))
 
 # Main
 if __name__ == "__main__":
-    
-    
+
+
     stock = Stock(spot=100.0, dividend=0.01)
     rate = Rate(rate=0.03)
-    
+
     benchmark_configs = [
         {
             "model_name": "BLACK-SCHOLES-MERTON MODEL VS. ALL TECHNIQUES",
@@ -254,8 +270,8 @@ if __name__ == "__main__":
     # Run all benchmarks
     for config in benchmark_configs:
         run_benchmark(config)
-        
-        
+
+
 
     # Test Interest Rate Models
     print("\n" + "="*80)
@@ -273,7 +289,7 @@ if __name__ == "__main__":
     r0_stock = Stock(spot=initial_short_rate)
 
     # The Rate object is required by the technique, will be ignored by the models
-    dummy_rate = Rate(rate=0.99) 
+    dummy_rate = Rate(rate=0.99)
 
     # Vasicek Model Test
     vasicek_model = VasicekModel(params={'kappa': 0.86, 'theta': 0.09, 'sigma': 0.02})

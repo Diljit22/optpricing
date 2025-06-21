@@ -1,19 +1,17 @@
-import numpy as np
 
-from quantfin.atoms.option                               import Option, OptionType
-from quantfin.atoms.stock                                import Stock
-from quantfin.atoms.rate                                 import Rate
-from quantfin.models.bsm                                 import BSMModel
-from quantfin.techniques.closed_form                      import ClosedFormTechnique
-from quantfin.techniques.crr                              import CRRLatticeTechnique
-from quantfin.techniques.leisen_reimer                    import LeisenReimerTechnique
-from quantfin.techniques.pde                              import PDESolverTechnique
-from quantfin.techniques.topm                             import TOPMLatticeTechnique
-from quantfin.benchmark.configs.base_config               import BenchmarkConfig
-from quantfin.techniques.integration                      import IntegrationTechnique
-from quantfin.techniques.fft                              import FFTTechnique
-from quantfin.techniques.monte_carlo                      import MonteCarloTechnique
-
+from quantfin.atoms.option import Option, OptionType
+from quantfin.atoms.rate import Rate
+from quantfin.atoms.stock import Stock
+from quantfin.benchmark.configs.base_config import BenchmarkConfig
+from quantfin.models.bsm import BSMModel
+from quantfin.techniques.closed_form import ClosedFormTechnique
+from quantfin.techniques.crr import CRRLatticeTechnique
+from quantfin.techniques.fft import FFTTechnique
+from quantfin.techniques.integration import IntegrationTechnique
+from quantfin.techniques.leisen_reimer import LeisenReimerTechnique
+from quantfin.techniques.monte_carlo import MonteCarloTechnique
+from quantfin.techniques.pde import PDESolverTechnique
+from quantfin.techniques.topm import TOPMLatticeTechnique
 
 S0, vol, r, q = 100.0, 0.2, 0.03, 0.01
 bsm_model = BSMModel(params={"sigma": vol})

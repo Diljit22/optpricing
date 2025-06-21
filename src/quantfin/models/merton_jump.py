@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 import math
-import numpy as np
-from scipy.special import factorial
 from typing import Any
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+import numpy as np
+from scipy.special import factorial
+
+from quantfin.models.base import CF, BaseModel, ParamValidator
 from quantfin.models.bsm import BSMModel
+
 
 class MertonJumpModel(BaseModel):
     """
@@ -46,7 +49,7 @@ class MertonJumpModel(BaseModel):
         k = math.exp(mu_j + 0.5 * sigma_j**2) - 1
         lambda_prime = lambda_ * (1 + k)
         y_mul = lambda_prime * t
-        
+
         interval = np.arange(max_sum_terms)
         weights = np.exp(-y_mul) * (y_mul ** interval) / factorial(interval)
 
@@ -59,12 +62,12 @@ class MertonJumpModel(BaseModel):
             # Terminate sum early if weights become negligible
             if weights[i] < 1e-12 and i > lambda_prime * t:
                 break
-            
+
             temp_bsm_solver = self.bsm_solver.with_params(sigma=sigma_n[i])
-            
+
             price_term = temp_bsm_solver.price_closed_form(spot=spot, strike=strike, r=r_n[i], q=q, t=t, call=call)
             total_price += weights[i] * price_term
-            
+
         return total_price
 
     def _cf_impl(self, *, t: float, spot: float, r: float, q: float) -> CF:

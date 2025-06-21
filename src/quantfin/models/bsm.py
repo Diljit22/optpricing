@@ -1,9 +1,12 @@
 from __future__ import annotations
+
+from typing import Callable, Dict, Tuple
+
 import numpy as np
 from scipy.stats import norm
-from typing import Any, Callable, Tuple, Dict
 
-from quantfin.models.base import BaseModel, ParamValidator, CF, PDECoeffs
+from quantfin.models.base import CF, BaseModel, ParamValidator, PDECoeffs
+
 
 class BSMModel(BaseModel):
     """

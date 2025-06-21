@@ -1,15 +1,25 @@
 from __future__ import annotations
-import math
-import numpy as np
-from typing import Callable, Dict, Any
 
-from quantfin.atoms import Option, OptionType, Stock, Rate
+import math
+from typing import Any, Callable, Dict
+
+import numpy as np
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
-from quantfin.techniques.base import BaseTechnique, PricingResult, GreekMixin, IVMixin
+from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+
 from .mc_kernels import (
-    bsm_kernel, heston_kernel, merton_kernel, bates_kernel, 
-    sabr_kernel, sabr_jump_kernel, kou_kernel, dupire_kernel
+    bates_kernel,
+    bsm_kernel,
+    dupire_kernel,
+    heston_kernel,
+    kou_kernel,
+    merton_kernel,
+    sabr_jump_kernel,
+    sabr_kernel,
 )
+
 
 class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
@@ -48,14 +58,14 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         """Selects the appropriate JIT-compiled kernel and prepares its parameters."""
         p = model.params
         kernel_params = {'r': r, 'q': q, 'dt': dt}
-        
+
         if getattr(model, 'is_sabr', False):
             kernel_params.update({'alpha': p['alpha'], 'beta': p['beta'], 'rho': p['rho'], 'v0': kwargs.get('v0', p.get('alpha'))})
             if model.has_jumps:
                 kernel_params.update({'lambda_': p['lambda'], 'mu_j': p['mu_j'], 'sigma_j': p['sigma_j']})
                 return sabr_jump_kernel, kernel_params
             return sabr_kernel, kernel_params
-        
+
         if getattr(model, 'is_local_vol', False): # Dupire
             return dupire_kernel, kernel_params
 
@@ -82,7 +92,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         num_draws = self.n_paths // 2 if self.antithetic else self.n_paths
 
         kernel, kernel_params = self._get_sde_kernel_and_params(model, r, q, dt, **kwargs)
-        
+
         sim_params = {'n_paths': num_draws, 'n_steps': self.n_steps, **kernel_params}
         if getattr(model, 'is_sabr', False):
             sim_params['s0'] = S0
@@ -100,12 +110,12 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         if model.has_jumps:
             sim_params['jump_counts'] = self.rng.poisson(lam=model.params["lambda"] * dt, size=(num_draws, self.n_steps))
-        
+
         if getattr(model, 'is_local_vol', False):
             sim_params['vol_surface_func'] = model.params['vol_surface']
 
         ST = kernel(**sim_params)
-        
+
         if self.antithetic and not getattr(model, 'is_local_vol', False):
             if 'dw' in sim_params: sim_params['dw'] *= -1
             if 'dw1' in sim_params: sim_params['dw1'] *= -1
@@ -119,10 +129,10 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         """Handles pure Lévy models by direct sampling of the terminal distribution."""
         if not hasattr(model, "sample_terminal_log_return") or not hasattr(model, "raw_cf"):
             raise NotImplementedError(f"Lévy model '{model.name}' is missing required methods.")
-        
+
         log_returns_raw = model.sample_terminal_log_return(T, self.n_paths, self.rng)
         phi_raw = model.raw_cf(t=T)
         compensator = np.log(np.real(phi_raw(-1j)))
         drift = (r - q) * T - compensator
-        
+
         return S0 * np.exp(drift + log_returns_raw)

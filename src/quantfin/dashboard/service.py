@@ -1,13 +1,17 @@
-import pandas as pd
-from typing import Dict, Any
+from typing import Any, Dict
 
+import pandas as pd
+
+from quantfin.atoms import Rate, Stock
+from quantfin.calibration import VolatilitySurface, fit_rate_and_dividend
 from quantfin.calibration.technique_selector import select_fastest_technique
-from quantfin.data.market_data_manager import load_market_snapshot, get_live_option_chain
+from quantfin.dashboard.plots import plot_iv_surface_3d, plot_smiles_by_expiry
+from quantfin.data.market_data_manager import (
+    get_live_option_chain,
+    load_market_snapshot,
+)
 from quantfin.workflows import DailyWorkflow
-from quantfin.calibration import VolatilitySurface
-from quantfin.atoms import Stock, Rate
-from quantfin.calibration import fit_rate_and_dividend
-from quantfin.dashboard.plots import plot_smiles_by_expiry, plot_iv_surface_3d
+
 
 class DashboardService:
     """Orchestrates all logic for the Streamlit dashboard."""
@@ -61,13 +65,13 @@ class DashboardService:
     def get_iv_plots(self):
         """Generates and returns the smile and surface plots."""
         market_surface = VolatilitySurface(self.market_data).calculate_market_iv(self.stock, self.rate).surface
-        
+
         model_surfaces = {}
         for name, model in self.calibrated_models.items():
             technique = select_fastest_technique(model)
             model_surfaces[name] = VolatilitySurface(self.market_data).calculate_model_iv(self.stock, self.rate, model, technique).surface
-            
+
         smile_fig = plot_smiles_by_expiry(market_surface, model_surfaces, self.ticker, self.snapshot_date)
         surface_fig = plot_iv_surface_3d(market_surface, model_surfaces, self.ticker)
-        
+
         return smile_fig, surface_fig

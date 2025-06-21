@@ -1,9 +1,11 @@
 from __future__ import annotations
-from typing import Dict, Any
 
-from quantfin.atoms import Option, OptionType, Stock, Rate, ZeroCouponBond
+from typing import Any, Dict
+
+from quantfin.atoms import Option, OptionType, Rate, Stock, ZeroCouponBond
 from quantfin.models import BaseModel
-from quantfin.techniques.base import BaseTechnique, PricingResult, GreekMixin, IVMixin
+from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+
 
 class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
@@ -37,7 +39,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
             raise TypeError(f"{model.name} has no closed-form solver.")
 
         base_params: Dict[str, Any] = {}
-        
+
         if isinstance(option, Option):
             base_params = {
                 "spot": stock.spot,
@@ -53,7 +55,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
                 "spot": stock.spot,
                 "t": option.maturity,
                 # passed to satisfy the model signature but are ignored.
-                "strike": option.face_value, 
+                "strike": option.face_value,
                 "r": rate.get_rate(option.maturity),
                 "q": stock.dividend,
             }

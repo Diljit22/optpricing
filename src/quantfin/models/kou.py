@@ -1,8 +1,11 @@
 from __future__ import annotations
-import numpy as np
-from typing import Any, Callable, Dict
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+from typing import Any, Dict
+
+import numpy as np
+
+from quantfin.models.base import CF, BaseModel, ParamValidator
+
 
 class KouModel(BaseModel):
     """Kou (2002) double-exponential jump-diffusion model."""
@@ -40,7 +43,7 @@ class KouModel(BaseModel):
         """Kou characteristic function for the log-spot price log(S_t)."""
         p = self.params
         sigma, lambda_, p_up, eta1, eta2 = p["sigma"], p["lambda"], p["p_up"], p["eta1"], p["eta2"]
-        
+
         compensator = lambda_ * (p_up / (eta1 - 1) - (1 - p_up) / (eta2 + 1))
         drift = r - q - 0.5 * sigma**2 - compensator
 
@@ -49,10 +52,10 @@ class KouModel(BaseModel):
             bsm_part = 1j * u * (np.log(spot) + drift * t) - 0.5 * u**2 * sigma**2 * t
             # Jump component formulation
             jump_part = lambda_ * t * (p_up / (eta1 - 1j * u) + (1 - p_up) / (eta2 + 1j * u) - 1)
-            
+
             return np.exp(bsm_part + jump_part)
         return phi
-    
+
     #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("Kou uses a specialized kernel.")
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

@@ -1,12 +1,13 @@
-import streamlit as st
+
 import pandas as pd
-import math
-from quantfin.atoms import Stock, Rate, ZeroCouponBond
-from quantfin.models import VasicekModel, CIRModel
-from quantfin.parity import ImpliedRateModel, ParityModel
-from quantfin.techniques import ClosedFormTechnique
-from quantfin.data import load_historical_returns
+import streamlit as st
+
+from quantfin.atoms import Rate, Stock, ZeroCouponBond
 from quantfin.calibration import fit_jump_params_from_history
+from quantfin.data import load_historical_returns
+from quantfin.models import CIRModel, VasicekModel
+from quantfin.parity import ImpliedRateModel
+from quantfin.techniques import ClosedFormTechnique
 
 st.set_page_config(layout="wide", page_title="QuantFin | Tools")
 st.title("Financial Utilities & Tools")

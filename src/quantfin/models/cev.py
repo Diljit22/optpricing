@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import Any, Callable, Dict
+
+from typing import Any
+
 import numpy as np
 
 from quantfin.models.base import BaseModel, ParamValidator
+
 
 class CEVModel(BaseModel):
     """Constant Elasticity of Variance (CEV) model."""
@@ -28,7 +31,7 @@ class CEVModel(BaseModel):
         from scipy.stats import ncx2
         p = self.params
         sigma, gamma = p["sigma"], p["gamma"]
-        
+
         # Handle the boundary case where gamma -> 1 (which is BSM)
         if abs(1.0 - gamma) < 1e-6:
             drift = (r - 0.5 * sigma**2) * T
@@ -38,7 +41,7 @@ class CEVModel(BaseModel):
         df = 2 + 2 / (1 - gamma)
         k = 2 * r / (sigma**2 * (1 - gamma) * (np.exp(r * (1 - gamma) * T) - 1))
         nc = k * S0**(2 * (1 - gamma)) * np.exp(-r * (1 - gamma) * T)
-        
+
         chi2_draws = ncx2.rvs(df=df, nc=nc, size=size)
         ST = (chi2_draws / k)**(1 / (2 * (1 - gamma)))
         return ST

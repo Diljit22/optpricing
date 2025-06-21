@@ -1,14 +1,16 @@
 from __future__ import annotations
-import numpy as np
-from scipy import integrate
-import pandas as pd
+
 from typing import TYPE_CHECKING
+
+import numpy as np
+import pandas as pd
+from scipy import integrate
 
 from quantfin.models import BSMModel
 
 if TYPE_CHECKING:
-    from quantfin.models import BaseModel
     from quantfin.atoms import Rate
+    from quantfin.models import BaseModel
 
 class VectorizedIntegrationIVSolver:
     """
@@ -44,7 +46,7 @@ class VectorizedIntegrationIVSolver:
             f0 = f1
             p1 = self._price_vectorized(iv1, options, model, rate)
             f1 = p1 - target_prices
-        
+
         return iv1
 
     def _price_vectorized(self, iv_vector: np.ndarray, options: pd.DataFrame, model: BaseModel, rate: Rate) -> np.ndarray:
@@ -59,7 +61,7 @@ class VectorizedIntegrationIVSolver:
             S, K = group['spot'].values, group['strike'].values
             q, r = group['dividend'].values, rate.get_rate(T)
             is_call = (group['optionType'].values == 'call')
-            
+
             bsm_model.params['sigma'] = iv_vector[idx]
             phi = bsm_model.cf(t=T, spot=S, r=r, q=q)
             k_log = np.log(K)
@@ -68,17 +70,17 @@ class VectorizedIntegrationIVSolver:
             integrand_p1 = lambda u: (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
 
             integral_p2, _ = integrate.quad_vec(integrand_p2, 1e-15, self.upper_bound)
-            
+
             phi_minus_i = phi(-1j)
             phi_minus_i[np.abs(phi_minus_i) < 1e-12] = 1.0
             integral_p1, _ = integrate.quad_vec(integrand_p1, 1e-15, self.upper_bound)
-            
+
             P1 = 0.5 + integral_p1 / (np.pi * np.real(phi_minus_i))
             P2 = 0.5 + integral_p2 / np.pi
 
             call_prices = S * np.exp(-q * T) * P1 - K * np.exp(-r * T) * P2
             put_prices = K * np.exp(-r * T) * (1 - P2) - S * np.exp(-q * T) * (1 - P1)
-            
+
             prices[idx] = np.where(is_call, call_prices, put_prices)
-            
+
         return prices

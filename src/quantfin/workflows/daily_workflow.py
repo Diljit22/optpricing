@@ -1,13 +1,18 @@
-import pandas as pd
-import numpy as np
-from typing import Dict, Any
+from typing import Any, Dict
 
+import numpy as np
+import pandas as pd
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
+from quantfin.calibration import (
+    Calibrator,
+    fit_jump_params_from_history,
+    fit_rate_and_dividend,
+)
 from quantfin.calibration.technique_selector import select_fastest_technique
-from quantfin.models import BaseModel
-from quantfin.atoms import Stock, Rate, Option, OptionType
-from quantfin.calibration import Calibrator, fit_rate_and_dividend
 from quantfin.data import load_historical_returns
-from quantfin.calibration import fit_jump_params_from_history
+from quantfin.models import BaseModel
+
 
 class DailyWorkflow:
     """
@@ -32,7 +37,7 @@ class DailyWorkflow:
             puts = self.market_data[self.market_data['optionType'] == 'put']
             r, q = fit_rate_and_dividend(calls, puts, spot)
             self.results.update({'Implied Rate': r, 'Implied Dividend': q})
-            
+
             stock = Stock(spot=spot, dividend=q)
             rate = Rate(rate=r)
 
@@ -47,7 +52,7 @@ class DailyWorkflow:
             print(f"\n[Step 2] Calibrating {model_name} on front-month options...")
             target_expiry = self.market_data['expiry'].min()
             calibration_slice = self.market_data[self.market_data['expiry'] == target_expiry].copy()
-            
+
             model_instance = self.model_config['model_class'](params=initial_guess)
             calibrator = Calibrator(model_instance, calibration_slice, stock, rate)
             calibrated_params = calibrator.fit(
@@ -56,7 +61,7 @@ class DailyWorkflow:
                 frozen_params=self.model_config.get("frozen", {})
             )
             self.results['Calibrated Params'] = calibrated_params
-            
+
             # Step 4: Evaluate the calibrated model on the full chain
             print(f"\n[Step 3] Evaluating calibrated {model_name} on the full chain...")
             final_model = model_instance.with_params(**calibrated_params)

@@ -1,6 +1,7 @@
-import streamlit as st
 import pandas as pd
-from quantfin.atoms import Option, OptionType, Stock, Rate
+import streamlit as st
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import *
 from quantfin.techniques import *
 
@@ -10,13 +11,13 @@ st.caption("Price any option with any model and technique. Manually set all para
 
 # Model and Technique Selection
 MODEL_MAP = {
-    "BSM": BSMModel, "Merton": MertonJumpModel, "Heston": HestonModel, 
-    "Bates": BatesModel, "Kou": KouModel, "NIG": NIGModel, "VG": VarianceGammaModel, 
+    "BSM": BSMModel, "Merton": MertonJumpModel, "Heston": HestonModel,
+    "Bates": BatesModel, "Kou": KouModel, "NIG": NIGModel, "VG": VarianceGammaModel,
     "CGMY": CGMYModel, "SABR": SABRModel, "CEV": CEVModel
 }
 TECHNIQUE_MAP = {
-    "Analytic/Closed-Form": ClosedFormTechnique, "Integration": IntegrationTechnique, 
-    "FFT": FFTTechnique, "Monte Carlo": MonteCarloTechnique, "PDE": PDETechnique, 
+    "Analytic/Closed-Form": ClosedFormTechnique, "Integration": IntegrationTechnique,
+    "FFT": FFTTechnique, "Monte Carlo": MonteCarloTechnique, "PDE": PDETechnique,
     "Leisen-Reimer": LeisenReimerTechnique, "CRR": CRRTechnique, "TOPM": TOPMTechnique
 }
 
@@ -67,10 +68,10 @@ if hasattr(dummy_model_instance, 'param_defs'):
     cols = st.columns(num_cols)
     for i, (p_name, p_def) in enumerate(param_defs.items()):
         params[p_name] = cols[i % num_cols].number_input(
-            p_def['label'], 
-            value=p_def['default'], 
-            min_value=p_def.get('min'), 
-            max_value=p_def.get('max'), 
+            p_def['label'],
+            value=p_def['default'],
+            min_value=p_def.get('min'),
+            max_value=p_def.get('max'),
             step=p_def.get('step'),
             format="%.4f"
         )
@@ -80,11 +81,11 @@ if st.button("Calculate Price & Greeks"):
     stock = Stock(spot=spot, dividend=div_val)
     rate = Rate(rate=rate_val)
     option = Option(strike=strike, maturity=maturity, option_type=OptionType[option_type])
-    
+
     # merge UI params with non-UI default params
     full_params = model_class.default_params.copy()
     full_params.update(params)
-    
+
     model = model_class(params=full_params)
     technique = TECHNIQUE_MAP[technique_name]()
 
@@ -96,17 +97,17 @@ if st.button("Calculate Price & Greeks"):
         try:
             # Create a dictionary to hold the results
             results_data = {}
-            
+
             # Price
             results_data['Price'] = technique.price(option, stock, model, rate, **pricing_kwargs).price
-            
+
             # Greeks
             results_data['Delta'] = technique.delta(option, stock, model, rate, **pricing_kwargs)
             results_data['Gamma'] = technique.gamma(option, stock, model, rate, **pricing_kwargs)
             results_data['Vega'] = technique.vega(option, stock, model, rate, **pricing_kwargs)
             results_data['Theta'] = technique.theta(option, stock, model, rate, **pricing_kwargs)
             results_data['Rho'] = technique.rho(option, stock, model, rate, **pricing_kwargs)
-            
+
             st.dataframe(pd.DataFrame([results_data]))
         except Exception as e:
             st.error(f"Calculation failed: {e}")

@@ -1,14 +1,15 @@
-from abc import ABC
 import math
-import numpy as np
+from abc import ABC
 from typing import Any
 
+import numpy as np
+
+from quantfin.atoms.option import Option, OptionType
+from quantfin.atoms.rate import Rate
+from quantfin.atoms.stock import Stock
 from quantfin.techniques.base.base_technique import BaseTechnique, PricingResult
-from quantfin.techniques.base.greek_mixin    import GreekMixin
-from quantfin.techniques.base.iv_mixin       import IVMixin
-from quantfin.atoms.option                   import Option, OptionType
-from quantfin.atoms.stock                    import Stock
-from quantfin.atoms.rate                     import Rate
+from quantfin.techniques.base.greek_mixin import GreekMixin
+from quantfin.techniques.base.iv_mixin import IVMixin
 
 
 class CRRLatticeTechnique(BaseTechnique, GreekMixin, IVMixin, ABC):

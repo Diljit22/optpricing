@@ -1,7 +1,8 @@
-from quantfin.models.base           import BaseModel
+from quantfin.models.base import BaseModel
 from quantfin.techniques.closed_form import ClosedFormTechnique
-from quantfin.techniques.fft         import FFTTechnique
+from quantfin.techniques.fft import FFTTechnique
 from quantfin.techniques.monte_carlo import MonteCarloTechnique
+
 
 def select_fastest_technique(model: BaseModel):
     """

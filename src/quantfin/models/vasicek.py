@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import math
-from typing import Any, Dict
+from typing import Any
 
 from quantfin.models.base import BaseModel, ParamValidator
+
 
 class VasicekModel(BaseModel):
     """
@@ -31,7 +33,7 @@ class VasicekModel(BaseModel):
 
         B = (1 / kappa) * (1 - math.exp(-kappa * T))
         A_log = (theta - sigma**2 / (2 * kappa**2)) * (B - T) - (sigma**2 / (4 * kappa)) * B**2
-        
+
         price = math.exp(A_log - B * r0)
         return price
 

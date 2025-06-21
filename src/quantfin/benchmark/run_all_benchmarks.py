@@ -1,5 +1,6 @@
 import sys
 import time
+
 from quantfin.benchmark.runner import run_from_config
 
 # A list of all benchmark configurations you want to run.
@@ -16,7 +17,7 @@ ALL_BENCHMARKS = [
     "quantfin.benchmark.configs.demo_cev",
     "quantfin.benchmark.configs.demo_sabr",
     "quantfin.benchmark.configs.demo_sabr_jump",
-    "quantfin.benchmark.configs.demo_dupire",    
+    "quantfin.benchmark.configs.demo_dupire",
 ]
 
 # A list of just the demo files.
@@ -32,14 +33,14 @@ def main(benchmarks_to_run: list[str]):
     Runs a list of specified benchmarks.
     """
     total_start_time = time.time()
-    print(f"--- Starting Master Benchmark Runner ---")
+    print("--- Starting Master Benchmark Runner ---")
     print(f"Found {len(benchmarks_to_run)} benchmarks to run.")
-    
+
     for i, config_path in enumerate(benchmarks_to_run):
         print("\n" + "#" * 80)
         print(f"### RUNNING BENCHMARK {i+1}/{len(benchmarks_to_run)}: {config_path}")
         print("#" * 80)
-        
+
         start_time = time.time()
         try:
             run_from_config(config_path)
@@ -50,7 +51,7 @@ def main(benchmarks_to_run: list[str]):
             # You might want to print the full traceback here for debugging
             import traceback
             traceback.print_exc()
-        
+
         end_time = time.time()
         print(f"--- Finished {config_path} in {end_time - start_time:.2f} seconds ---")
 
@@ -67,5 +68,5 @@ if __name__ == "__main__":
     else:
         # Default: run all standard benchmarks
         benchmarks = ALL_BENCHMARKS
-        
+
     main(benchmarks)

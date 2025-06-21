@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 import math
-import numpy as np
 from typing import Any, Dict
 
-from quantfin.atoms import Option, OptionType, Stock, Rate
+import numpy as np
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
-from quantfin.techniques.base import BaseTechnique, PricingResult, GreekMixin, IVMixin
+from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+
 
 class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
@@ -28,16 +31,16 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         r, q = rate.get_rate(T), stock.dividend
 
         vol_proxy = self._get_vol_proxy(model, kwargs)
-        
+
         if self.alpha_user is not None:
             alpha = self.alpha_user
         elif vol_proxy is None:
             alpha = 1.75
         else:
             alpha = 1.0 + 0.5 * vol_proxy * math.sqrt(T)
-            
+
         eta = self.base_eta * max(1.0, vol_proxy * math.sqrt(T)) if vol_proxy is not None else self.base_eta
-        
+
         lambda_ = (2 * math.pi) / (self.N * eta)
         b = (self.N * lambda_) / 2.0
         k_grid = -b + lambda_ * np.arange(self.N)
@@ -57,7 +60,7 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         fft_input = psi * np.exp(1j * u * b) * weights
         fft_vals = np.fft.fft(fft_input).real
-        
+
         call_price_grid = np.exp(-alpha * k_grid) / math.pi * fft_vals
 
         # Interpolate to find the results at the target strike
@@ -68,7 +71,7 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
             price = call_price
         else:
             price = call_price - (S0 * np.exp(-q * T) - K * np.exp(-r * T))
-            
+
         return {"price": price}
 
     def price(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any) -> PricingResult:

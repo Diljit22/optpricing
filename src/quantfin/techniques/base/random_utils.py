@@ -1,5 +1,7 @@
 from contextlib import contextmanager
+
 import numpy as np
+
 
 @contextmanager
 def crn(rng: np.random.Generator):

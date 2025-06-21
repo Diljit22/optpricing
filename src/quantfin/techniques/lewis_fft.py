@@ -1,17 +1,17 @@
 from __future__ import annotations
+
 import math
 from typing import Any, Dict
 
 import numpy as np
 
+from quantfin.atoms.option import Option, OptionType
+from quantfin.atoms.rate import Rate
+from quantfin.atoms.stock import Stock
+from quantfin.models.base import BaseModel
 from quantfin.techniques.base.base_technique import BaseTechnique, PricingResult
-from quantfin.techniques.base.greek_mixin    import GreekMixin
-from quantfin.techniques.base.iv_mixin       import IVMixin
-from quantfin.models.base                    import BaseModel
-from quantfin.atoms.option                   import Option, OptionType
-from quantfin.atoms.stock                    import Stock
-from quantfin.atoms.rate                     import Rate
-
+from quantfin.techniques.base.greek_mixin import GreekMixin
+from quantfin.techniques.base.iv_mixin import IVMixin
 
 
 class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):

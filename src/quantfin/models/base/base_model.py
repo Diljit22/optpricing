@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Callable, Any, Dict, Set, Tuple
+from typing import Any, Callable, Dict, Tuple
+
 import numpy as np
 
 __doc__ = """
@@ -48,7 +50,7 @@ class BaseModel(ABC):
     has_variance_process: bool = False
     is_pure_levy: bool = False
     has_jumps: bool = False
-    
+
     # TODO: Rename cf_kwargs to something more specific like `pricing_args`
     # as it's used by more than just the characteristic function.
     cf_kwargs: Tuple[str, ...] = ()
@@ -175,7 +177,7 @@ class BaseModel(ABC):
         """Provide a formal string representation of the model."""
         param_str = ", ".join(f"{k}={v:.4f}" for k, v in self.params.items())
         return f"{self.__class__.__name__}({param_str})"
-    
+
     def __eq__(self, other: object) -> bool:
         """
         Check for equality based on class type and parameters.

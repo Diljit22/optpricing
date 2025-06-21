@@ -1,12 +1,15 @@
 from __future__ import annotations
-from abc import abstractmethod
+
 import math
-import numpy as np
+from abc import abstractmethod
 from typing import Any
 
-from quantfin.atoms import Option, OptionType, Stock, Rate
+import numpy as np
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
-from quantfin.techniques.base import BaseTechnique, PricingResult, GreekMixin, IVMixin
+from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+
 
 class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
     """

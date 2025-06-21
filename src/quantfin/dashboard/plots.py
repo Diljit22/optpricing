@@ -1,8 +1,10 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 from typing import Dict
+
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+
 
 def plot_smiles_by_expiry(market_surface: pd.DataFrame, model_surfaces: Dict[str, pd.DataFrame], ticker: str, snapshot_date: str):
     """Generates a matplotlib figure with volatility smiles for key expiries."""
@@ -18,13 +20,13 @@ def plot_smiles_by_expiry(market_surface: pd.DataFrame, model_surfaces: Dict[str
     for i, expiry in enumerate(plot_expiries):
         ax = axes[i]
         market_slice = market_surface[market_surface['expiry'] == expiry]
-        
+
         ax.scatter(market_slice['strike'], market_slice['iv'] * 100, label='Market IV', alpha=0.7, s=20, zorder=10)
-        
+
         for model_name, model_surface in model_surfaces.items():
             model_slice = model_surface[model_surface['expiry'] == expiry].sort_values('strike')
             ax.plot(model_slice['strike'], model_slice['iv'] * 100, label=f'{model_name} IV', lw=2.5, alpha=0.8)
-            
+
         expiry_date_str = pd.to_datetime(expiry).strftime('%Y-%m-%d')
         maturity = market_slice['maturity'].iloc[0]
         ax.set_title(f"Expiry: {expiry_date_str} (T={maturity:.2f}y)")
@@ -44,7 +46,7 @@ def plot_iv_surface_3d(market_surface: pd.DataFrame, model_surfaces: Dict[str, p
     """Creates an interactive 3D plot of the volatility surfaces."""
     fig = go.Figure()
     fig.add_trace(go.Mesh3d(x=market_surface['maturity'], y=market_surface['strike'], z=market_surface['iv'], opacity=0.5, color='grey', name='Market IV'))
-    
+
     colors = [
         '#3a7fc1',  # Deep ocean blue
         '#ff8c00',  # Sunset orange

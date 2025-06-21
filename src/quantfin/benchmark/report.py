@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 import math
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from quantfin.atoms.option import OptionType
+
 
 def print_benchmark_report(
     config: Any,
@@ -88,4 +91,3 @@ def print_benchmark_report(
         print(f"* indicates |error| > {parity_threshold}\n")
 
     print("Benchmark complete.")
-    

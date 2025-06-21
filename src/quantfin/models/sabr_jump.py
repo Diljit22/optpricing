@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Any, Callable, Dict
-import numpy as np
+
+from typing import Any
 
 from quantfin.models.base import BaseModel, ParamValidator
+
 
 class SABRJumpModel(BaseModel):
     """SABR model with an added log-normal jump component on the spot process."""

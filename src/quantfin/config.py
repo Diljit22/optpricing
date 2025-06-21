@@ -1,6 +1,7 @@
-import yaml
-from pathlib import Path
 import os
+from pathlib import Path
+
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -16,7 +17,7 @@ if not CONFIG_FILE_PATH.exists():
         yaml.dump(default_config, f, default_flow_style=False)
     print(f"Created default config file at: {CONFIG_FILE_PATH}")
 
-with open(CONFIG_FILE_PATH, 'r') as f:
+with open(CONFIG_FILE_PATH) as f:
     _config = yaml.safe_load(f)
 
 # API Key Management
@@ -36,6 +37,6 @@ CALIBRATED_PARAMS_DIR = ARTIFACTS_DIR / "calibrated_params"
 CALIBRATION_LOGS_DIR = ARTIFACTS_DIR / "calibration_logs"
 
 # Ensure all directories exist
-for path in [DATA_DIR, ARTIFACTS_DIR, MARKET_SNAPSHOT_DIR, HISTORICAL_DIR, 
+for path in [DATA_DIR, ARTIFACTS_DIR, MARKET_SNAPSHOT_DIR, HISTORICAL_DIR,
              BACKTEST_LOGS_DIR, CALIBRATED_PARAMS_DIR, CALIBRATION_LOGS_DIR]:
     path.mkdir(parents=True, exist_ok=True)

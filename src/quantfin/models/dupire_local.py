@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Any, Callable, Dict
-import numpy as np
+
+from typing import Any
 
 from quantfin.models.base import BaseModel
+
 
 class DupireLocalVolModel(BaseModel):
     """Dupire (1994) Local Volatility model."""

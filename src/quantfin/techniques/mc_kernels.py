@@ -1,5 +1,6 @@
-import numpy as np
 import numba
+import numpy as np
+
 
 @numba.jit(nopython=True, fastmath=True, cache=True)
 def bsm_kernel(n_paths, n_steps, log_s0, r, q, sigma, dt, dw):
@@ -47,15 +48,15 @@ def bates_kernel(n_paths, n_steps, log_s0, v0, r, q, kappa, theta, rho, vol_of_v
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
     compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    
+
     for i in range(n_steps):
         v_pos = np.maximum(v, 0)
         v_sqrt = np.sqrt(v_pos)
-        
+
         # Heston part
         log_s += (r - q - 0.5 * v_pos - compensator) * dt + v_sqrt * dw1[:, i]
         v += kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * dw2[:, i]
-        
+
         # Merton Jump part
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
@@ -82,10 +83,10 @@ def sabr_kernel(n_paths, n_steps, s0, v0, r, q, alpha, beta, rho, dt, dw1, dw2):
         s_pos = np.maximum(s, 1e-8) # Avoid negative spot
         v_pos = np.maximum(v, 0)
         s += (r - q) * s_pos * dt + v_pos * (s_pos**beta) * dw1[:, i]
-        
+
         # Evolve volatility sigma_t (lognormal process)
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * dw2[:, i])
-        
+
     return s
 
 @numba.jit(nopython=True, fastmath=True, cache=True)
@@ -99,11 +100,11 @@ def sabr_jump_kernel(n_paths, n_steps, s0, v0, r, q, alpha, beta, rho, lambda_, 
     for i in range(n_steps):
         s_pos = np.maximum(s, 1e-8)
         v_pos = np.maximum(v, 0)
-        
+
         s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * dw1[:, i]
-        
+
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * dw2[:, i])
-        
+
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
             num_jumps = np.sum(jumps_this_step)
@@ -123,25 +124,25 @@ def kou_kernel(n_paths, n_steps, log_s0, r, q, sigma, lambda_, p_up, eta1, eta2,
     log_s = np.full(n_paths, log_s0)
     compensator = lambda_ * ((p_up * eta1 / (eta1 - 1)) + ((1 - p_up) * eta2 / (eta2 + 1)) - 1)
     drift = (r - q - 0.5 * sigma**2 - compensator) * dt
-    
+
     for i in range(n_steps):
         log_s += drift + sigma * dw[:, i]
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
             num_jumps = np.sum(jumps_this_step)
-            
+
             # Determine which jumps are up and which are down
             up_or_down = np.random.random(num_jumps)
             num_up_jumps = np.sum(up_or_down < p_up)
             num_down_jumps = num_jumps - num_up_jumps
-            
+
             # Generate jump sizes from exponential distributions
             total_jump_size = 0.0
             if num_up_jumps > 0:
                 total_jump_size += np.sum(np.random.exponential(1.0 / eta1, num_up_jumps))
             if num_down_jumps > 0:
                 total_jump_size -= np.sum(np.random.exponential(1.0 / eta2, num_down_jumps))
-            
+
             # This part is tricky to vectorize perfectly in Numba, so loop
             jump_idx = 0
             for path_idx in range(n_paths):

@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import math
-from typing import Any, Dict
+from typing import Any
 
 from scipy.optimize import brentq
 
-from quantfin.models.base import BaseModel, ParamValidator
+from quantfin.models.base import BaseModel
+
 
 class ImpliedRateModel(BaseModel):
     """
@@ -15,7 +17,7 @@ class ImpliedRateModel(BaseModel):
     """
     name: str = "Implied Rate"
     has_closed_form: bool = True
-    
+
     # Define inputs for the closed-form solver.
     cf_kwargs = ("call_price", "put_price")
 
@@ -62,7 +64,7 @@ class ImpliedRateModel(BaseModel):
         # Attempt to find a bracket for the root
         low, high = -0.5, 0.5  # reasonable range for interest rates
         f_low, f_high = objective_func(low), objective_func(high)
-        
+
         for _ in range(10): # Try up to 10 times to expand the bracket
             if f_low * f_high < 0:
                 break

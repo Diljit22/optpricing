@@ -1,8 +1,11 @@
 from __future__ import annotations
-import numpy as np
+
 from typing import Any, Callable, Dict
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+import numpy as np
+
+from quantfin.models.base import CF, BaseModel, ParamValidator
+
 
 class VarianceGammaModel(BaseModel):
     """Variance Gamma (VG) model, a pure-jump Lévy process."""
@@ -38,7 +41,7 @@ class VarianceGammaModel(BaseModel):
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
             return self.raw_cf(t=t)(u) * np.exp(1j * u * (np.log(spot) + drift * t))
         return phi
-    
+
     def raw_cf(self, *, t: float) -> Callable:
         p = self.params
         sigma, nu, theta = p["sigma"], p["nu"], p["theta"]

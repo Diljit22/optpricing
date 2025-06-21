@@ -1,9 +1,12 @@
 from __future__ import annotations
+
+from typing import Any, Callable
+
 import numpy as np
 from scipy.special import gamma as gamma_func
-from typing import Any, Callable, Dict
 
-from quantfin.models.base import BaseModel, ParamValidator, CF
+from quantfin.models.base import CF, BaseModel, ParamValidator
+
 
 class CGMYModel(BaseModel):
     """
@@ -26,7 +29,7 @@ class CGMYModel(BaseModel):
         if not (p["Y"] < 2):
             raise ValueError("CGMY parameter Y must be less than 2 for finite variance.")
         if p["Y"] <= 0 and p["C"] != 0:
-             print(f"Warning: CGMY with Y<=0 and C!=0 can have infinite moments.")
+             print("Warning: CGMY with Y<=0 and C!=0 can have infinite moments.")
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CGMYModel): return NotImplemented
@@ -39,7 +42,7 @@ class CGMYModel(BaseModel):
         """Risk-neutral characteristic function for the log-spot price log(S_t)."""
         compensator = np.log(self.raw_cf(t=1.0)(-1j))
         drift = r - q - np.real(compensator)
-        
+
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
             return self.raw_cf(t=t)(u) * np.exp(1j * u * (np.log(spot) + drift * t))
         return phi
@@ -71,7 +74,7 @@ class CGMYModel(BaseModel):
         # Can sample this by time-changing a Brownian motion.
         g_up = rng.gamma(shape=C*T, scale=1/M, size=size)
         g_down = rng.gamma(shape=C*T, scale=1/G, size=size)
-        
+
         return g_up - g_down
 
     #  Abstract Method Implementations

@@ -1,11 +1,14 @@
 from __future__ import annotations
-import numpy as np
-from scipy import integrate
+
 from typing import Any, Dict
 
-from quantfin.atoms import Option, OptionType, Stock, Rate
+import numpy as np
+from scipy import integrate
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
-from quantfin.techniques.base import BaseTechnique, PricingResult, GreekMixin, IVMixin
+from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+
 
 class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
@@ -39,7 +42,7 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         integrand_p1 = lambda u: (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
 
         integral_p2, _ = integrate.quad(integrand_p2, 1e-15, self.upper_bound, limit=self.limit, epsabs=self.epsabs, epsrel=self.epsrel)
-        
+
         phi_minus_i = phi(-1j)
         if np.abs(phi_minus_i) < 1e-12:
             P1 = np.nan
@@ -60,7 +63,7 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
             else:
                 price = df_K * (1 - P2) - df_S * (1 - P1)
                 delta = np.exp(-q * T) * (P1 - 1.0)
-            
+
         return {"price": price, "delta": delta}
 
     def price(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any) -> PricingResult:
@@ -75,7 +78,7 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         """
         if not self._cached_results:
             self.price(option, stock, model, rate, **kwargs)
-        
+
         delta_val = self._cached_results.get('delta')
         if delta_val is not None and not np.isnan(delta_val):
             return delta_val

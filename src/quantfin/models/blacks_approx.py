@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 import math
+from typing import Any
+
 import numpy as np
-from typing import Optional, Any
 
 from quantfin.models.base import BaseModel, ParamValidator
 from quantfin.models.bsm import BSMModel
+
 
 class BlacksApproxModel(BaseModel):
     """

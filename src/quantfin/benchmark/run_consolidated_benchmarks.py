@@ -1,10 +1,9 @@
 import importlib
 import sys
-import time
 import traceback
 
-from quantfin.benchmark.runner              import collect_benchmark_data
 from quantfin.benchmark.consolidated_report import print_consolidated_report
+from quantfin.benchmark.runner import collect_benchmark_data
 
 # A list of all benchmark configurations you want to run.
 ALL_BENCHMARKS = [
@@ -20,7 +19,7 @@ ALL_BENCHMARKS = [
     "quantfin.benchmark.configs.demo_cev",
     "quantfin.benchmark.configs.demo_sabr",
     "quantfin.benchmark.configs.demo_sabr_jump",
-    "quantfin.benchmark.configs.demo_dupire",    
+    "quantfin.benchmark.configs.demo_dupire",
 ]
 
 # A list of just the demo files.
@@ -37,16 +36,16 @@ def main(benchmarks_to_run: list[str]):
     Loads a list of benchmark configs, executes them to collect price data,
     and then prints a single consolidated report.
     """
-    print(f"--- Starting Consolidated Benchmark Runner ---")
+    print("--- Starting Consolidated Benchmark Runner ---")
     print(f"Found {len(benchmarks_to_run)} benchmarks to run.")
-    
+
     all_run_results = []
 
     for config_path in benchmarks_to_run:
         print("\n" + "#" * 80)
         print(f"### EXECUTING: {config_path}")
         print("#" * 80)
-        
+
         try:
             # Load the config module
             config_module = importlib.import_module(config_path)
@@ -74,7 +73,7 @@ def main(benchmarks_to_run: list[str]):
                 "error": e,
                 "traceback": traceback.format_exc(),
             })
-        
+
         print(f"--- Finished executing {config_path} ---")
 
     # After all benchmarks have been run (or failed), print the single report
@@ -86,5 +85,5 @@ if __name__ == "__main__":
         benchmarks = sys.argv[1:]
     else:
         benchmarks = ALL_BENCHMARKS
-        
+
     main(benchmarks)

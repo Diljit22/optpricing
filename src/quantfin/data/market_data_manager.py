@@ -1,6 +1,7 @@
-import pandas as pd
 from datetime import date, datetime
 from typing import List
+
+import pandas as pd
 import yfinance as yf
 from polygon import RESTClient
 
@@ -26,7 +27,7 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
                 opt.puts['optionType'] = 'put'
                 opt.puts['expiry'] = pd.to_datetime(expiry)
                 all_options.append(opt.puts)
-        
+
         if not all_options: return None
 
         chain_df = pd.concat(all_options, ignore_index=True)
@@ -34,7 +35,7 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
         chain_df['maturity'] = (chain_df['expiry'] - today_date).dt.days / 365.25
         chain_df['last_price'] = (chain_df['bid'] + chain_df['ask']) / 2.0
         chain_df['spot_price'] = ticker_obj.fast_info.get('last_price', ticker_obj.history('1d')['Close'].iloc[0])
-        
+
         chain_df.dropna(subset=['last_price', 'strike', 'maturity', 'impliedVolatility'], inplace=True)
         chain_df = chain_df[(chain_df['last_price'] > 0.01) & (chain_df['maturity'] > 1/365.25)].copy()
         return chain_df
@@ -55,14 +56,14 @@ def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
         # gets the chain for the next expiration date.
         expirations = list(client.list_options_contracts(underlying_ticker=ticker, expired=False, limit=1))
         if not expirations: return None
-        
+
         expiry_date = expirations[0].expiration_date
         contracts = list(client.list_options_contracts(underlying_ticker=ticker, expiration_date=expiry_date, limit=1000))
         if not contracts: return None
 
         # A single snapshot call
         snapshot = client.get_options_chain(underlying_ticker=ticker, expiration_date=expiry_date)
-        
+
         data = []
         for contract_details in snapshot.results:
             greeks = contract_details.greeks
@@ -78,7 +79,7 @@ def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
                 'volume': contract_details.day.volume,
                 'open_interest': contract_details.open_interest,
             })
-        
+
         df = pd.DataFrame(data)
         df['maturity'] = (df['expiry'] - pd.Timestamp.now()).dt.days / 365.25
         return df

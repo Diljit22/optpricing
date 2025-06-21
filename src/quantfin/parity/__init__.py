@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .parity_model import ParityModel
 from .implied_rate import ImpliedRateModel
+from .parity_model import ParityModel
 
 __all__ = [
     "ParityModel",

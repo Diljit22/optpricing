@@ -1,5 +1,7 @@
 import subprocess
+
 from quantfin.config import PROJECT_ROOT
+
 
 def launch_dashboard():
     """
@@ -8,9 +10,9 @@ def launch_dashboard():
     """
     # Construct the full path to the main app.py file in the scripts directory
     app_path = PROJECT_ROOT / "scripts" / "app.py"
-    
+
     print(f"Attempting to launch Streamlit app from: {app_path}")
-    
+
     if not app_path.exists():
         print(f"\nError: Dashboard entry point not found at '{app_path}'.")
         print("Please ensure 'scripts/app.py' exists in your project root.")

@@ -1,7 +1,9 @@
-import pandas as pd
-import numpy as np
-from scipy.optimize import minimize
 from typing import Tuple
+
+import numpy as np
+import pandas as pd
+from scipy.optimize import minimize
+
 
 def find_atm_options(calls: pd.DataFrame, puts: pd.DataFrame, spot: float) -> pd.DataFrame:
     merged = pd.merge(calls, puts, on=['strike', 'maturity'], suffixes=('_call', '_put'), how='inner')

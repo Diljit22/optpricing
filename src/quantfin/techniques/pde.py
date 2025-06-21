@@ -1,10 +1,14 @@
 from __future__ import annotations
+
 from typing import Any
+
 import numpy as np
 from scipy.linalg import solve_banded
-from quantfin.atoms import Option, OptionType, Stock, Rate
+
+from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel, BSMModel
-from quantfin.techniques.base import BaseTechnique, PricingResult, GreekMixin, IVMixin
+from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+
 
 class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
     def __init__(self, S_max_mult: float = 3.0, M: int = 200, N: int = 200):
@@ -38,12 +42,12 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
             else:
                 rhs[0] += alpha[0] * (K * np.exp(-r * time_to_expiry))
             V[1:-1] = solve_banded((1, 1), LHS, rhs, overwrite_b=True)
-        
+
         # Grid-based Greeks
         j0 = int(S0 / dS)
         delta = (V[j0 + 1] - V[j0 - 1]) / (2 * dS)
         gamma_val = (V[j0 + 1] - 2 * V[j0] + V[j0 - 1]) / (dS**2)
-        
+
         return {
             "price": np.interp(S0, S_vec, V),
             "delta": delta,

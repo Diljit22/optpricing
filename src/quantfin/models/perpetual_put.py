@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import math
 from typing import Any, Dict
 
 from quantfin.models.base import BaseModel, ParamValidator
+
 
 class PerpetualPutModel(BaseModel):
     """
