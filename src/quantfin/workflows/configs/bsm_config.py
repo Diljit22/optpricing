@@ -1,7 +1,7 @@
 from quantfin.models.bsm import BSMModel
 
 BSM_WORKFLOW_CONFIG = {
-    "model_name": "BSM",
+    "name": "BSM",
     "model_class": BSMModel,
     "initial_guess": {'sigma': 0.20},
     "frozen": {},

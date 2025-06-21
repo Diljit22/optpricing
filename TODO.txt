@@ -1,4 +1,6 @@
 1. Build Dashboard
+--I want a full dash for bsm and for bsj i will add rest later.
+--More graphs will be good.
 2. Un-AI project
 3. Upload
 ----
@@ -24,3 +26,41 @@ Dashboard
     ☐ Faster results too
 
 streamlit run scripts/app.py
+
+
+---
+Select model - feature all models we did
+select techs should adjsut to the techs we defined that model
+dont have a drag vol that is not user friendly
+for merton you have the extra params but not for the other models.
+calubration doest calibrate its a copy of the pricer and greeks.
+
+rates and parity:
+TypeError: BaseModel.__init__() missing 1 required positional argument: 'params'
+Traceback:
+File "C:\Users\dilji\Desktop\qf\scripts\pages\3_Rates_and_Parity.py", line 48, in <module>
+    implied_rate_model = ImpliedRateModel()
+
+include ways to calibrate jump params to a stock since this is easy via historical data 10y returns
+we have. you can localize to the 25 stocks we have data for or download via yahoo the requested.
+
+---
+ValueError: Merton Jump-Diffusion: missing required parameters: max_sum_terms
+Traceback:
+File "C:\Users\dilji\Desktop\qf\scripts\pages\2_Pricer_and_Greeks.py", line 57, in <module>
+    model = model_class(params=params)
+File "C:\Users\dilji\Desktop\qf\src\quantfin\models\merton_jump.py", line 29, in __init__
+    super().__init__(params)
+    ~~~~~~~~~~~~~~~~^^^^^^^^
+File "C:\Users\dilji\Desktop\qf\src\quantfin\models\base\base_model.py", line 68, in __init__
+    self._validate_params()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+File "C:\Users\dilji\Desktop\qf\src\quantfin\models\merton_jump.py", line 36, in _validate_params
+    ParamValidator.require(p, req, model=self.name)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+File "C:\Users\dilji\Desktop\qf\src\quantfin\models\base\validators.py", line 37, in require
+    raise ValueError(f"{model}: missing required parameters: {', '.join(missing)}")
+
+fro bsm integration:
+Calculation failed: BSMModel._cf_impl() got an unexpected keyword argument 'sigma'
+same for fft.

@@ -17,6 +17,14 @@ class MertonJumpModel(BaseModel):
     supports_sde: bool = True
     has_jumps: bool = True
 
+    default_params = {'sigma': 0.2, 'lambda': 0.5, 'mu_j': -0.1, 'sigma_j': 0.15, 'max_sum_terms': 100}
+    param_defs = {
+        'sigma': {'label': 'Volatility', 'default': 0.2, 'min': 0.01, 'max': 1.0, 'step': 0.01},
+        'lambda': {'label': 'Jump Intensity', 'default': 0.5, 'min': 0.0, 'max': 5.0, 'step': 0.1},
+        'mu_j': {'label': 'Mean Jump', 'default': -0.1, 'min': -1.0, 'max': 1.0, 'step': 0.05},
+        'sigma_j': {'label': 'Jump Vol', 'default': 0.15, 'min': 0.01, 'max': 1.0, 'step': 0.01},
+    }
+
     def __init__(self, params: dict[str, float]):
         super().__init__(params)
         # Composition: Create a BSMModel instance for the core diffusion part.

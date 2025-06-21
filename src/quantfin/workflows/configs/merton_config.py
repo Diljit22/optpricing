@@ -1,7 +1,7 @@
 from quantfin.models.merton_jump import MertonJumpModel
 
 MERTON_WORKFLOW_CONFIG = {
-    "model_name": "Merton",
+    "name": "Merton",
     "model_class": MertonJumpModel,
     "historical_params": ["sigma", "lambda", "mu_j", "sigma_j"],
     "initial_guess": {'sigma': 0.18, 'lambda': 0.2, 'mu_j': -0.1, 'sigma_j': 0.15, 'max_sum_terms': 100},

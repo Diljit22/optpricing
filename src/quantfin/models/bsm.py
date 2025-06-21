@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from scipy.stats import norm
-from typing import Any, Callable, Tuple
+from typing import Any, Callable, Tuple, Dict
 
 from quantfin.models.base import BaseModel, ParamValidator, CF, PDECoeffs
 
@@ -18,6 +18,15 @@ class BSMModel(BaseModel):
     supports_pde: bool = True
     has_closed_form: bool = True
 
+    default_params = {'sigma': 0.2}
+    param_defs = {
+        'sigma': {'label': 'Volatility', 'default': 0.2, 'min': 0.01, 'max': 2.0, 'step': 0.01}
+    }
+
+    def __init__(self, params: Dict[str, float] | None = None):
+        # If no params are given, use the class's default_params
+        super().__init__(params or self.default_params)
+
     def _validate_params(self) -> None:
         """Validate the 'sigma' parameter."""
         ParamValidator.require(self.params, ["sigma"], model=self.name)
@@ -31,7 +40,7 @@ class BSMModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
-    def _closed_form_impl(self, *, spot: float, strike: float, r: float, q: float, t: float, call: bool = True) -> float:
+    def _closed_form_impl(self, *, spot: float, strike: float, r: float, q: float, t: float,call: bool = True) -> float:
         """
         Compute the Black-Scholes-Merton price in closed form.
         """
@@ -94,7 +103,7 @@ class BSMModel(BaseModel):
         df_rate = np.exp(-r * t)
         return strike * t * df_rate * (norm.cdf(d2) if call else -norm.cdf(-d2))
 
-    def _cf_impl(self, *, t: float, spot: float, r: float, q: float) -> CF:
+    def _cf_impl(self, *, t: float, spot: float, r: float, q: float, **_) -> CF:
         """Returns the characteristic function phi(u) for the log-spot price log(S_t)."""
         sigma = self.params["sigma"]
         drift = r - q - 0.5 * sigma**2
