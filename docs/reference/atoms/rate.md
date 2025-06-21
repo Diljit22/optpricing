@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Rate
 
-Coming soon.
+::: src.quantfin.atoms.rate.Rate

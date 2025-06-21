@@ -62,7 +62,15 @@ where = ["src"]
 line-length = 88
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP"]
+select = ["E", "W", "F", "I", "N", "UP", "NPY"]
+ignore = ["N803", "N806"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = false
 
 [tool.pytest.ini_options]
 minversion = "6.0"

@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Stock
 
-Coming soon.
+::: src.quantfin.atoms.stock.Stock

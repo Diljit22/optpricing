@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+__doc__ = """
+This module defines the data structure for a zero-coupon bond.
+"""
 
 @dataclass(frozen=True, slots=True)
 class ZeroCouponBond:

@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List
 
 __doc__ = """
 This module defines the data structure for representing the underlying asset.
@@ -19,17 +20,17 @@ class Stock:
         Default is `None`.
     dividend : float, optional
         The continuously compounded dividend yield, by default 0.0.
-    discrete_dividends : List[float] | None, optional
+    discrete_dividends : list[float] | None, optional
         A list of discrete dividend amounts. Default is `None`.
-    ex_div_times : List[float] | None, optional
+    ex_div_times : list[float] | None, optional
         A list of times (in years) for the discrete dividend payments.
         Must correspond to `discrete_dividends`. Default is `None`.
     """
     spot: float
     volatility: float | None = None
     dividend: float = 0.0
-    discrete_dividends: List[float] | None = None
-    ex_div_times: List[float] | None = None
+    discrete_dividends: list[float] | None = None
+    ex_div_times: list[float] | None = None
 
     def __post_init__(self):
         if self.spot <= 0:

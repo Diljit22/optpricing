@@ -57,5 +57,8 @@ class Option:
         Option
             A new Option instance with the opposite type.
         """
-        other_type = OptionType.CALL if self.option_type is OptionType.PUT else OptionType.PUT
+        if self.option_type is OptionType.PUT:
+            other_type = OptionType.CALL
+        else:
+            other_type = OptionType.PUT
         return replace(self, option_type=other_type)
