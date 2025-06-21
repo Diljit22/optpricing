@@ -27,7 +27,7 @@ class MertonJumpModel(BaseModel):
 
     def __init__(self, params: dict[str, float]):
         super().__init__(params)
-        # Composition: Create a BSMModel instance for the core diffusion part.
+        # BSMModel instance for the core diffusion
         self.bsm_solver = BSMModel(params={"sigma": self.params["sigma"]})
 
     def _validate_params(self) -> None:
@@ -50,7 +50,6 @@ class MertonJumpModel(BaseModel):
         interval = np.arange(max_sum_terms)
         weights = np.exp(-y_mul) * (y_mul ** interval) / factorial(interval)
 
-        # Vectorized computation of adjusted BSM parameters
         r_n = r - lambda_ * k + (interval * (mu_j + 0.5 * sigma_j**2)) / t
         sigma_n_sq = self.params["sigma"]**2 + (interval * sigma_j**2) / t
         sigma_n = np.sqrt(np.maximum(sigma_n_sq, 1e-12))
@@ -61,7 +60,6 @@ class MertonJumpModel(BaseModel):
             if weights[i] < 1e-12 and i > lambda_prime * t:
                 break
             
-            # Create a temporary BSM model with the adjusted volatility
             temp_bsm_solver = self.bsm_solver.with_params(sigma=sigma_n[i])
             
             price_term = temp_bsm_solver.price_closed_form(spot=spot, strike=strike, r=r_n[i], q=q, t=t, call=call)

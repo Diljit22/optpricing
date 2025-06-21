@@ -19,7 +19,7 @@ st.markdown(
     - **Pricer and Greeks:** An interactive tool to price options with any model/technique and see the effect of changing parameters in real-time.
     - **Financial Tools:** Utilities for pricing interest rate derivatives and analyzing put-call parity.
 
-    This entire application is built on a robust, refactored library with a focus
+    This entire application is built on a robust, library with a focus
     on speed, accuracy, and extensibility.
     """
 )

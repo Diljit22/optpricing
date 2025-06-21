@@ -32,7 +32,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         S0, K, T = stock.spot, option.strike, option.maturity
         r, q = rate.get_rate(T), stock.dividend
 
-        # --- Dispatch to the correct simulation method ---
+        # Dispatch to the correct simulation method
         if getattr(model, 'has_exact_sampler', False):
             ST = model.sample_terminal_spot(S0, r, T, self.n_paths)
         elif getattr(model, 'is_pure_levy', False):

@@ -36,7 +36,6 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         if not model.has_closed_form:
             raise TypeError(f"{model.name} has no closed-form solver.")
 
-        # --- CORRECTED: Build parameters based on the asset type ---
         base_params: Dict[str, Any] = {}
         
         if isinstance(option, Option):
@@ -53,7 +52,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
             base_params = {
                 "spot": stock.spot,
                 "t": option.maturity,
-                # These are passed to satisfy the model signature but may be ignored.
+                # passed to satisfy the model signature but are ignored.
                 "strike": option.face_value, 
                 "r": rate.get_rate(option.maturity),
                 "q": stock.dividend,
@@ -61,7 +60,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         else:
             raise TypeError(f"Unsupported asset type for ClosedFormTechnique: {type(option)}")
 
-        # Add any extra model-specific kwargs
+        # Add extra model-specific kwargs
         for key in getattr(model, 'cf_kwargs', []):
             if key in base_params:
                 continue
@@ -70,11 +69,10 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
             elif key in kwargs:
                 base_params[key] = kwargs[key]
             else:
-                # This check is now more careful
                 if not (isinstance(option, ZeroCouponBond) and key in ['call_price', 'put_price']):
                      raise ValueError(f"{model.name} requires '{key}' for closed-form pricing.")
 
-        # For ImpliedRateModel, we need to pass these explicitly
+        # For ImpliedRateModel, pass these explicitly
         if 'call_price' in kwargs: base_params['call_price'] = kwargs['call_price']
         if 'put_price' in kwargs: base_params['put_price'] = kwargs['put_price']
 

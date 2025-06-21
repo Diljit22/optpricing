@@ -1,5 +1,5 @@
 import subprocess
-from quantfin.config import PROJECT_ROOT # Use our centralized config for paths
+from quantfin.config import PROJECT_ROOT
 
 def launch_dashboard():
     """

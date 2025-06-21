@@ -16,7 +16,6 @@ class IVMixin:
     root-finding algorithm.
     """
     def implied_volatility(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, target_price: float, low: float = 1e-6, high: float = 5.0, tol: float = 1e-6, **kwargs: Any) -> float:
-        # ... (bsm_price_minus_target function is the same) ...
         bsm_solver_model = BSMModel(params={"sigma": 0.3})
         def bsm_price_minus_target(vol: float) -> float:
             current_bsm_model = bsm_solver_model.with_params(sigma=vol)
@@ -33,7 +32,7 @@ class IVMixin:
             iv = brentq(bsm_price_minus_target, low, high, xtol=tol, disp=False)
         except (ValueError, RuntimeError):
             try:
-                # If brentq fails, fall back to the slower but more robust Secant method
+                # If brentq fails, fall back to the slower Secant method
                 iv = self._secant_iv(bsm_price_minus_target, 0.2, tol, 100)
             except (ValueError, RuntimeError):
                 iv = np.nan
@@ -42,7 +41,6 @@ class IVMixin:
 
     @staticmethod
     def _secant_iv(fn: Any, x0: float, tol: float, max_iter: int) -> float:
-        # Your original Secant method implementation
         x1 = x0 * 1.1
         fx0 = fn(x0)
         for _ in range(max_iter):

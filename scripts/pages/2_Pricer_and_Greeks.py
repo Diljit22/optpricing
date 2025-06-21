@@ -8,7 +8,7 @@ st.set_page_config(layout="wide", page_title="QuantFin | Pricer")
 st.title("On-Demand Pricer & Greek Analysis")
 st.caption("Price any option with any model and technique. Manually set all parameters to see their effect.")
 
-# --- Model and Technique Selection ---
+# Model and Technique Selection
 MODEL_MAP = {
     "BSM": BSMModel, "Merton": MertonJumpModel, "Heston": HestonModel, 
     "Bates": BatesModel, "Kou": KouModel, "NIG": NIGModel, "VG": VarianceGammaModel, 
@@ -32,7 +32,7 @@ else:
     st.error(f"Model {model_name} is missing 'default_params' attribute.")
     st.stop()
 
-# --- Dynamic Technique Selector ---
+# Dynamic Technique Selector
 supported_techs = []
 if dummy_model_instance.has_closed_form: supported_techs.append("Analytic/Closed-Form")
 if dummy_model_instance.supports_cf: supported_techs.extend(["Integration", "FFT"])
@@ -48,7 +48,7 @@ with col2:
         selected_index = supported_techs.index(st.session_state.technique_name)
     technique_name = st.selectbox("Select Technique", supported_techs, index=selected_index, key='technique_name')
 
-# --- Parameter Inputs ---
+# Parameter Inputs
 st.subheader("Market Parameters")
 cols = st.columns(4)
 spot = cols[0].number_input("Spot Price", value=100.0, step=1.0)
@@ -58,7 +58,7 @@ rate_val = cols[3].number_input("Risk-Free Rate", value=0.05, step=0.01, format=
 div_val = cols[0].number_input("Dividend Yield", value=0.02, step=0.01, format="%.2f")
 option_type = cols[1].selectbox("Option Type", ("CALL", "PUT"))
 
-# --- Dynamic Model Parameter Inputs ---
+# Dynamic Model Parameter Inputs
 st.subheader(f"{model_name} Model Parameters")
 params = {}
 if hasattr(dummy_model_instance, 'param_defs'):
@@ -76,12 +76,12 @@ if hasattr(dummy_model_instance, 'param_defs'):
         )
 
 if st.button("Calculate Price & Greeks"):
-    # --- Instantiate Objects ---
+    # Instantiate Objects
     stock = Stock(spot=spot, dividend=div_val)
     rate = Rate(rate=rate_val)
     option = Option(strike=strike, maturity=maturity, option_type=OptionType[option_type])
     
-    # Correctly merge UI params with non-UI default params
+    # merge UI params with non-UI default params
     full_params = model_class.default_params.copy()
     full_params.update(params)
     
@@ -91,7 +91,7 @@ if st.button("Calculate Price & Greeks"):
     # Prepare kwargs for techniques that need extra info (e.g., Heston's v0)
     pricing_kwargs = full_params.copy()
 
-    # --- Calculate and Display ---
+    # Calculate and Display
     with st.spinner("Calculating..."):
         try:
             # Create a dictionary to hold the results
@@ -110,4 +110,4 @@ if st.button("Calculate Price & Greeks"):
             st.dataframe(pd.DataFrame([results_data]))
         except Exception as e:
             st.error(f"Calculation failed: {e}")
-            st.exception(e) # Also print the full traceback for debugging
+            st.exception(e) # print full traceback for debugging

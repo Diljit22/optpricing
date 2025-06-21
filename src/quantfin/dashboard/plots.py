@@ -1,5 +1,3 @@
-# src/quantfin/dashboard/plots.py
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -47,7 +45,13 @@ def plot_iv_surface_3d(market_surface: pd.DataFrame, model_surfaces: Dict[str, p
     fig = go.Figure()
     fig.add_trace(go.Mesh3d(x=market_surface['maturity'], y=market_surface['strike'], z=market_surface['iv'], opacity=0.5, color='grey', name='Market IV'))
     
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'] # Muted blue, orange, green, red
+    colors = [
+        '#3a7fc1',  # Deep ocean blue
+        '#ff8c00',  # Sunset orange
+        '#4aac26',  # Fresh sprout green
+        '#d03530'   # Warning red
+    ]
+
     for i, (name, surface) in enumerate(model_surfaces.items()):
         fig.add_trace(go.Scatter3d(x=surface['maturity'], y=surface['strike'], z=surface['iv'], mode='lines', name=f'{name} IV', line=dict(color=colors[i % len(colors)], width=6)))
 

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 import math
 import numpy as np
@@ -28,7 +27,6 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         S0, K, T = stock.spot, option.strike, option.maturity
         r, q = rate.get_rate(T), stock.dividend
 
-        # 1. Set up FFT grid parameters using YOUR original tuned logic
         vol_proxy = self._get_vol_proxy(model, kwargs)
         
         if self.alpha_user is not None:
@@ -44,15 +42,13 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         b = (self.N * lambda_) / 2.0
         k_grid = -b + lambda_ * np.arange(self.N)
 
-        # 2. Set up Simpson's rule weights
+        # Simpson's rule weights
         w = np.ones(self.N)
         w[1:-1:2], w[2:-2:2] = 4, 2
         weights = w * eta / 3.0
 
-        # 3. Get the model's characteristic function
         phi = model.cf(t=T, spot=S0, r=r, q=q, **kwargs)
 
-        # 4. Calculate FFT for the call price using YOUR original formula
         u = np.arange(self.N) * eta
         discount = math.exp(-r * T)
         numerator = phi(u - 1j * (alpha + 1))
@@ -62,17 +58,15 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         fft_input = psi * np.exp(1j * u * b) * weights
         fft_vals = np.fft.fft(fft_input).real
         
-        # Note: The original formula priced C*exp(alpha*k). We need to divide by exp(alpha*k).
         call_price_grid = np.exp(-alpha * k_grid) / math.pi * fft_vals
 
-        # 5. Interpolate to find the results at the target strike
+        # Interpolate to find the results at the target strike
         k_target = math.log(K)
         call_price = np.interp(k_target, k_grid, call_price_grid)
 
-        # 6. Use put-call parity for put price
         if option.option_type is OptionType.CALL:
             price = call_price
-        else: # Put
+        else:
             price = call_price - (S0 * np.exp(-q * T) - K * np.exp(-r * T))
             
         return {"price": price}
@@ -81,10 +75,6 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         """Calculates the option price using the FFT method."""
         self._cached_results = self._price_and_greeks(option, stock, model, rate, **kwargs)
         return PricingResult(price=self._cached_results['price'])
-
-    # Note: For FFT, we let the GreekMixin handle all Greeks via finite difference.
-    # This is a robust choice as analytic FFT greeks can be complex to implement.
-    # The caching in the mixin is not used here, as each Greek call is a full price recalculation.
 
     @staticmethod
     def _get_vol_proxy(model: BaseModel, kw: Dict[str, Any]) -> float | None:

@@ -116,26 +116,21 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
             integrand = np.exp(-r * T) * phi(u) / denom
         integrand[0] = 0.0  # Handle singularity at v = 0
 
-        # Simpson weights
         w = np.ones(self.N)
         w[1:-1:2] = 4
         w[2:-2:2] = 2
         weights = w * eta / 3.0
 
-        # FFT input, centered at k_grid
         fft_input = integrand * np.exp(1j * v * (k_grid[0] - np.log(K))) * weights
         fft_vals = np.fft.fft(fft_input).real
 
-        # Compute call price grid
         call_price_grid = np.exp(-0.5 * k_grid) * fft_vals / math.pi
 
         # Interpolate to target strike
         call_price = float(np.interp(np.log(K), k_grid, call_price_grid))
 
-        # Put-call parity for put price
         price = call_price if is_call else call_price - S * np.exp(-q * T) + K * np.exp(-r * T)
 
-        # Optional analytic delta
         greeks = {}
         try:
             phi_minus_half_i = phi(-0.5j)

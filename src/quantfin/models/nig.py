@@ -1,5 +1,3 @@
-# src/quantfin/models/nig.py
-
 from __future__ import annotations
 import numpy as np
 from typing import Any, Callable, Dict
@@ -10,7 +8,7 @@ class NIGModel(BaseModel):
     """Normal Inverse Gaussian (NIG) model, a pure-jump Lévy process."""
     name: str = "Normal Inverse Gaussian"
     supports_cf: bool = True
-    is_pure_levy: bool = True # Flag for the MC dispatcher
+    is_pure_levy: bool = True
 
     def _validate_params(self) -> None:
         p = self.params
@@ -59,7 +57,7 @@ class NIGModel(BaseModel):
         bm_diffusion = np.sqrt(ig_time) * rng.standard_normal(size=size)
         return bm_drift + bm_diffusion
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("NIG is a pure Lévy process, use terminal sampling.")
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

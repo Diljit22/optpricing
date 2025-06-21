@@ -51,7 +51,7 @@ class BaseModel(ABC):
     
     # TODO: Rename cf_kwargs to something more specific like `pricing_args`
     # as it's used by more than just the characteristic function.
-    cf_kwargs: Tuple[str, ...] = ()  # <<< ADD THIS LINE BACK
+    cf_kwargs: Tuple[str, ...] = ()
 
     __slots__ = ("params",)
 

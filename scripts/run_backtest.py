@@ -2,7 +2,6 @@ import pandas as pd
 from quantfin.workflows import BacktestWorkflow
 from quantfin.workflows.configs import BSM_WORKFLOW_CONFIG, MERTON_WORKFLOW_CONFIG
 
-# --- Configuration ---
 MODELS_TO_BACKTEST = [
     BSM_WORKFLOW_CONFIG,
     MERTON_WORKFLOW_CONFIG,
@@ -31,8 +30,6 @@ def main(ticker: str):
     print("\nAverage RMSE per Model:")
     print(pivot_df.mean().to_string(float_format="%.4f"))
 
-    # The save_results method now handles pathing automatically
-    # We can create a dummy backtester instance just to call it
     dummy_backtester = BacktestWorkflow(ticker, {})
     dummy_backtester.results = all_results
     dummy_backtester.save_results()

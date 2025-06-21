@@ -1,9 +1,6 @@
-# src/quantfin/dashboard/service.py
-
 import pandas as pd
 from typing import Dict, Any
 
-# Use our new, clean data managers
 from quantfin.calibration.technique_selector import select_fastest_technique
 from quantfin.data.market_data_manager import load_market_snapshot, get_live_option_chain
 from quantfin.workflows import DailyWorkflow
@@ -33,7 +30,6 @@ class DashboardService:
                 self._market_data = load_market_snapshot(self.ticker, self.snapshot_date)
         return self._market_data
 
-    # ... (The rest of the DashboardService remains the same) ...
     @property
     def stock(self) -> Stock:
         if self._stock is None:

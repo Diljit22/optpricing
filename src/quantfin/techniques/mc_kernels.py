@@ -1,5 +1,3 @@
-# src/quantfin/techniques/mc_kernels.py
-
 import numpy as np
 import numba
 
@@ -102,13 +100,10 @@ def sabr_jump_kernel(n_paths, n_steps, s0, v0, r, q, alpha, beta, rho, lambda_, 
         s_pos = np.maximum(s, 1e-8)
         v_pos = np.maximum(v, 0)
         
-        # Evolve spot with jump compensator
         s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * dw1[:, i]
         
-        # Evolve volatility
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * dw2[:, i])
         
-        # Add jumps
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
             num_jumps = np.sum(jumps_this_step)
@@ -147,12 +142,11 @@ def kou_kernel(n_paths, n_steps, log_s0, r, q, sigma, lambda_, p_up, eta1, eta2,
             if num_down_jumps > 0:
                 total_jump_size -= np.sum(np.random.exponential(1.0 / eta2, num_down_jumps))
             
-            # This part is tricky to vectorize perfectly in Numba, so we loop
+            # This part is tricky to vectorize perfectly in Numba, so loop
             jump_idx = 0
             for path_idx in range(n_paths):
                 if jumps_this_step[path_idx] > 0: # This path has a jump
-                    # For simplicity in Numba, we add the average jump size
-                    # A more complex implementation could assign specific jumps
+                    # For simplicity in Numba, add the average jump size
                     log_s[path_idx] += total_jump_size / num_jumps * jumps_this_step[path_idx]
 
     return log_s

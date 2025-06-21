@@ -1,5 +1,3 @@
-# src/quantfin/techniques/integration.py (Final, Corrected Version)
-
 from __future__ import annotations
 import numpy as np
 from scipy import integrate
@@ -37,7 +35,6 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         phi = model.cf(t=T, spot=S, r=r, q=q, **kwargs)
         k_log = np.log(K)
 
-        # Integrands now explicitly take the real part of the imaginary component.
         integrand_p2 = lambda u: (np.exp(-1j * u * k_log) * phi(u)).imag / u
         integrand_p1 = lambda u: (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
 

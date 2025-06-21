@@ -53,7 +53,7 @@ class TOPMLatticeTechnique(BaseTechnique, GreekMixin, IVMixin, ABC):
 
         dT  = T / self.steps
         noise = vol * math.sqrt(dT / 2.0)
-        B   = math.exp(2.0 * noise)          # up / down factor
+        B   = math.exp(2.0 * noise)
 
         V_up = _topm_price(S0 * B,   K, T, r, q, vol,
                            self.steps, is_call, self.is_american)
@@ -86,10 +86,9 @@ class TOPMLatticeTechnique(BaseTechnique, GreekMixin, IVMixin, ABC):
         V_dn  = _topm_price(S0 / B,   K, T, r, q, vol,
                             self.steps, is_call, self.is_american)
 
-        h1 = S0 * (B - 1.0)          # upward bump  (S↑)
-        h2 = S0 * (1.0 - 1.0/B)      # downward bump (S↓)
+        h1 = S0 * (B - 1.0)
+        h2 = S0 * (1.0 - 1.0/B)
 
-        # General unequal-step formula
         return (
             2.0 * (h2 * V_up - (h1 + h2) * V_mid + h1 * V_dn)
             / (h1 * h2 * (h1 + h2))
@@ -107,7 +106,7 @@ def _topm_price(
     drift = (r - q) * dT2
     noise = vol * math.sqrt(dT2)
 
-    B = math.exp(2 * noise)  # up/down factor
+    B = math.exp(2 * noise)
     A = math.exp(drift + noise)
     norm = (B - 1)**2
     pU = (A - 1)**2 / norm

@@ -51,7 +51,7 @@ class HyperbolicModel(BaseModel):
         p = self.params
         return genhyperbolic.rvs(p=1.0, a=p["alpha"], b=p["beta"], loc=p["mu"]*T, scale=p["delta"]*T, size=size, random_state=rng)
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

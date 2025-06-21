@@ -127,6 +127,5 @@ class BSMModel(BaseModel):
         """Returns the Black-Scholes PDE coefficients."""
         sigma = self.params["sigma"]
         def coeffs(S: np.ndarray, r: float, q: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-            # Returns sigma^2*S^2, (r-q)*S, and -r
             return sigma**2 * S**2, (r - q) * S, -r * np.ones_like(S)
         return coeffs

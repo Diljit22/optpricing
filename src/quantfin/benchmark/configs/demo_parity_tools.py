@@ -14,7 +14,7 @@ def run_parity_demonstration():
     q, r_known = 0.01, 0.03
     call_price, put_price = 8.8273, 6.8669
 
-    # --- 1. Test ParityModel ---
+    # 1. Test ParityModel ---
     parity_model = ParityModel(params={})
     print("\n1. Put-Call Parity Calculations:")
     

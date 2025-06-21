@@ -1,4 +1,3 @@
-# clean_cache.py
 import shutil
 from pathlib import Path
 

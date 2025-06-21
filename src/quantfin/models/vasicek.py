@@ -35,7 +35,7 @@ class VasicekModel(BaseModel):
         price = math.exp(A_log - B * r0)
         return price
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _cf_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

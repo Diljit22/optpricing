@@ -1,5 +1,3 @@
-# src/quantfin/models/bates.py
-
 from __future__ import annotations
 import numpy as np
 from typing import Any, Callable, Dict
@@ -24,7 +22,7 @@ class BatesModel(BaseModel):
     cf_kwargs = ("v0",)
 
     default_params = {'v0': 0.04, 'kappa': 2.0, 'theta': 0.04, 'rho': -0.7, 'vol_of_vol': 0.5, 'lambda': 0.5, 'mu_j': -0.1, 'sigma_j': 0.15}
-    param_defs = {**HestonModel.param_defs, **MertonJumpModel.param_defs} # Combine them
+    param_defs = {**HestonModel.param_defs, **MertonJumpModel.param_defs}
     def __init__(self, params: Dict[str, float] | None = None):
         super().__init__(params or self.default_params)
 
@@ -92,7 +90,7 @@ class BatesModel(BaseModel):
             return next_log_s, np.maximum(v_t_next, 0)
         return stepper
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Callable: return self.get_sde_stepper()
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

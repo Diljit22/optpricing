@@ -1,5 +1,3 @@
-# src/quantfin/techniques/pde.py (Corrected Gamma)
-# ... (imports are the same) ...
 from __future__ import annotations
 from typing import Any
 import numpy as np
@@ -9,7 +7,6 @@ from quantfin.models import BaseModel, BSMModel
 from quantfin.techniques.base import BaseTechnique, PricingResult, GreekMixin, IVMixin
 
 class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
-    # ... (init is the same) ...
     def __init__(self, S_max_mult: float = 3.0, M: int = 200, N: int = 200):
         self.S_max_mult = float(S_max_mult)
         self.M = int(M)
@@ -17,7 +14,6 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         self._cached_results: dict[str, Any] = {}
 
     def _price_and_greeks(self, option: Option, stock: Stock, model: BaseModel, rate: Rate) -> dict:
-        # This internal method performs the core calculation once.
         if not isinstance(model, BSMModel):
             raise TypeError(f"This PDETechnique is optimized for BSMModel only, but got {model.name}.")
         S0, K, T = stock.spot, option.strike, option.maturity

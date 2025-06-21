@@ -1,5 +1,3 @@
-# src/quantfin/models/cgmy.py
-
 from __future__ import annotations
 import numpy as np
 from scipy.special import gamma as gamma_func
@@ -70,13 +68,13 @@ class CGMYModel(BaseModel):
 
         # For Y=1, CGMY is a scaled difference of two Gamma processes.
         # This is equivalent to a Variance Gamma process.
-        # We can sample this by time-changing a Brownian motion.
+        # Can sample this by time-changing a Brownian motion.
         g_up = rng.gamma(shape=C*T, scale=1/M, size=size)
         g_down = rng.gamma(shape=C*T, scale=1/G, size=size)
         
         return g_up - g_down
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("CGMY is a pure Lévy process, use terminal sampling.")
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

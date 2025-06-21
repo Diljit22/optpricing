@@ -28,7 +28,7 @@ class Calibrator:
             return 1e12
 
         # Vectorized pricing for speed
-        # Note: This assumes the technique supports vectorized pricing.
+        # assumes the technique supports vectorized pricing.
         # For now, we fall back to iterating, but this is where future optimization lies.
         total_error = 0.0
         for _, row in self.market_data.iterrows():
@@ -51,12 +51,12 @@ class Calibrator:
         initial_values = [initial_guess[p] for p in params_to_fit_names]
 
         if len(params_to_fit_names) == 1:
-            # Use a robust scalar minimizer for one parameter
+            # scalar minimizer for one parameter
             res = minimize_scalar(lambda x: self._objective_function(np.array([x]), params_to_fit_names, frozen_params), bounds=fit_bounds[0], method='bounded')
             final_params = {**frozen_params, params_to_fit_names[0]: res.x}
             print(f"Scalar optimization finished. Final loss: {res.fun:.6f}")
         else:
-            # Use a gradient-based optimizer for multiple parameters
+            # gradient-based optimizer for multiple parameters
             res = minimize(fun=self._objective_function, x0=initial_values, args=(params_to_fit_names, frozen_params), method='L-BFGS-B', bounds=fit_bounds)
             final_params = {**frozen_params, **dict(zip(params_to_fit_names, res.x))}
             print(f"Multivariate optimization finished. Final loss: {res.fun:.6f}")

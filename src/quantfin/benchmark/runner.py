@@ -11,7 +11,7 @@ def run_single_technique(technique, config):
     metrics_to_run = config.metrics_to_run
 
     for opt in config.options:
-        # --- Step 1: Price ---
+        # Step 1: Price ---
 
         if "Price" not in metrics_to_run:
             continue # Should not happen
@@ -22,7 +22,7 @@ def run_single_technique(technique, config):
         timings[opt]["Price"] = perf_counter() - t0
         results[opt]["Price"] = pr.price
 
-        # --- Step 2: Greeks and Implied Vol ---
+        # Step 2: Greeks and Implied Vol ---
         for metric in metrics_to_run:
             if metric == "Price":
                 continue

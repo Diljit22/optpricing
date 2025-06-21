@@ -1,5 +1,3 @@
-# run_full_benchmark.py
-
 import time
 import math
 import numpy as np
@@ -8,7 +6,6 @@ from quantfin.models.base.base_model import BaseModel
 from tabulate import tabulate
 from typing import Dict, Any, List
 
-# --- Import Atoms, Models, and Techniques from your refactored library ---
 from quantfin.atoms import Option, OptionType, Stock, Rate
 from quantfin.models import (
     BSMModel, MertonJumpModel, HestonModel, BatesModel, VarianceGammaModel,
@@ -26,7 +23,7 @@ def profile_all_metrics(technique: Any, option: Option, stock: Stock, model: Bas
     """Helper to run and profile all calculations for a given technique."""
     results = {}
     
-    # --- Price ---
+    # Price
     start = time.perf_counter()
     try:
         price_val = technique.price(option, stock, model, rate, **kwargs).price
@@ -35,7 +32,7 @@ def profile_all_metrics(technique: Any, option: Option, stock: Stock, model: Bas
     end = time.perf_counter()
     results['Price'] = (price_val, end - start)
 
-    # --- Greeks ---
+    # Greeks
     greeks_to_calc = {'Delta': technique.delta, 'Gamma': technique.gamma, 'Vega': technique.vega, 'Theta': technique.theta, 'Rho': technique.rho}
     for name, func in greeks_to_calc.items():
         start = time.perf_counter()
@@ -47,7 +44,7 @@ def profile_all_metrics(technique: Any, option: Option, stock: Stock, model: Bas
         end = time.perf_counter()
         results[name] = (greek_val, end - start)
 
-    # --- Implied Volatility ---
+    # Implied Volatility
     start = time.perf_counter()
     try:
         if np.isfinite(price_val):
@@ -105,7 +102,7 @@ def run_benchmark(config: Dict[str, Any]):
             table_data.append(row)
         print(tabulate(table_data, headers=headers, tablefmt="grid", stralign="center"))
 
-    # --- Put-Call Parity Error ---
+    # Put-Call Parity Error 
     if model.name != "Dupire Local Volatility": # Parity doesn't apply if strikes differ
         print("\n" + " Put-Call Parity Errors: ".center(80, "-"))
         parity_errors = {}
@@ -125,10 +122,9 @@ def run_benchmark(config: Dict[str, Any]):
         error_data = [[f"{err:.4e}" for err in parity_errors.values()]]
         print(tabulate(error_data, headers=headers, tablefmt="plain", stralign="center"))
 
-# --- Main Execution ---
+# Main
 if __name__ == "__main__":
     
-    # --- Define All Benchmark Configurations ---
     
     stock = Stock(spot=100.0, dividend=0.01)
     rate = Rate(rate=0.03)
@@ -255,38 +251,36 @@ if __name__ == "__main__":
         },
     ]
 
-    # --- Run all benchmarks ---
+    # Run all benchmarks
     for config in benchmark_configs:
         run_benchmark(config)
         
         
 
-    # --- Test Interest Rate Models ---
+    # Test Interest Rate Models
     print("\n" + "="*80)
     print("--- TESTING INTEREST RATE MODELS ---".center(80))
     print("="*80)
 
-    # The technique is the same, we just pass it a different model and "asset"
+    # same technique, different model and "asset"
     cf_technique = ClosedFormTechnique()
 
     # Define a Zero-Coupon Bond to be priced
     bond = ZeroCouponBond(maturity=1.0, face_value=1.0)
 
-    # The initial short rate r0 is passed via the 'spot' of a Stock object
+    # Pass initial short rate r0 via the stock.spot
     initial_short_rate = 0.05
     r0_stock = Stock(spot=initial_short_rate)
 
-    # The Rate object is required by the technique's signature, but will be ignored by the models
+    # The Rate object is required by the technique, will be ignored by the models
     dummy_rate = Rate(rate=0.99) 
 
-    # --- Vasicek Model Test ---
+    # Vasicek Model Test
     vasicek_model = VasicekModel(params={'kappa': 0.86, 'theta': 0.09, 'sigma': 0.02})
     vasicek_price = cf_technique.price(bond, r0_stock, vasicek_model, dummy_rate).price
-    # CORRECTED: Use the defined variable 'initial_short_rate'
     print(f"Vasicek ZCB Price (r0={initial_short_rate:.2f}, T={bond.maturity:.1f}): {vasicek_price:.6f}")
 
-    # --- CIR Model Test ---
+    # CIR Model Test
     cir_model = CIRModel(params={'kappa': 0.86, 'theta': 0.09, 'sigma': 0.02})
     cir_price = cf_technique.price(bond, r0_stock, cir_model, dummy_rate).price
-    # CORRECTED: Use the defined variable 'initial_short_rate'
     print(f"CIR ZCB Price     (r0={initial_short_rate:.2f}, T={bond.maturity:.1f}): {cir_price:.6f}")

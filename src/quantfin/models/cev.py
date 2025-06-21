@@ -8,7 +8,7 @@ class CEVModel(BaseModel):
     """Constant Elasticity of Variance (CEV) model."""
     name: str = "CEV"
     supports_sde: bool = True
-    has_exact_sampler: bool = True # Special flag for the MC dispatcher
+    has_exact_sampler: bool = True
 
     def _validate_params(self) -> None:
         p = self.params
@@ -43,7 +43,7 @@ class CEVModel(BaseModel):
         ST = (chi2_draws / k)**(1 / (2 * (1 - gamma)))
         return ST
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("CEV uses a specialized exact sampler.")
     def _cf_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

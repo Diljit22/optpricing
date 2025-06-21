@@ -15,7 +15,6 @@ class BlacksApproxModel(BaseModel):
     cf_kwargs = BaseModel.cf_kwargs + ("discrete_dividends", "ex_div_times")
     def __init__(self, params: dict[str, float]):
         super().__init__(params)
-        # Composition: Create a BSMModel instance to handle the core pricing.
         self.bsm_solver = BSMModel(params={"sigma": self.params["sigma"]})
 
     def _validate_params(self) -> None:
@@ -28,12 +27,12 @@ class BlacksApproxModel(BaseModel):
         if not hasattr(discrete_dividends, '__len__') or len(discrete_dividends) == 0:
             raise ValueError("BlacksApproxModel requires non-empty 'discrete_dividends'.")
 
-        # Method 1: Value of holding until maturity T
+        # Value of holding until maturity T
         pv_all_divs = sum(D * math.exp(-r * tD) for D, tD in zip(discrete_dividends, ex_div_times) if tD < t)
         S_adj_T = spot - pv_all_divs
         price_hold_to_maturity = self.bsm_solver.price_closed_form(spot=S_adj_T, strike=strike, r=r, q=0, t=t, call=True)
 
-        # Method 2: Value of exercising just before each ex-dividend date
+        # Value of exercising just before each ex-dividend date
         prices_early_exercise = []
         for i, t_i in enumerate(ex_div_times):
             if t_i >= t:

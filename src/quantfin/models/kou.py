@@ -1,5 +1,3 @@
-# src/quantfin/models/kou.py
-
 from __future__ import annotations
 import numpy as np
 from typing import Any, Callable, Dict
@@ -43,20 +41,19 @@ class KouModel(BaseModel):
         p = self.params
         sigma, lambda_, p_up, eta1, eta2 = p["sigma"], p["lambda"], p["p_up"], p["eta1"], p["eta2"]
         
-        # CORRECTED: Risk-neutral drift compensator
         compensator = lambda_ * (p_up / (eta1 - 1) - (1 - p_up) / (eta2 + 1))
         drift = r - q - 0.5 * sigma**2 - compensator
 
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
             # BSM component
             bsm_part = 1j * u * (np.log(spot) + drift * t) - 0.5 * u**2 * sigma**2 * t
-            # CORRECTED: Jump component formulation
+            # Jump component formulation
             jump_part = lambda_ * t * (p_up / (eta1 - 1j * u) + (1 - p_up) / (eta2 + 1j * u) - 1)
             
             return np.exp(bsm_part + jump_part)
         return phi
     
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("Kou uses a specialized kernel.")
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

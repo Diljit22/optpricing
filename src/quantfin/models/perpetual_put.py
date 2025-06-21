@@ -64,12 +64,12 @@ class PerpetualPutModel(BaseModel):
         float
             The price of the perpetual American put.
         """
-        # Model uses its own intrinsic rate, not the one from the Rate object.
+        # uses its own intrinsic rate, not the one from the Rate object.
         r = self.params["rate"]
         sigma = self.params["sigma"]
         vol_sq = sigma**2
 
-        # This is the negative root of the characteristic quadratic equation
+        # negative root of the characteristic quadratic equation
         b = r - q - 0.5 * vol_sq
         gamma = (-b - math.sqrt(b**2 + 2 * r * vol_sq)) / vol_sq
 
@@ -83,7 +83,7 @@ class PerpetualPutModel(BaseModel):
             # Otherwise, the value is given by the standard formula.
             return (strike - s_star) * (spot / s_star) ** gamma
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _cf_impl(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError(f"{self.name} does not support a characteristic function.")
 

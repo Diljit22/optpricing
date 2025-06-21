@@ -11,7 +11,7 @@ from quantfin.calibration import fit_jump_params_from_history
 st.set_page_config(layout="wide", page_title="QuantFin | Tools")
 st.title("Financial Utilities & Tools")
 
-# --- Jump Parameter Fitter ---
+# Jump Parameter Fitter
 st.header("Historical Jump Parameter Fitter")
 TICKERS = ['SPY', 'AAPL', 'META', 'GOOGL', 'TSLA', 'NVDA', 'AMD', 'MSFT', 'AMZN', 'JPM']
 ticker_jump = st.selectbox("Select Ticker for Jump Analysis", TICKERS)
@@ -24,9 +24,8 @@ if st.button("Fit Jump Parameters"):
         except Exception as e:
             st.error(f"Could not fit parameters: {e}")
 
-# --- Rate Model Pricer ---
+# Rate Model Pricer
 st.header("Term Structure Model Pricer")
-# ... (code from previous step is the same, but we fix the bug) ...
 col1, col2, col3 = st.columns(3)
 model_name = col1.selectbox("Select Rate Model", ["Vasicek", "CIR"])
 r0 = col2.number_input("Initial Short Rate (r0)", value=0.05, step=0.01)

@@ -1,9 +1,7 @@
-# src/quantfin/data/historical_manager.py
-
 import yfinance as yf
 import numpy as np
 import pandas as pd
-from quantfin.config import HISTORICAL_DIR # Use centralized path
+from quantfin.config import HISTORICAL_DIR
 
 def save_historical_returns(tickers: list[str], period: str = "10y"):
     """Fetches and saves historical log returns for a list of tickers."""

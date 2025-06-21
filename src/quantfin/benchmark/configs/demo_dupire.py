@@ -15,7 +15,7 @@ from quantfin.techniques.integration                      import IntegrationTech
 from quantfin.techniques.fft                              import FFTTechnique
 from quantfin.techniques.monte_carlo                      import MonteCarloTechnique
 
-# --- Define a mock volatility surface ---
+# Define a mock volatility surface ---
 # In a real application, this would be a 2D interpolator object
 # calibrated to market data. For this demo, we create a simple function.
 # This surface has a "smile": vol is higher for low/high strikes.
@@ -30,7 +30,7 @@ def mock_vol_surface(t: float, s: np.ndarray) -> np.ndarray:
     
     log_moneyness = np.log(safe_s / 100.0)
     return 0.20 + 0.1 * log_moneyness + 0.5 * log_moneyness**2
-# --- Create the Dupire Model ---
+# Create the Dupire Model ---
 # The 'params' dictionary holds the callable surface object.
 dupire_params = {"vol_surface": mock_vol_surface}
 model = DupireLocalVolModel(params=dupire_params)

@@ -1,5 +1,3 @@
-# src/quantfin/models/heston.py
-
 from __future__ import annotations
 import numpy as np
 from typing import Any, Callable, Dict
@@ -81,7 +79,7 @@ class HestonModel(BaseModel):
             return log_s_t_next, np.maximum(v_t_next, 0) # Reflection scheme
         return stepper
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Callable: return self.get_sde_stepper()
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

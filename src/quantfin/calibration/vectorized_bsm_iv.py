@@ -1,4 +1,3 @@
-# This file is already well-structured. We just add docstrings and type hints.
 import numpy as np
 from scipy.stats import norm
 import pandas as pd

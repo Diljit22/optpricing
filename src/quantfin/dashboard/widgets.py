@@ -1,5 +1,3 @@
-# src/quantfin/dashboard/widgets.py
-
 import streamlit as st
 import pandas as pd
 from quantfin.parity import ImpliedRateModel, ParityModel

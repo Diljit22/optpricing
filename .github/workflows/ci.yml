@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # Install the library itself, plus app and dev dependencies
+          # Install the library plus app and dev dependencies
           pip install -e .[app,dev]
 
       - name: Lint with ruff
@@ -37,4 +37,4 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          pytest # Pytest will automatically pick up the config from pyproject.toml
+          pytest # automatically pick up the config from pyproject.toml

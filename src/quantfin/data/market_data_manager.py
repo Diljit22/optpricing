@@ -1,15 +1,11 @@
-# src/quantfin/data/market_data_manager.py
-
 import pandas as pd
 from datetime import date, datetime
 from typing import List
 import yfinance as yf
 from polygon import RESTClient
 
-# Import our centralized configuration
 from quantfin.config import MARKET_SNAPSHOT_DIR, POLYGON_API_KEY, _config
 
-# --- Private Fetcher Implementations ---
 
 def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
     """Fetches a live option chain using yfinance."""
@@ -55,8 +51,8 @@ def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
 
     client = RESTClient(POLYGON_API_KEY)
     try:
-        # This is a limited implementation for a free account.
-        # It gets the chain for the next expiration date.
+        # limited implementation for a free account
+        # gets the chain for the next expiration date.
         expirations = list(client.list_options_contracts(underlying_ticker=ticker, expired=False, limit=1))
         if not expirations: return None
         
@@ -64,7 +60,7 @@ def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
         contracts = list(client.list_options_contracts(underlying_ticker=ticker, expiration_date=expiry_date, limit=1000))
         if not contracts: return None
 
-        # A single snapshot call is more efficient for paid tiers
+        # A single snapshot call
         snapshot = client.get_options_chain(underlying_ticker=ticker, expiration_date=expiry_date)
         
         data = []
@@ -90,7 +86,7 @@ def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
         print(f"An error occurred while fetching live Polygon data: {e}")
         return None
 
-# --- Public API Functions ---
+# Public API Functions
 
 def get_live_option_chain(ticker: str) -> pd.DataFrame | None:
     """

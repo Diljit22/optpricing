@@ -15,7 +15,7 @@ def print_consolidated_report(all_run_results: List[Dict[str, Any]]) -> None:
         print(f"\n{run_result['name'].upper()}")
         print("-" * 80)
 
-        # --- Handle and Print Errors ---
+        # Handle and Print Errors ---
         if run_result.get("error"):
             print(f"[ERROR] Benchmark failed: {run_result['error']}")
             # Optionally print the full traceback for debugging
@@ -24,7 +24,7 @@ def print_consolidated_report(all_run_results: List[Dict[str, Any]]) -> None:
             print("-----------------\n")
             continue
 
-        # --- If no error, print the results table ---
+        # If no error, print the results table ---
         techniques = run_result['techniques']
         results = run_result['results']
         timings = run_result['timings']

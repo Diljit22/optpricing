@@ -41,7 +41,7 @@ class BacktestWorkflow:
             
             # Evaluate the model on the next day's data
             eval_workflow = DailyWorkflow(market_data=eval_data, model_config=self.model_config)
-            # We need to run the first part of the eval workflow to get the correct r, q, and stock
+            # need to run the first part of the eval workflow to get the correct r, q, and stock
             eval_workflow.run() 
             if eval_workflow.results['Status'] != 'Success':
                 print("    -> Evaluation setup failed. Skipping evaluation for this period.")

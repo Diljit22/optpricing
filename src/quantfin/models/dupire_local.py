@@ -8,7 +8,7 @@ class DupireLocalVolModel(BaseModel):
     """Dupire (1994) Local Volatility model."""
     name: str = "Dupire Local Volatility"
     supports_sde: bool = True
-    is_local_vol: bool = True # Special flag for the MC dispatcher
+    is_local_vol: bool = True
 
     def _validate_params(self) -> None:
         if "vol_surface" not in self.params or not callable(self.params["vol_surface"]):
@@ -27,7 +27,7 @@ class DupireLocalVolModel(BaseModel):
         vol_surface_repr = getattr(self.params['vol_surface'], '__name__', str(type(self.params['vol_surface'])))
         return f"{self.__class__.__name__}(vol_surface={vol_surface_repr})"
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("Dupire uses a specialized kernel.")
     def _cf_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

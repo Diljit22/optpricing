@@ -54,7 +54,7 @@ class VarianceGammaModel(BaseModel):
         bm_diffusion = sigma * np.sqrt(gamma_time) * rng.standard_normal(size=size)
         return bm_drift + bm_diffusion
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

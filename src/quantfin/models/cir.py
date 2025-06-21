@@ -38,7 +38,7 @@ class CIRModel(BaseModel):
         price = (A_log_base ** A_log_power) * math.exp(-B * r0)
         return price
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _cf_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError

@@ -14,7 +14,7 @@ def print_benchmark_report(
     Prints a comparison of pricing techniques. If both a call and put are present
     in the config, it also includes per-technique put-call parity errors.
     """
-    # --- Header ---
+    # Header ---
     print("=" * 80)
     print(f"{config.name.upper()}") # Use the config name for a better title
     print("=" * 80)
@@ -26,7 +26,7 @@ def print_benchmark_report(
     technique_names = [name for _, name in config.techniques]
     col_width = 14
 
-    # --- Check if a parity check is possible ---
+    # Check if a parity check is possible ---
     has_call = any(o.option_type == OptionType.CALL for o in config.options)
     has_put = any(o.option_type == OptionType.PUT for o in config.options)
     parity_is_possible = has_call and has_put
@@ -39,7 +39,7 @@ def print_benchmark_report(
         T = call_opt.maturity # Assume same maturity for the pair
         diff = S0 * math.exp(-q * T) - call_opt.strike * math.exp(-r * T)
 
-    # --- Main Loop for Each Option Priced ---
+    # Main Loop for Each Option Priced ---
     for opt in config.options:
         opt_label = opt.option_type.name # Use .name for "CALL" or "PUT"
 
@@ -66,7 +66,7 @@ def print_benchmark_report(
             print(row_time)
             if metric == "Price": print() # Add space after price
 
-    # --- Parity Check Section (if possible) ---
+    # Parity Check Section (if possible) ---
     if parity_is_possible:
         print(f"\n{' ' * 20}{'-' * 40}")
         print(f"{' ' * 23}Put-Call Parity Errors:")

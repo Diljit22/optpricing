@@ -1,13 +1,9 @@
-# src/quantfin/config.py
-
 import yaml
 from pathlib import Path
 import os
 
-# --- Path Configuration ---
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-# --- Load YAML Configuration ---
 CONFIG_FILE_PATH = PROJECT_ROOT / "config.yaml"
 if not CONFIG_FILE_PATH.exists():
     # Create a default config if it doesn't exist
@@ -23,10 +19,10 @@ if not CONFIG_FILE_PATH.exists():
 with open(CONFIG_FILE_PATH, 'r') as f:
     _config = yaml.safe_load(f)
 
-# --- API Key Management ---
+# API Key Management
 POLYGON_API_KEY = os.environ.get("POLYGON_API_KEY", _config.get("polygon_api_key"))
 
-# --- Directory Management ---
+# Directory Management
 DATA_DIR = PROJECT_ROOT / _config.get("data_directory", "data")
 ARTIFACTS_DIR = PROJECT_ROOT / _config.get("artifacts_directory", "artifacts")
 

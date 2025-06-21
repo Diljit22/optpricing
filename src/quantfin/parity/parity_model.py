@@ -1,5 +1,3 @@
-# src/quantfin/parity/parity_model.py
-
 from __future__ import annotations
 import math
 from typing import Tuple, Any, Optional
@@ -17,7 +15,7 @@ class ParityModel(BaseModel):
     name: str = "Put-Call Parity"
     has_closed_form: bool = True
     
-    # Define the required inputs for the closed-form solver.
+    # Define inputs for the closed-form solver.
     cf_kwargs = ("option_price",)
 
     def _validate_params(self) -> None:
@@ -57,16 +55,11 @@ class ParityModel(BaseModel):
         parity_difference = discounted_spot - discounted_strike
 
         if call:
-            # We were given a Call price (C), we want the Put price (P).
-            # P = C - (S*exp(-qT) - K*exp(-rT))
             return option_price - parity_difference
         else:
-            # We were given a Put price (P), we want the Call price (C).
-            # C = P + (S*exp(-qT) - K*exp(-rT))
             return option_price + parity_difference
 
-    # Note: The other methods are utilities and not part of the standard
-    # BaseModel pricing flow, so they are kept as regular methods.
+    # other methods are utilities and not part of the standard
     def price_bounds(self, *, spot: float, strike: float, r: float, t: float, call: bool, option_price: float) -> Tuple[float, float]:
         """
         Return absolute (lower, upper) no-arbitrage bounds implied by parity.
@@ -91,7 +84,7 @@ class ParityModel(BaseModel):
             raise ValueError("Arbitrage opportunity exists (S - C + P >= K). Cannot compute implied rate.")
         return math.log(val) / t
 
-    # --- Abstract Method Implementations ---
+    # Abstract Method Implementations
     def _cf_impl(self, *args: Any, **kwargs: Any) -> Any: raise NotImplementedError
     def _sde_impl(self) -> Any: raise NotImplementedError
     def _pde_impl(self) -> Any: raise NotImplementedError

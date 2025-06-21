@@ -1,11 +1,10 @@
 House Cleaning
     ☐ pytests
-    ☐ Misc Files
     ☐ mkdocs file/Documentation 
     ☐ Break up lattice and mc_kernals
     ☐ Benchmark -> demo/ in root?
     ☐ Parameterize hard-coded data/log directories using `pathlib.Path` or environment variables
-    Port other scripts to cli.
+    ☐ scripts/ port other scripts to cli + backtesting + demo
 
 Technical
     ☐ Lattice: American + Bermuda
@@ -16,8 +15,6 @@ Technical
 Dashboard
     ☐ Live option pricing (e.g. via Polygon.io API)
     ☐ Add additional graphs/stats to showcase library complexity
-
-streamlit run scripts/app.py
 
             └── 📁benchmark
                 └── __init__.py
@@ -45,3 +42,187 @@ streamlit run scripts/app.py
                 └── run_all_benchmarks.py
                 └── run_consolidated_benchmarks.py
                 └── runner.py
+
+---
+```
+└── 📁qf
+    └── 📁.github
+        └── 📁workflows
+            └── ci.yml
+    └── 📁.vscode
+        └── settings.json
+    └── 📁artifacts
+        └── 📁backtest_logs
+            └── SPY_backtest_2025-06-17.csv
+        └── 📁calibrated_params
+            └── SPY_Black-Scholes_2025-06-17.json
+            └── SPY_BSM_2025-06-17.json
+            └── SPY_Merton_2025-06-17.json
+        └── 📁calibration_logs
+            └── SPY_evaluation_2025-06-16.csv
+    └── 📁data
+        └── 📁historical_data
+            └── AAPL_10y_returns.parquet
+            └── AMC_10y_returns.parquet
+            └── AMD_10y_returns.parquet
+            └── AMZN_10y_returns.parquet
+            └── BA_10y_returns.parquet
+            └── BAC_10y_returns.parquet
+            └── CAT_10y_returns.parquet
+            └── CVX_10y_returns.parquet
+            └── GME_10y_returns.parquet
+            └── GOOGL_10y_returns.parquet
+            └── GS_10y_returns.parquet
+            └── HD_10y_returns.parquet
+            └── JNJ_10y_returns.parquet
+            └── JPM_10y_returns.parquet
+            └── META_10y_returns.parquet
+            └── MSFT_10y_returns.parquet
+            └── NKE_10y_returns.parquet
+            └── NVDA_10y_returns.parquet
+            └── PFE_10y_returns.parquet
+            └── QQQ_10y_returns.parquet
+            └── SPY_10y_returns.parquet
+            └── SPY_5y_returns.parquet
+            └── TSLA_10y_returns.parquet
+            └── UNH_10y_returns.parquet
+            └── WMT_10y_returns.parquet
+            └── XOM_10y_returns.parquet
+        └── 📁market_data_snapshots
+            └── AAPL_2025-06-16.parquet
+            └── AAPL_2025-06-17.parquet
+            └── AMC_2025-06-17.parquet
+            └── AMD_2025-06-17.parquet
+            └── AMZN_2025-06-17.parquet
+            └── BA_2025-06-17.parquet
+            └── BAC_2025-06-17.parquet
+            └── CAT_2025-06-17.parquet
+            └── CVX_2025-06-17.parquet
+            └── GME_2025-06-17.parquet
+            └── GOOGL_2025-06-16.parquet
+            └── GOOGL_2025-06-17.parquet
+            └── GS_2025-06-17.parquet
+            └── HD_2025-06-17.parquet
+            └── JNJ_2025-06-17.parquet
+            └── JPM_2025-06-17.parquet
+            └── META_2025-06-16.parquet
+            └── META_2025-06-17.parquet
+            └── MSFT_2025-06-17.parquet
+            └── NKE_2025-06-17.parquet
+            └── NVDA_2025-06-17.parquet
+            └── PFE_2025-06-17.parquet
+            └── QQQ_2025-06-17.parquet
+            └── SPY_2025-06-16.parquet
+            └── SPY_2025-06-17.parquet
+            └── TSLA_2025-06-16.parquet
+            └── TSLA_2025-06-17.parquet
+            └── UNH_2025-06-17.parquet
+            └── WMT_2025-06-17.parquet
+            └── XOM_2025-06-17.parquet
+    └── 📁docs
+    └── 📁scripts
+        └── app.py
+        └── clean_cache.py
+        └── download_historical_data.py
+        └── 📁pages
+            └── 1_Calibration.py
+            └── 2_Pricer_and_Greeks.py
+            └── 3_Financial_Tools.py
+        └── run_backtest.py
+        └── run_calib.py
+        └── run_informal_test.py
+    └── 📁src
+        └── 📁quantfin
+            └── __init__.py
+            └── 📁atoms
+                └── __init__.py
+                └── bond.py
+                └── option.py
+                └── rate.py
+                └── stock.py
+            └── 📁calibration
+                └── __init__.py
+                └── calibrator.py
+                └── fit_jump_parameters.py
+                └── fit_market_params.py
+                └── iv_surface.py
+                └── technique_selector.py
+                └── vectorized_bsm_iv.py
+                └── vectorized_integration_iv.py
+            └── cli.py
+            └── config.py
+            └── 📁dashboard
+                └── plots.py
+                └── service.py
+                └── widgets.py
+            └── 📁data
+                └── __init__.py
+                └── historical_manager.py
+                └── market_data_manager.py
+            └── 📁models
+                └── __init__.py
+                └── 📁base
+                    └── __init__.py
+                    └── base_model.py
+                    └── validators.py
+                └── bates.py
+                └── blacks_approx.py
+                └── bsm.py
+                └── cev.py
+                └── cgmy.py
+                └── cir.py
+                └── dupire_local.py
+                └── heston.py
+                └── hyperbolic.py
+                └── kou.py
+                └── merton_jump.py
+                └── nig.py
+                └── perpetual_put.py
+                └── sabr_jump.py
+                └── sabr.py
+                └── vasicek.py
+                └── vg.py
+            └── 📁parity
+                └── __init__.py
+                └── implied_rate.py
+                └── parity_model.py
+            └── 📁techniques
+                └── __init__.py
+                └── 📁base
+                    └── __init__.py
+                    └── base_technique.py
+                    └── greek_mixin.py
+                    └── iv_mixin.py
+                    └── pricing_result.py
+                    └── random_utils.py
+                └── closed_form.py
+                └── crr.py
+                └── fft.py
+                └── integration.py
+                └── lattice.py
+                └── leisen_reimer.py
+                └── lewis_fft.py
+                └── mc_kernels.py
+                └── monte_carlo.py
+                └── pde.py
+                └── topm.py
+            └── 📁workflows
+                └── __init__.py
+                └── backtest_workflow.py
+                └── 📁configs
+                    └── __init__.py
+                    └── bsm_config.py
+                    └── heston_config.py
+                    └── kou_config.py
+                    └── merton_config.py
+                    └── nig_config.py
+                    └── vg_config.py
+                └── daily_workflow.py
+    └── 📁tests
+    └── .gitignore
+    └── config.yaml
+    └── LICENSE
+    └── pyproject.toml
+    └── README.md
+    └── TODO.txt
+```

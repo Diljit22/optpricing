@@ -40,7 +40,7 @@ class LeisenReimerTechnique(BaseTechnique, GreekMixin, IVMixin, ABC):
 
 
 def _peizer_pratt(z: float, N: int) -> float:
-    if z == 0: # Handle edge case to avoid division by zero in the term calculation
+    if z == 0: # Handle edge case to avoid division by zero
         return 0.5
     term = z / (N + 1/3 + 0.1 / (N + 1))
     return 0.5 + math.copysign(0.5 * math.sqrt(1 - math.exp(-term**2 * (N + 1/6))), z)
@@ -50,7 +50,7 @@ def _lr_price(
     r: float, q: float, sigma: float,
     N: int, is_call: bool, is_am: bool
 ) -> float:
-    # 1. Ensure N is odd for Leisen-Reimer.
+    # Ensure N is odd for Leisen-Reimer.
     if N % 2 == 0:
         N += 1
 
@@ -58,7 +58,7 @@ def _lr_price(
     disc = math.exp(-r * dt)
     cost_of_carry = r - q
 
-    # 2. Calculate d1 and d2 from Black-Scholes.
+    # Calculate d1 and d2 from Black-Scholes.
     sqrt_t = math.sqrt(T)
     if T <= 0 or sigma <= 0:
         # If time or vol is zero, return intrinsic value immediately.
@@ -68,29 +68,26 @@ def _lr_price(
         d1 = (math.log(S0 / K) + (cost_of_carry + 0.5 * sigma**2) * T) / (sigma * sqrt_t)
         d2 = d1 - sigma * sqrt_t
 
-    # 3. Use Peizer-Pratt to get the two key probabilities.
     p1 = _peizer_pratt(d1, N)
     p2 = _peizer_pratt(d2, N)
 
-    # 4. Check for degenerate probabilities. If p2 is ~0 or ~1, the tree is unstable.
-    # In this limit, the price is simply the discounted expected payoff.
-    # A small epsilon is used to avoid floating point inaccuracies.
+    # If p2 is ~0 or ~1, the tree is unstable; epsilon used to avoid floating point inaccuracies.
     epsilon = 1e-12
     if abs(p2) < epsilon or abs(1 - p2) < epsilon:
         # For European options, this is the exact BSM formula limit.
         # For American, it's a very strong approximation as early exercise is unlikely.
         if is_call:
             price = S0 * math.exp(-q * T) * p1 - K * math.exp(-r * T) * p2
-        else: # Put
+        else:
             price = K * math.exp(-r * T) * (1 - p2) - S0 * math.exp(-q * T) * (1 - p1)
         return max(0.0, price)
 
-    # 5. Calculate the LR-specific up/down factors and the risk-neutral probability 'p'.
+    # Calculate the LR-specific up/down factors and the risk-neutral probability 'p'.
     p = p2
     u = math.exp(cost_of_carry * dt) * (p1 / p2)
     d = (math.exp(cost_of_carry * dt) - p * u) / (1 - p)
 
-    # 6. Valuation loop
+    # Valuation loop
     j = np.arange(N + 1)
     ST = S0 * (u**j) * (d**(N - j))
     pay = np.where(is_call, np.maximum(ST - K, 0.0), np.maximum(K - ST, 0.0))

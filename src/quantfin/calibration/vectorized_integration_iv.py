@@ -1,5 +1,3 @@
-# src/quantfin/calibration/vectorized_integration_iv.py
-
 from __future__ import annotations
 import numpy as np
 from scipy import integrate
@@ -53,7 +51,6 @@ class VectorizedIntegrationIVSolver:
         """
         Internal method to price a vector of options for a given vector of volatilities.
         """
-        # CORRECTED LINE: Provide a dummy sigma to pass validation.
         bsm_model = BSMModel(params={"sigma": 0.2})
         prices = np.zeros_like(iv_vector)
 

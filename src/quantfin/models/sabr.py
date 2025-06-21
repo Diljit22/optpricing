@@ -12,7 +12,7 @@ class SABRModel(BaseModel):
     name: str = "SABR"
     supports_sde: bool = True
     has_variance_process: bool = True
-    is_sabr: bool = True # Special flag for the MC dispatcher
+    is_sabr: bool = True
 
     def _validate_params(self) -> None:
         p = self.params
@@ -29,7 +29,7 @@ class SABRModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
-    # --- Abstract Method Implementations ---
+    #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("SABR uses a specialized kernel, not a generic stepper.")
     def _cf_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
     def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
