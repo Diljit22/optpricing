@@ -1,66 +1,47 @@
-1. Build Dashboard
---I want a full dash for bsm and for bsj i will add rest later.
---More graphs will be good.
-2. Un-AI project
-3. Upload
-----
 House Cleaning
     ☐ pytests
     ☐ Misc Files
     ☐ mkdocs file/Documentation 
-    ☐ Download stock jump data
     ☐ Break up lattice and mc_kernals
+    ☐ Benchmark -> demo/ in root?
     ☐ Parameterize hard-coded data/log directories using `pathlib.Path` or environment variables
-    ☐ Computation issues: Hyperbolic, Dupire, Kou
+    Port other scripts to cli.
 
-Additions
+Technical
     ☐ Lattice: American + Bermuda
     ☐ MC Tech: American + Bermuda
     ☐ Use pricingResult
+    ☐ Computation issues: Hyperbolic, Dupire, Kou
 
 Dashboard
     ☐ Live option pricing (e.g. via Polygon.io API)
     ☐ Add additional graphs/stats to showcase library complexity
-    ☐ Expose model/technique selector, parameter inputs, real-time pricing
-    ☐ IV surface viewer, implied-rate & put-call-parity widgets
-    ☐ Faster results too
 
 streamlit run scripts/app.py
 
-
----
-Select model - feature all models we did
-select techs should adjsut to the techs we defined that model
-dont have a drag vol that is not user friendly
-for merton you have the extra params but not for the other models.
-calubration doest calibrate its a copy of the pricer and greeks.
-
-rates and parity:
-TypeError: BaseModel.__init__() missing 1 required positional argument: 'params'
-Traceback:
-File "C:\Users\dilji\Desktop\qf\scripts\pages\3_Rates_and_Parity.py", line 48, in <module>
-    implied_rate_model = ImpliedRateModel()
-
-include ways to calibrate jump params to a stock since this is easy via historical data 10y returns
-we have. you can localize to the 25 stocks we have data for or download via yahoo the requested.
-
----
-ValueError: Merton Jump-Diffusion: missing required parameters: max_sum_terms
-Traceback:
-File "C:\Users\dilji\Desktop\qf\scripts\pages\2_Pricer_and_Greeks.py", line 57, in <module>
-    model = model_class(params=params)
-File "C:\Users\dilji\Desktop\qf\src\quantfin\models\merton_jump.py", line 29, in __init__
-    super().__init__(params)
-    ~~~~~~~~~~~~~~~~^^^^^^^^
-File "C:\Users\dilji\Desktop\qf\src\quantfin\models\base\base_model.py", line 68, in __init__
-    self._validate_params()
-    ~~~~~~~~~~~~~~~~~~~~~^^
-File "C:\Users\dilji\Desktop\qf\src\quantfin\models\merton_jump.py", line 36, in _validate_params
-    ParamValidator.require(p, req, model=self.name)
-    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
-File "C:\Users\dilji\Desktop\qf\src\quantfin\models\base\validators.py", line 37, in require
-    raise ValueError(f"{model}: missing required parameters: {', '.join(missing)}")
-
-fro bsm integration:
-Calculation failed: BSMModel._cf_impl() got an unexpected keyword argument 'sigma'
-same for fft.
+            └── 📁benchmark
+                └── __init__.py
+                └── 📁configs
+                    └── __init__.py
+                    └── base_config.py
+                    └── demo_bates.py
+                    └── demo_blacks_approx.py
+                    └── demo_bsm.py
+                    └── demo_cev.py
+                    └── demo_cgmy.py
+                    └── demo_dupire.py
+                    └── demo_heston.py
+                    └── demo_hyperbolic.py
+                    └── demo_kou.py
+                    └── demo_merton_jump.py
+                    └── demo_nig.py
+                    └── demo_parity_tools.py
+                    └── demo_perpetual_put.py
+                    └── demo_sabr_jump.py
+                    └── demo_sabr.py
+                    └── demo_vg.py
+                └── consolidated_report.py
+                └── report.py
+                └── run_all_benchmarks.py
+                └── run_consolidated_benchmarks.py
+                └── runner.py

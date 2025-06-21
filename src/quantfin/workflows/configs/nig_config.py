@@ -1,7 +1,7 @@
 from quantfin.models.nig import NIGModel
 
 NIG_WORKFLOW_CONFIG = {
-    "model_name": "NIG",
+    "name": "NIG",
     "model_class": NIGModel,
     "initial_guess": {"alpha": 15.0, "beta": -5.0, "delta": 0.5},
     "frozen": {},

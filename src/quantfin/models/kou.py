@@ -13,6 +13,17 @@ class KouModel(BaseModel):
     supports_sde: bool = True
     has_jumps: bool = True
 
+    default_params = {'sigma': 0.15, 'lambda': 1.0, 'p_up': 0.6, 'eta1': 10.0, 'eta2': 5.0}
+    param_defs = {
+        'sigma': {'label': 'Volatility (σ)', 'default': 0.15, 'min': 0.01, 'max': 1.0, 'step': 0.01},
+        'lambda': {'label': 'Jump Intensity (λ)', 'default': 1.0, 'min': 0.0, 'max': 10.0, 'step': 0.1},
+        'p_up': {'label': 'Up Prob (p)', 'default': 0.6, 'min': 0.0, 'max': 1.0, 'step': 0.05},
+        'eta1': {'label': 'Up Size (η1)', 'default': 10.0, 'min': 0.1, 'max': 50.0, 'step': 0.5},
+        'eta2': {'label': 'Down Size (η2)', 'default': 5.0, 'min': 0.1, 'max': 50.0, 'step': 0.5},
+    }
+    def __init__(self, params: Dict[str, float] | None = None):
+        super().__init__(params or self.default_params)
+
     def _validate_params(self) -> None:
         p = self.params
         req = ["sigma", "lambda", "p_up", "eta1", "eta2"]

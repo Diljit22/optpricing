@@ -1,7 +1,7 @@
 from quantfin.models.kou import KouModel
 
 KOU_WORKFLOW_CONFIG = {
-    "model_name": "Kou",
+    "name": "Kou",
     "model_class": KouModel,
     "historical_params": ["sigma", "lambda"],
     

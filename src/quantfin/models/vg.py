@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 
 from quantfin.models.base import BaseModel, ParamValidator, CF
 
@@ -9,6 +9,15 @@ class VarianceGammaModel(BaseModel):
     name: str = "Variance Gamma"
     supports_cf: bool = True
     is_pure_levy: bool = True
+
+    default_params = {'sigma': 0.2, 'nu': 0.1, 'theta': -0.14}
+    param_defs = {
+        'sigma': {'label': 'Volatility (σ)', 'default': 0.2, 'min': 0.01, 'max': 2.0, 'step': 0.01},
+        'nu': {'label': 'Variance Rate (ν)', 'default': 0.1, 'min': 0.001, 'max': 2.0, 'step': 0.01},
+        'theta': {'label': 'Drift (θ)', 'default': -0.14, 'min': -2.0, 'max': 2.0, 'step': 0.05},
+    }
+    def __init__(self, params: Dict[str, float] | None = None):
+        super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
         p = self.params

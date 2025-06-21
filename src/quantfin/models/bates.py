@@ -5,6 +5,8 @@ import numpy as np
 from typing import Any, Callable, Dict
 
 from quantfin.models.base import BaseModel, ParamValidator, CF
+from quantfin.models.heston import HestonModel
+from quantfin.models.merton_jump import MertonJumpModel
 
 class BatesModel(BaseModel):
     """
@@ -20,6 +22,11 @@ class BatesModel(BaseModel):
     has_jumps: bool = True
     has_variance_process: bool = True
     cf_kwargs = ("v0",)
+
+    default_params = {'v0': 0.04, 'kappa': 2.0, 'theta': 0.04, 'rho': -0.7, 'vol_of_vol': 0.5, 'lambda': 0.5, 'mu_j': -0.1, 'sigma_j': 0.15}
+    param_defs = {**HestonModel.param_defs, **MertonJumpModel.param_defs} # Combine them
+    def __init__(self, params: Dict[str, float] | None = None):
+        super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
         """Validates all Heston and Merton parameters."""

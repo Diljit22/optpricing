@@ -16,22 +16,26 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Intended Audience :: Financial and Insurance Industry",
-    "Topic :: Office/Business :: Financial",
+    "Intended Audience :: Financial Industry",
+    "Topic :: Math :: Financial",
 ]
 
 dependencies = [
-    "streamlit==1.45.1",
-    "pandas==2.2.3",
-    "scipy==1.15.2",
-    "matplotlib==3.10.1",
     "numpy==2.2.5",
-    "yfinance==0.2.63",
-    "plotly==6.1.2",
-    "numba"
+    "scipy==1.15.2",
+    "pandas==2.2.3",
+    "numba",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]
+app = [
+    "streamlit==1.45.1",
+    "matplotlib==3.10.1",
+    "plotly==6.1.2",
+    "yfinance==0.2.63",
+    "tabulate",
+]
 dev = [
     "pytest",
     "pytest-cov",
@@ -39,18 +43,17 @@ dev = [
     "mkdocs",
     "mkdocs-material",
     "line_profiler",
-    "numba",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/Diljit22/qf"
 
 [project.scripts]
-dashboard           = "quantfin.scripts.launch_dashboard:main"
-bench-full          = "quantfin.benchmark.run_all_benchmarks:main"
-bench-report        = "quantfin.benchmark.run_consolidated_benchmarks:main"
-daily-calib         = "quantfin.workflows.run_calib:main"
-backtest            = "quantfin.workflows.run_backtest:main"
+quantfin-dashboard = "quantfin.cli:launch_dashboard"
+quantfin-benchmark = "quantfin.cli:run_benchmark"
+quantfin-backtest = "scripts.run_backtest:main"
+quantfin-calibrate = "scripts.run_calib:main"
+quantfin-dl-hist = "scripts.download_historical_data:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -63,7 +66,5 @@ select = ["E", "F", "W", "I", "UP"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q --cov=quantfin --cov-report=term-missing"
-testpaths = [
-    "tests",
-]
+addopts = "-ra -q --cov=src/quantfin --cov-report=term-missing"
+testpaths = ["tests"]

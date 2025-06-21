@@ -1,10 +1,8 @@
-# src/quantfin/__init__.py (Cleaner Version)
-
 """
-qf - A Python Quantitative Finance Library
-===========================================
-This top-level package provides convenient access to the most common
-components of the library.
+quantfin - A Python Quantitative Finance Library
+=================================================
+This library provides a comprehensive suite of tools for pricing financial
+derivatives, calibrating models, and analyzing market data.
 """
 
 # --- Core Data Structures (Atoms) ---
@@ -14,30 +12,37 @@ from .atoms import Option, OptionType, ExerciseStyle, Rate, Stock, ZeroCouponBon
 from .techniques.base import PricingResult
 
 # --- Models ---
-# Import the most common models directly for ease of use
 from .models import (
-    BSMModel, MertonJumpModel, HestonModel, BatesModel, SABRModel,
-    VasicekModel, CIRModel
+    BSMModel, MertonJumpModel, HestonModel, BatesModel, SABRModel, CEVModel,
+    KouModel, VarianceGammaModel, NIGModel, CGMYModel, HyperbolicModel,
+    DupireLocalVolModel, VasicekModel, CIRModel,
+)
+
+from .parity import(
+    ParityModel, ImpliedRateModel,
 )
 
 # --- Techniques ---
-# Import the most common techniques directly for ease of use
 from .techniques import (
-    ClosedFormTechnique, IntegrationTechnique, FFTTechnique,
-    MonteCarloTechnique, PDETechnique, CRRTechnique
+    ClosedFormTechnique, IntegrationTechnique, FFTTechnique, MonteCarloTechnique,
+    PDETechnique, CRRTechnique, LeisenReimerTechnique, TOPMTechnique
 )
+
+# --- Calibration & Workflows ---
+from .calibration import Calibrator, VolatilitySurface
+from .workflows import DailyWorkflow, BacktestWorkflow
 
 # --- Define the public API for the top-level package ---
 __all__ = [
-    # Atoms
-    "Option", "OptionType", "ExerciseStyle", "Rate", "Stock", "ZeroCouponBond",
-    "PricingResult",
-
-    # Common Models
-    "BSMModel", "MertonJumpModel", "HestonModel", "BatesModel", "SABRModel",
-    "VasicekModel", "CIRModel",
-
-    # Common Techniques
-    "ClosedFormTechnique", "IntegrationTechnique", "FFTTechnique",
-    "MonteCarloTechnique", "PDETechnique", "CRRTechnique",
+    # Atoms & Results
+    "Option", "OptionType", "ExerciseStyle", "Rate", "Stock", "ZeroCouponBond", "PricingResult",
+    # Models
+    "BSMModel", "MertonJumpModel", "HestonModel", "BatesModel", "SABRModel", "CEVModel",
+    "KouModel", "VarianceGammaModel", "NIGModel", "CGMYModel", "HyperbolicModel",
+    "DupireLocalVolModel", "VasicekModel", "CIRModel", "ParityModel", "ImpliedRateModel",
+    # Techniques
+    "ClosedFormTechnique", "IntegrationTechnique", "FFTTechnique", "MonteCarloTechnique",
+    "PDETechnique", "CRRTechnique", "LeisenReimerTechnique", "TOPMTechnique",
+    # Workflows
+    "Calibrator", "VolatilitySurface", "DailyWorkflow", "BacktestWorkflow",
 ]

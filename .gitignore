@@ -1,32 +1,24 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-
-# Build artifacts
-build/
-dist/
+*.py[cod]
 *.egg-info/
 .eggs/
-
-# Data and Logs
-*.csv
-*.json
-*.parquet
-*.log
-
-#/backtest_logs/
-#/calibrated_params/
-#/calibration_logs/
-#/historical_data/
-#/market_data_snapshots/
+build/
+dist/
+env/
+venv/
+.env
 
 # IDEs and Tools
 .vscode/
 .idea/
 .DS_Store
+*.nbconvert.ipynb
 
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation artifacts
+site/

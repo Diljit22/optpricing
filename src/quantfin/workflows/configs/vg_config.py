@@ -1,7 +1,7 @@
 from quantfin.models.vg import VarianceGammaModel
 
 VG_WORKFLOW_CONFIG = {
-    "model_name": "Variance Gamma",
+    "name": "Variance Gamma",
     "model_class": VarianceGammaModel,
     "initial_guess": {"sigma": 0.2, "nu": 0.1, "theta": -0.14},
     "frozen": {}, # No frozen params, fit all to the smile

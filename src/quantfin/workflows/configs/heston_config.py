@@ -1,7 +1,7 @@
 from quantfin.models.heston import HestonModel
 
 HESTON_WORKFLOW_CONFIG = {
-    "model_name": "Heston",
+    "name": "Heston",
     "model_class": HestonModel,
     "initial_guess": {'v0': 0.04, 'kappa': .1, 'theta': 0.04, 'rho': -0.7, 'vol_of_vol': 1},
     "frozen": {},

@@ -20,6 +20,17 @@ class HestonModel(BaseModel):
     has_variance_process: bool = True
     cf_kwargs = ("v0",) # v0 is required for pricing, passed from kwargs
 
+    default_params = {'v0': 0.04, 'kappa': 2.0, 'theta': 0.04, 'rho': -0.7, 'vol_of_vol': 0.5}
+    param_defs = {
+        'v0': {'label': 'Initial Variance (v0)', 'default': 0.04, 'min': 0.001, 'max': 0.5, 'step': 0.01},
+        'kappa': {'label': 'Mean Reversion (κ)', 'default': 2.0, 'min': 0.1, 'max': 10.0, 'step': 0.1},
+        'theta': {'label': 'Long-Term Var (θ)', 'default': 0.04, 'min': 0.01, 'max': 0.5, 'step': 0.01},
+        'rho': {'label': 'Correlation (ρ)', 'default': -0.7, 'min': -0.99, 'max': 0.99, 'step': 0.05},
+        'vol_of_vol': {'label': 'Vol of Vol (ξ)', 'default': 0.5, 'min': 0.1, 'max': 1.5, 'step': 0.05},
+    }
+    def __init__(self, params: Dict[str, float] | None = None):
+        super().__init__(params or self.default_params)
+
     def _validate_params(self) -> None:
         """Validates parameters for mean-reversion, correlation, etc."""
         p = self.params
