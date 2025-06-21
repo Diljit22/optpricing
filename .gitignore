@@ -22,3 +22,7 @@ htmlcov/
 
 # Documentation artifacts
 site/
+
+# Ignore my local notes file
+tmp.txt
+TODO.txt
