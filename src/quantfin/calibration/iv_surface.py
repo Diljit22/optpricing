@@ -15,9 +15,12 @@ class VolatilitySurface:
         # Ensure the necessary columns are present from the start
         required_cols = ["strike", "maturity", "marketPrice", "optionType", "expiry"]
         if not all(col in option_data.columns for col in required_cols):
-            raise ValueError(
-                f"Input option_data is missing one of the required columns: {required_cols}"
+            msg = (
+                "Input option_data is missing one "
+                f"of the required columns: {required_cols}"
             )
+            raise ValueError(msg)
+
         self.data = option_data[required_cols].copy()
         self.surface: pd.DataFrame | None = None
         self.iv_solver = BSMIVSolver()

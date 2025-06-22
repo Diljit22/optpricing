@@ -35,7 +35,6 @@ def fit_jump_params_from_history(
         "sigma_j": sigma_j_est,
     }
 
-    print(
-        f"  -> Estimated Historical Params: { {k: f'{v:.4f}' for k, v in fitted_params.items()} }"
-    )
+    formatted = ", ".join(f"{k}: {v:.4f}" for k, v in fitted_params.items())
+    print(f"  -> Estimated Historical Params: {{{formatted}}}")
     return fitted_params

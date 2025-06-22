@@ -20,14 +20,17 @@ class BacktestWorkflow:
         available_dates = get_available_snapshot_dates(self.ticker)
         if len(available_dates) < 2:
             print(
-                f"Backtest for {self.model_config['name']} requires at least 2 days of data. Skipping."
+                "Backtest for "
+                f"{self.model_config['name']} "
+                "requires at least 2 days of data. Skipping."
             )
             return
 
         for i in range(len(available_dates) - 1):
             calib_date, eval_date = available_dates[i], available_dates[i + 1]
             print(
-                f"\n--- Processing Period: Calibrate on {calib_date}, Evaluate on {eval_date} ---"
+                "\n--- Processing Period: Calibrate on "
+                f"{calib_date}, Evaluate on {eval_date} ---"
             )
 
             calib_data = load_market_snapshot(self.ticker, calib_date)
@@ -53,11 +56,12 @@ class BacktestWorkflow:
             eval_workflow = DailyWorkflow(
                 market_data=eval_data, model_config=self.model_config
             )
-            # need to run the first part of the eval workflow to get the correct r, q, and stock
+            # run the first part of the eval workflow to get the correct r, q, and stock
             eval_workflow.run()
             if eval_workflow.results["Status"] != "Success":
                 print(
-                    "    -> Evaluation setup failed. Skipping evaluation for this period."
+                    "    -> Evaluation setup failed. "
+                    "Skipping evaluation for this period."
                 )
                 continue
 
@@ -66,8 +70,10 @@ class BacktestWorkflow:
             )
 
             print(
-                f"  -> Out-of-Sample RMSE for {self.model_config['name']} on {eval_date}: {rmse:.4f}"
+                "  -> Out-of-Sample RMSE for "
+                f"{self.model_config['name']} on {eval_date}: {rmse:.4f}"
             )
+
             self.results.append(
                 {
                     "Eval Date": eval_date,

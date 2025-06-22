@@ -23,9 +23,7 @@ def launch_dashboard():
         subprocess.run(["streamlit", "run", str(app_path)], check=True)
     except FileNotFoundError:
         print("\nError: 'streamlit' command not found.")
-        print(
-            "Please ensure Streamlit is installed in your environment (`pip install quantfin[app]`)."
-        )
+        print("Ensure Streamlit is installed in your environment.")
     except subprocess.CalledProcessError as e:
         print(f"\nAn error occurred while running the Streamlit app: {e}")
 

@@ -84,7 +84,7 @@ def _lr_price(
     p1 = _peizer_pratt(d1, N)
     p2 = _peizer_pratt(d2, N)
 
-    # If p2 is ~0 or ~1, the tree is unstable; epsilon used to avoid floating point inaccuracies.
+    # If p2 is ~0 or ~1, tree unstable; eps used to avoid floating point inaccuracies.
     epsilon = 1e-12
     if abs(p2) < epsilon or abs(1 - p2) < epsilon:
         # For European options, this is the exact BSM formula limit.

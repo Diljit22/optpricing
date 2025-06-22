@@ -46,7 +46,7 @@ class Calibrator:
 
         # Vectorized pricing for speed
         # assumes the technique supports vectorized pricing.
-        # For now, we fall back to iterating, but this is where future optimization lies.
+        # For now, fall back to iterating, but this is where future optimization lies.
         total_error = 0.0
         for _, row in self.market_data.iterrows():
             option = Option(

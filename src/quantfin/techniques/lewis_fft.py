@@ -109,7 +109,7 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
                 continue  # Skip if already provided (e.g., spot, t, r, q)
             else:
                 raise ValueError(
-                    f"Required CF parameter '{key}' not found in kwargs or model.params."
+                    f"Required CF param '{key}' not found in kwargs or model.params."
                 )
         phi = model.cf(**cf_params)
 

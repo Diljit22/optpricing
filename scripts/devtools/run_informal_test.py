@@ -109,12 +109,12 @@ def run_benchmark(config: dict[str, Any]):
         if model.name == "Dupire Local Volatility":
             option = config["options"][option_type]
 
-        print(
-            "\n"
-            + f" OPTION: {option.option_type.value.upper()} | K={option.strike} | T={option.maturity} ".center(
-                80, "-"
-            )
-        )
+        header = (
+            f" OPTION: {option.option_type.value.upper()} | "
+            f"K={option.strike} | T={option.maturity} "
+        ).center(80, "-")
+
+        print(f"\n{header}")
 
         tech_results = {}
         for name, tech_instance in techniques.items():
@@ -383,13 +383,17 @@ if __name__ == "__main__":
     # Vasicek Model Test
     vasicek_model = VasicekModel(params={"kappa": 0.86, "theta": 0.09, "sigma": 0.02})
     vasicek_price = cf_technique.price(bond, r0_stock, vasicek_model, dummy_rate).price
+
     print(
-        f"Vasicek ZCB Price (r0={initial_short_rate:.2f}, T={bond.maturity:.1f}): {vasicek_price:.6f}"
+        f"Vasicek ZCB Price (r0={initial_short_rate:.2f}, "
+        f"T={bond.maturity:.1f}): {vasicek_price:.6f}"
     )
 
     # CIR Model Test
     cir_model = CIRModel(params={"kappa": 0.86, "theta": 0.09, "sigma": 0.02})
     cir_price = cf_technique.price(bond, r0_stock, cir_model, dummy_rate).price
+
     print(
-        f"CIR ZCB Price     (r0={initial_short_rate:.2f}, T={bond.maturity:.1f}): {cir_price:.6f}"
+        f"CIR ZCB Price     (r0={initial_short_rate:.2f}, "
+        f"T={bond.maturity:.1f}): {cir_price:.6f}"
     )

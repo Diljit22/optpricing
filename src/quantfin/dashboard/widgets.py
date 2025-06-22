@@ -55,6 +55,6 @@ def render_parity_analysis_widget(market_data: pd.DataFrame, stock: Stock, rate:
     )
 
     st.dataframe(results_df)
-    st.caption(
+    st.caption(  # noqa: E501
         "A non-zero 'Arbitrage Gap' suggests a violation of put-call parity (or stale data)."
     )

@@ -56,9 +56,7 @@ def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
     """Fetches a live option chain using Polygon.io."""
     print(f"Fetching live option chain for {ticker} from Polygon.io...")
     if not POLYGON_API_KEY or "YOUR_KEY" in POLYGON_API_KEY:
-        print(
-            "Error: Polygon API key not configured in config.yaml or environment variables."
-        )
+        print("Error: Polygon API key not set in config.yaml or environment variables.")
         return None
 
     client = RESTClient(POLYGON_API_KEY)

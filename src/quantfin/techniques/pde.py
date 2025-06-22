@@ -22,7 +22,7 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
     ) -> dict:
         if not isinstance(model, BSMModel):
             raise TypeError(
-                f"This PDETechnique is optimized for BSMModel only, but got {model.name}."
+                f"PDETechnique is optimized for BSMModel only, but got {model.name}."
             )
         S0, K, T = stock.spot, option.strike, option.maturity
         r, q, sigma = rate.get_rate(T), stock.dividend, model.params["sigma"]
