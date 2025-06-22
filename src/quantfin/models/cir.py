@@ -23,7 +23,13 @@ class CIRModel(BaseModel):
         if 2 * p["kappa"] * p["theta"] < p["sigma"] ** 2:
             print("Warning: CIR parameters do not satisfy the Feller condition.")
 
-    def _closed_form_impl(self, *, spot: float, t: float, **_: Any) -> float:
+    def _closed_form_impl(
+        self,
+        *,
+        spot: float,
+        t: float,
+        **_: Any,
+    ) -> float:
         """Calculates the price of a Zero-Coupon Bond."""
         r0, T = spot, t
         p = self.params

@@ -1,5 +1,3 @@
----
-title: TODO
----
+# BaseModel
 
-Coming soon.
+::: src.quantfin.models.base.base_model.BaseModel

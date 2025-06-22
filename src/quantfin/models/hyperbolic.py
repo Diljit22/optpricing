@@ -32,7 +32,15 @@ class HyperbolicModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
-    def _cf_impl(self, *, t: float, spot: float, r: float, q: float, **_: Any) -> CF:
+    def _cf_impl(
+        self,
+        *,
+        t: float,
+        spot: float,
+        r: float,
+        q: float,
+        **_: Any,
+    ) -> CF:
         p = self.params
         alpha, beta, delta, mu = p["alpha"], p["beta"], p["delta"], p["mu"]
         compensator = np.log(self.raw_cf(t=1.0)(-1j))  # E[exp(X_1)] = phi_raw(-i)
@@ -59,7 +67,10 @@ class HyperbolicModel(BaseModel):
         return phi_raw
 
     def sample_terminal_log_return(
-        self, T: float, size: int, rng: np.random.Generator
+        self,
+        T: float,
+        size: int,
+        rng: np.random.Generator,
     ) -> np.ndarray:
         p = self.params
         return genhyperbolic.rvs(

@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 __doc__ = """
 The `techniques` package provides the various numerical and analytical
 methods for pricing options.
 """
+
 from .base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 from .closed_form import ClosedFormTechnique
 from .fft import FFTTechnique

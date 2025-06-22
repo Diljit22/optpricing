@@ -96,7 +96,13 @@ class BSMModel(BaseModel):
         return df_div * norm.cdf(d1) if call else -df_div * norm.cdf(-d1)
 
     def gamma_analytic(
-        self, *, spot: float, strike: float, r: float, q: float, t: float
+        self,
+        *,
+        spot: float,
+        strike: float,
+        r: float,
+        q: float,
+        t: float,
     ) -> float:
         """Analytic gamma for the BSM model."""
         sigma = self.params["sigma"]
@@ -106,7 +112,13 @@ class BSMModel(BaseModel):
         return df_div * norm.pdf(d1) / (spot * sigma * sqrt_t)
 
     def vega_analytic(
-        self, *, spot: float, strike: float, r: float, q: float, t: float
+        self,
+        *,
+        spot: float,
+        strike: float,
+        r: float,
+        q: float,
+        t: float,
     ) -> float:
         """Analytic vega for the BSM model."""
         sigma = self.params["sigma"]
@@ -155,7 +167,15 @@ class BSMModel(BaseModel):
         df_rate = np.exp(-r * t)
         return strike * t * df_rate * (norm.cdf(d2) if call else -norm.cdf(-d2))
 
-    def _cf_impl(self, *, t: float, spot: float, r: float, q: float, **_) -> CF:
+    def _cf_impl(
+        self,
+        *,
+        t: float,
+        spot: float,
+        r: float,
+        q: float,
+        **_,
+    ) -> CF:
         """Returns the characteristic function phi(u) for the log-spot price log(S_t)."""
         sigma = self.params["sigma"]
         drift = r - q - 0.5 * sigma**2

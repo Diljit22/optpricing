@@ -114,7 +114,14 @@ class MertonJumpModel(BaseModel):
 
         return total_price
 
-    def _cf_impl(self, *, t: float, spot: float, r: float, q: float) -> CF:
+    def _cf_impl(
+        self,
+        *,
+        t: float,
+        spot: float,
+        r: float,
+        q: float,
+    ) -> CF:
         p = self.params
         sigma, lambda_, mu_j, sigma_j = p["sigma"], p["lambda"], p["mu_j"], p["sigma_j"]
         drift = r - q - 0.5 * sigma**2

@@ -43,7 +43,12 @@ class PerpetualPutModel(BaseModel):
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
     def _closed_form_impl(
-        self, *, spot: float, strike: float, q: float, **_: Any
+        self,
+        *,
+        spot: float,
+        strike: float,
+        q: float,
+        **_: Any,
     ) -> float:
         """
         Calculates the price of a perpetual American put.
@@ -89,7 +94,11 @@ class PerpetualPutModel(BaseModel):
             return (strike - s_star) * (spot / s_star) ** gamma
 
     #  Abstract Method Implementations
-    def _cf_impl(self, *args: Any, **kwargs: Any) -> Any:
+    def _cf_impl(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         raise NotImplementedError(
             f"{self.name} does not support a characteristic function."
         )

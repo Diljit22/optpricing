@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 __doc__ = """
 Provides the base classes and mixins for all pricing techniques.
 """
+
 from .base_technique import BaseTechnique
 from .greek_mixin import GreekMixin
 from .iv_mixin import IVMixin

@@ -91,7 +91,14 @@ class HestonModel(BaseModel):
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
     def _cf_impl(
-        self, *, t: float, spot: float, r: float, q: float, v0: float, **_: Any
+        self,
+        *,
+        t: float,
+        spot: float,
+        r: float,
+        q: float,
+        v0: float,
+        **_: Any,
     ) -> CF:
         """Heston characteristic function for the log-spot price log(S_t)."""
         p = self.params

@@ -42,7 +42,15 @@ class CGMYModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
-    def _cf_impl(self, *, t: float, spot: float, r: float, q: float, **_: Any) -> CF:
+    def _cf_impl(
+        self,
+        *,
+        t: float,
+        spot: float,
+        r: float,
+        q: float,
+        **_: Any,
+    ) -> CF:
         """Risk-neutral characteristic function for the log-spot price log(S_t)."""
         compensator = np.log(self.raw_cf(t=1.0)(-1j))
         drift = r - q - np.real(compensator)
@@ -69,7 +77,10 @@ class CGMYModel(BaseModel):
         return phi_raw
 
     def sample_terminal_log_return(
-        self, T: float, size: int, rng: np.random.Generator
+        self,
+        T: float,
+        size: int,
+        rng: np.random.Generator,
     ) -> np.ndarray:
         """
         Draws samples from the terminal distribution of the raw CGMY process.

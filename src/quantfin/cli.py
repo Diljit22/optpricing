@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import subprocess
 
 from quantfin.config import PROJECT_ROOT

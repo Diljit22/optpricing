@@ -29,7 +29,11 @@ class CEVModel(BaseModel):
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
     def sample_terminal_spot(
-        self, S0: float, r: float, T: float, size: int
+        self,
+        S0: float,
+        r: float,
+        T: float,
+        size: int,
     ) -> np.ndarray:
         """Exact simulation of the terminal spot price via Non-Central Chi-Squared."""
         from scipy.stats import ncx2

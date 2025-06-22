@@ -17,21 +17,21 @@ class VarianceGammaModel(BaseModel):
     default_params = {"sigma": 0.2, "nu": 0.1, "theta": -0.14}
     param_defs = {
         "sigma": {
-            "label": "Volatility (σ)",
+            "label": "Volatility",
             "default": 0.2,
             "min": 0.01,
             "max": 2.0,
             "step": 0.01,
         },
         "nu": {
-            "label": "Variance Rate (ν)",
+            "label": "Variance Rate",
             "default": 0.1,
             "min": 0.001,
             "max": 2.0,
             "step": 0.01,
         },
         "theta": {
-            "label": "Drift (θ)",
+            "label": "Drift",
             "default": -0.14,
             "min": -2.0,
             "max": 2.0,
@@ -75,7 +75,10 @@ class VarianceGammaModel(BaseModel):
         return phi_raw
 
     def sample_terminal_log_return(
-        self, T: float, size: int, rng: np.random.Generator
+        self,
+        T: float,
+        size: int,
+        rng: np.random.Generator,
     ) -> np.ndarray:
         p = self.params
         sigma, nu, theta = p["sigma"], p["nu"], p["theta"]

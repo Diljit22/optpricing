@@ -59,7 +59,14 @@ class BatesModel(BaseModel):
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
     def _cf_impl(
-        self, *, t: float, spot: float, r: float, q: float, v0: float, **_: Any
+        self,
+        *,
+        t: float,
+        spot: float,
+        r: float,
+        q: float,
+        v0: float,
+        **_: Any,
     ) -> CF:
         """Bates characteristic function, a product of Heston and Merton CFs."""
         p = self.params
