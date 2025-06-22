@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __doc__ = """
 The `data` package provides a clean, unified interface for fetching, loading,
 and saving all market and historical data required by the quantfin library.

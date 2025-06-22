@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 import pandas as pd
@@ -11,6 +13,11 @@ from quantfin.data.market_data_manager import (
     load_market_snapshot,
 )
 from quantfin.workflows import DailyWorkflow
+
+__doc__ = """
+Defines the main service layer that orchestrates all backend logic for the
+Streamlit dashboard, from data loading to model calibration and plot generation.
+"""
 
 
 class DashboardService:
