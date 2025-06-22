@@ -56,10 +56,11 @@ quantfin-calibrate = "scripts.run_calib:main"
 quantfin-dl-hist = "scripts.download_historical_data:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "scripts"]
 
 [tool.ruff]
 line-length = 88
+extend-exclude = ["demo"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "NPY"]
