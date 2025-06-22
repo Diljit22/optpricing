@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable
 
 import numpy as np
 
@@ -10,7 +10,8 @@ Defines the abstract base class for all option pricing models.
 """
 
 CF = Callable[[np.ndarray], np.ndarray]
-PDECoeffs = Callable[[np.ndarray, float], Tuple[np.ndarray, np.ndarray, np.ndarray]]
+PDECoeffs = Callable[[np.ndarray, float], tuple[np.ndarray, np.ndarray, np.ndarray]]
+
 
 class BaseModel(ABC):
     """
@@ -24,7 +25,7 @@ class BaseModel(ABC):
     ----------
     name : str
         A string identifier for the model (e.g., "Black-Scholes-Merton").
-    params : Dict[str, float]
+    params : dict[str, float]
         A dictionary holding the model's parameters.
     supports_cf : bool
         Flag indicating if the model implements a characteristic function.
@@ -41,8 +42,9 @@ class BaseModel(ABC):
     has_jumps : bool
         Flag for models that include a jump component.
     """
+
     name: str = "BaseModel"
-    params: Dict[str, float]
+    params: dict[str, float]
     supports_cf: bool = False
     supports_sde: bool = False
     supports_pde: bool = False
@@ -53,17 +55,17 @@ class BaseModel(ABC):
 
     # TODO: Rename cf_kwargs to something more specific like `pricing_args`
     # as it's used by more than just the characteristic function.
-    cf_kwargs: Tuple[str, ...] = ()
+    cf_kwargs: tuple[str, ...] = ()
 
     __slots__ = ("params",)
 
-    def __init__(self, params: Dict[str, float]) -> None:
+    def __init__(self, params: dict[str, float]) -> None:
         """
         Initializes the model and validates its parameters.
 
         Parameters
         ----------
-        params : Dict[str, float]
+        params : dict[str, float]
             A dictionary of parameter names to values for the model.
         """
         self.params = params
@@ -90,7 +92,9 @@ class BaseModel(ABC):
             If the model does not support a characteristic function.
         """
         if not self.supports_cf:
-            raise NotImplementedError(f"{self.name} does not support characteristic functions.")
+            raise NotImplementedError(
+                f"{self.name} does not support characteristic functions."
+            )
         return self._cf_impl(**kwargs)
 
     @abstractmethod
@@ -129,8 +133,6 @@ class BaseModel(ABC):
             raise NotImplementedError(f"{self.name} does not support PDE solving.")
         return self._pde_impl(**kwargs)
 
-
-
     @abstractmethod
     def _pde_impl(self, **kwargs: Any) -> PDECoeffs:
         """Internal implementation for returning PDE coefficients."""
@@ -146,7 +148,9 @@ class BaseModel(ABC):
             If the model does not have a closed-form solution.
         """
         if not self.has_closed_form:
-            raise NotImplementedError(f"{self.name} does not have a closed-form solution.")
+            raise NotImplementedError(
+                f"{self.name} does not have a closed-form solution."
+            )
         return self._closed_form_impl(*args, **kwargs)
 
     @abstractmethod

@@ -17,16 +17,20 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         self.N = int(N)
         self._cached_results: dict[str, Any] = {}
 
-    def _price_and_greeks(self, option: Option, stock: Stock, model: BaseModel, rate: Rate) -> dict:
+    def _price_and_greeks(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate
+    ) -> dict:
         if not isinstance(model, BSMModel):
-            raise TypeError(f"This PDETechnique is optimized for BSMModel only, but got {model.name}.")
+            raise TypeError(
+                f"This PDETechnique is optimized for BSMModel only, but got {model.name}."
+            )
         S0, K, T = stock.spot, option.strike, option.maturity
         r, q, sigma = rate.get_rate(T), stock.dividend, model.params["sigma"]
         S_max = S0 * self.S_max_mult
         M, N = self.M, self.N
         dS, dt = S_max / M, T / N
         S_vec = np.linspace(0, S_max, M + 1)
-        is_call = (option.option_type is OptionType.CALL)
+        is_call = option.option_type is OptionType.CALL
         j = np.arange(1, M)
         alpha = 0.25 * dt * (sigma**2 * j**2 - (r - q) * j)
         beta = -0.5 * dt * (sigma**2 * j**2 + r)
@@ -54,14 +58,22 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
             "gamma": gamma_val,
         }
 
-    def price(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs) -> PricingResult:
+    def price(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs
+    ) -> PricingResult:
         self._cached_results = self._price_and_greeks(option, stock, model, rate)
-        return PricingResult(price=self._cached_results['price'])
+        return PricingResult(price=self._cached_results["price"])
 
-    def delta(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs) -> float:
-        if not self._cached_results: self.price(option, stock, model, rate)
-        return self._cached_results['delta']
+    def delta(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs
+    ) -> float:
+        if not self._cached_results:
+            self.price(option, stock, model, rate)
+        return self._cached_results["delta"]
 
-    def gamma(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs) -> float:
-        if not self._cached_results: self.price(option, stock, model, rate)
-        return self._cached_results['gamma']
+    def gamma(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs
+    ) -> float:
+        if not self._cached_results:
+            self.price(option, stock, model, rate)
+        return self._cached_results["gamma"]

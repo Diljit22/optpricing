@@ -8,7 +8,11 @@ from .vectorized_bsm_iv import BSMIVSolver
 from .vectorized_integration_iv import VectorizedIntegrationIVSolver
 
 __all__ = [
-    "Calibrator", "fit_jump_params_from_history", "fit_rate_and_dividend",
-    "VolatilitySurface", "select_fastest_technique", "BSMIVSolver",
+    "Calibrator",
+    "fit_jump_params_from_history",
+    "fit_rate_and_dividend",
+    "VolatilitySurface",
+    "select_fastest_technique",
+    "BSMIVSolver",
     "VectorizedIntegrationIVSolver",
 ]

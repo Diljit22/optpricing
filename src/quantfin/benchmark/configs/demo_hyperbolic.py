@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock
@@ -25,7 +24,7 @@ config = BenchmarkConfig(
     techniques=[
         (IntegrationTechnique(), "Integration"),
         (FFTTechnique(n=14), "FFT"),
-        (MonteCarloTechnique(n_paths=20000, n_steps=100, seed=42), "MC")
+        (MonteCarloTechnique(n_paths=20000, n_steps=100, seed=42), "MC"),
     ],
     stock=stock,
     rate=rate,

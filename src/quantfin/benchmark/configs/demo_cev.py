@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock

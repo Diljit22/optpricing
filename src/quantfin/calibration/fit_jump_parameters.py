@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 
 
-def fit_jump_params_from_history(log_returns: pd.Series, threshold_stds: float = 3.0) -> dict:
+def fit_jump_params_from_history(
+    log_returns: pd.Series, threshold_stds: float = 3.0
+) -> dict:
     """
     Estimates jump parameters and diffusion volatility from historical returns.
     """
@@ -27,11 +29,13 @@ def fit_jump_params_from_history(log_returns: pd.Series, threshold_stds: float =
 
     # Use the key 'sigma' to match the parameter name in the Merton/Kou models.
     fitted_params = {
-        'sigma': sigma_est,
-        'lambda': lambda_est,
-        'mu_j': mu_j_est,
-        'sigma_j': sigma_j_est
+        "sigma": sigma_est,
+        "lambda": lambda_est,
+        "mu_j": mu_j_est,
+        "sigma_j": sigma_j_est,
     }
 
-    print(f"  -> Estimated Historical Params: { {k: f'{v:.4f}' for k,v in fitted_params.items()} }")
+    print(
+        f"  -> Estimated Historical Params: { {k: f'{v:.4f}' for k, v in fitted_params.items()} }"
+    )
     return fitted_params

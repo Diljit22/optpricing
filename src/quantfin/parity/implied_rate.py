@@ -7,6 +7,10 @@ from scipy.optimize import brentq
 
 from quantfin.models.base import BaseModel
 
+__doc__ = """
+This module defines a model to find the risk-free rate implied by put-call parity.
+"""
+
 
 class ImpliedRateModel(BaseModel):
     """
@@ -15,6 +19,7 @@ class ImpliedRateModel(BaseModel):
     This model solves for the risk-free rate `r` that satisfies the equation:
     C - P = S*exp(-qT) - K*exp(-rT)
     """
+
     name: str = "Implied Rate"
     has_closed_form: bool = True
 
@@ -25,7 +30,17 @@ class ImpliedRateModel(BaseModel):
         """This model has no intrinsic parameters to validate."""
         pass
 
-    def _closed_form_impl(self, *, call_price: float, put_price: float, spot: float, strike: float, t: float, q: float = 0.0, **_: Any) -> float:
+    def _closed_form_impl(
+        self,
+        *,
+        call_price: float,
+        put_price: float,
+        spot: float,
+        strike: float,
+        t: float,
+        q: float = 0.0,
+        **_: Any,
+    ) -> float:
         """
         Solves for the implied risk-free rate using a root-finding algorithm.
 
@@ -57,7 +72,9 @@ class ImpliedRateModel(BaseModel):
         discounted_spot = spot * math.exp(-q * t)
         price_difference = call_price - put_price
 
-        def objective_func(r: float) -> float:
+        def objective_func(
+            r: float,
+        ) -> float:
             """The put-call parity equation rearranged to equal zero."""
             return discounted_spot - strike * math.exp(-r * t) - price_difference
 
@@ -65,18 +82,29 @@ class ImpliedRateModel(BaseModel):
         low, high = -0.5, 0.5  # reasonable range for interest rates
         f_low, f_high = objective_func(low), objective_func(high)
 
-        for _ in range(10): # Try up to 10 times to expand the bracket
+        for _ in range(10):  # Try up to 10 times to expand the bracket
             if f_low * f_high < 0:
                 break
             low -= 0.5
             high += 0.5
             f_low, f_high = objective_func(low), objective_func(high)
         else:
-            raise ValueError("Unable to bracket a root for the implied rate. Check input prices for arbitrage.")
+            raise ValueError(
+                "Unable to bracket a root for implied rate. Check input for arbitrage."
+            )
 
         return brentq(objective_func, low, high, xtol=1e-9, maxiter=100)
 
     #  Abstract Method Implementations
-    def _cf_impl(self, *args: Any, **kwargs: Any) -> Any: raise NotImplementedError
-    def _sde_impl(self) -> Any: raise NotImplementedError
-    def _pde_impl(self) -> Any: raise NotImplementedError
+    def _cf_impl(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        raise NotImplementedError
+
+    def _sde_impl(self) -> Any:
+        raise NotImplementedError
+
+    def _pde_impl(self) -> Any:
+        raise NotImplementedError

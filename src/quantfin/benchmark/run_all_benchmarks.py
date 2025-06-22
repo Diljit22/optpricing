@@ -38,7 +38,7 @@ def main(benchmarks_to_run: list[str]):
 
     for i, config_path in enumerate(benchmarks_to_run):
         print("\n" + "#" * 80)
-        print(f"### RUNNING BENCHMARK {i+1}/{len(benchmarks_to_run)}: {config_path}")
+        print(f"### RUNNING BENCHMARK {i + 1}/{len(benchmarks_to_run)}: {config_path}")
         print("#" * 80)
 
         start_time = time.time()
@@ -50,6 +50,7 @@ def main(benchmarks_to_run: list[str]):
             print(f"Error details: {e}")
             # You might want to print the full traceback here for debugging
             import traceback
+
             traceback.print_exc()
 
         end_time = time.time()
@@ -57,7 +58,9 @@ def main(benchmarks_to_run: list[str]):
 
     total_end_time = time.time()
     print("\n" + "=" * 80)
-    print(f"Master Benchmark Runner Finished. Total time: {total_end_time - total_start_time:.2f} seconds.")
+    print(
+        f"Master Benchmark Runner Finished. Total time: {total_end_time - total_start_time:.2f} seconds."
+    )
     print("=" * 80)
 
 

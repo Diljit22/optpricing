@@ -11,6 +11,7 @@ class VasicekModel(BaseModel):
     Vasicek (1977) mean-reverting short rate model.
     dr_t = kappa * (theta - r_t) * dt + sigma * dW_t
     """
+
     name: str = "Vasicek"
     has_closed_form: bool = True
 
@@ -32,12 +33,19 @@ class VasicekModel(BaseModel):
         kappa, theta, sigma = p["kappa"], p["theta"], p["sigma"]
 
         B = (1 / kappa) * (1 - math.exp(-kappa * T))
-        A_log = (theta - sigma**2 / (2 * kappa**2)) * (B - T) - (sigma**2 / (4 * kappa)) * B**2
+        A_log = (theta - sigma**2 / (2 * kappa**2)) * (B - T) - (
+            sigma**2 / (4 * kappa)
+        ) * B**2
 
         price = math.exp(A_log - B * r0)
         return price
 
     #  Abstract Method Implementations
-    def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
-    def _cf_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
-    def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
+    def _sde_impl(self, **kwargs: Any) -> Any:
+        raise NotImplementedError
+
+    def _cf_impl(self, **kwargs: Any) -> Any:
+        raise NotImplementedError
+
+    def _pde_impl(self, **kwargs: Any) -> Any:
+        raise NotImplementedError

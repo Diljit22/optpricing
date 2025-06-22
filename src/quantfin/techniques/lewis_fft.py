@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -23,6 +23,7 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
     transform of the option price with a shift to improve numerical stability.
 
     """
+
     def __init__(self, *, n: int = 12, eta: float = 0.25) -> None:
         """
         Initialize Lewis FFT pricer.
@@ -76,7 +77,9 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
             If input parameters are invalid (e.g., T <= 0).
         """
         if not model.supports_cf:
-            raise TypeError(f"Model '{model.name}' does not support a characteristic function.")
+            raise TypeError(
+                f"Model '{model.name}' does not support a characteristic function."
+            )
 
         S, K, T = stock.spot, option.strike, option.maturity
         r, q = rate.rate, stock.dividend
@@ -96,7 +99,7 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         k_grid = np.log(K) + (np.arange(self.N) - self.N / 2) * lambd
 
         # Build CF arguments
-        cf_params: Dict[str, Any] = {"t": T, "spot": S, "r": r, "q": q}
+        cf_params: dict[str, Any] = {"t": T, "spot": S, "r": r, "q": q}
         for key in getattr(model, "cf_kwargs", ()):
             if key in kwargs:
                 cf_params[key] = kwargs[key]
@@ -105,7 +108,9 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
             elif key in cf_params:
                 continue  # Skip if already provided (e.g., spot, t, r, q)
             else:
-                raise ValueError(f"Required CF parameter '{key}' not found in kwargs or model.params.")
+                raise ValueError(
+                    f"Required CF parameter '{key}' not found in kwargs or model.params."
+                )
         phi = model.cf(**cf_params)
 
         # Form u = v - 0.5i and integrand
@@ -129,14 +134,22 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         # Interpolate to target strike
         call_price = float(np.interp(np.log(K), k_grid, call_price_grid))
 
-        price = call_price if is_call else call_price - S * np.exp(-q * T) + K * np.exp(-r * T)
+        price = (
+            call_price
+            if is_call
+            else call_price - S * np.exp(-q * T) + K * np.exp(-r * T)
+        )
 
         greeks = {}
         try:
             phi_minus_half_i = phi(-0.5j)
             if abs(phi_minus_half_i) > 1e-12:
-                delta_integrand = np.exp(-r * T) * phi(u - 1j) / (phi_minus_half_i * denom)
-                delta_fft_input = delta_integrand * np.exp(1j * v * (k_grid[0] - np.log(K))) * weights
+                delta_integrand = (
+                    np.exp(-r * T) * phi(u - 1j) / (phi_minus_half_i * denom)
+                )
+                delta_fft_input = (
+                    delta_integrand * np.exp(1j * v * (k_grid[0] - np.log(K))) * weights
+                )
                 delta_fft_vals = np.fft.fft(delta_fft_input).real
                 delta_grid = np.exp(-0.5 * k_grid) * delta_fft_vals / math.pi
                 delta = float(np.interp(np.log(K), k_grid, delta_grid))
@@ -148,7 +161,7 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         return PricingResult(price=float(price), Greeks=greeks)
 
     @staticmethod
-    def _vol_proxy(model: BaseModel, kw: Dict[str, Any]) -> float:
+    def _vol_proxy(model: BaseModel, kw: dict[str, Any]) -> float:
         """
         Best-effort volatility proxy used for eta heuristic.
 
@@ -156,7 +169,7 @@ class LewisFFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         ----------
         model : BaseModel
             Pricing model.
-        kw : Dict[str, Any]
+        kw : dict[str, Any]
             Additional model parameters.
 
         Returns

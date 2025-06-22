@@ -8,6 +8,7 @@ MODELS_TO_BACKTEST = [
     MERTON_WORKFLOW_CONFIG,
 ]
 
+
 def main(ticker: str):
     """Executes backtests for specified models on a ticker."""
     all_results = []
@@ -21,11 +22,13 @@ def main(ticker: str):
         return
 
     results_df = pd.DataFrame(all_results)
-    pivot_df = results_df.pivot(index='Eval Date', columns='Model', values='Out-of-Sample RMSE')
+    pivot_df = results_df.pivot(
+        index="Eval Date", columns="Model", values="Out-of-Sample RMSE"
+    )
 
-    print("\n\n" + "="*80)
+    print("\n\n" + "=" * 80)
     print(f"--- FINAL BACKTEST SUMMARY for {ticker} ---")
-    print("="*80)
+    print("=" * 80)
     print("Out-of-Sample RMSE by Day:")
     print(pivot_df.to_string(float_format="%.4f"))
     print("\nAverage RMSE per Model:")
@@ -35,6 +38,7 @@ def main(ticker: str):
     dummy_backtester.results = all_results
     dummy_backtester.save_results()
 
-if __name__ == '__main__':
-    TICKER = 'SPY'
+
+if __name__ == "__main__":
+    TICKER = "SPY"
     main(TICKER)

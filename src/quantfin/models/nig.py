@@ -9,6 +9,7 @@ from quantfin.models.base import CF, BaseModel, ParamValidator
 
 class NIGModel(BaseModel):
     """Normal Inverse Gaussian (NIG) model, a pure-jump Lévy process."""
+
     name: str = "Normal Inverse Gaussian"
     supports_cf: bool = True
     is_pure_levy: bool = True
@@ -22,7 +23,8 @@ class NIGModel(BaseModel):
             raise ValueError("NIG params must satisfy |beta| < alpha.")
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, NIGModel): return NotImplemented
+        if not isinstance(other, NIGModel):
+            return NotImplemented
         return self.params == other.params
 
     def __hash__(self) -> int:
@@ -32,26 +34,49 @@ class NIGModel(BaseModel):
         """Risk-neutral characteristic function for the log-spot price log(S_t)."""
         p = self.params
         alpha, beta, delta = p["alpha"], p["beta"], p["delta"]
-        compensator = delta * (np.sqrt(alpha**2 - (beta + 1)**2) - np.sqrt(alpha**2 - beta**2))
+        compensator = delta * (
+            np.sqrt(alpha**2 - (beta + 1) ** 2) - np.sqrt(alpha**2 - beta**2)
+        )
         drift = r - q + compensator
+
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
             term1 = 1j * u * (np.log(spot) + drift * t)
-            term2 = delta * t * (np.sqrt(alpha**2 - beta**2) - np.sqrt(alpha**2 - (beta + 1j * u)**2))
+            term2 = (
+                delta
+                * t
+                * (
+                    np.sqrt(alpha**2 - beta**2)
+                    - np.sqrt(alpha**2 - (beta + 1j * u) ** 2)
+                )
+            )
             return np.exp(term1 + term2)
+
         return phi
 
     def raw_cf(self, *, t: float) -> Callable:
         """Returns the CF of the raw NIG process, without drift or spot."""
         p = self.params
         alpha, beta, delta = p["alpha"], p["beta"], p["delta"]
+
         def phi_raw(u: np.ndarray | complex) -> np.ndarray | complex:
-            term = delta * t * (np.sqrt(alpha**2 - beta**2) - np.sqrt(alpha**2 - (beta + 1j * u)**2))
+            term = (
+                delta
+                * t
+                * (
+                    np.sqrt(alpha**2 - beta**2)
+                    - np.sqrt(alpha**2 - (beta + 1j * u) ** 2)
+                )
+            )
             return np.exp(term)
+
         return phi_raw
 
-    def sample_terminal_log_return(self, T: float, size: int, rng: np.random.Generator) -> np.ndarray:
+    def sample_terminal_log_return(
+        self, T: float, size: int, rng: np.random.Generator
+    ) -> np.ndarray:
         """Draws samples from the terminal distribution of the raw NIG process."""
         from scipy.stats import invgauss
+
         p = self.params
         alpha, beta, delta = p["alpha"], p["beta"], p["delta"]
         mu_ig = delta * T / np.sqrt(alpha**2 - beta**2)
@@ -61,6 +86,11 @@ class NIGModel(BaseModel):
         return bm_drift + bm_diffusion
 
     #  Abstract Method Implementations
-    def _sde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError("NIG is a pure Lévy process, use terminal sampling.")
-    def _pde_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
-    def _closed_form_impl(self, **kwargs: Any) -> Any: raise NotImplementedError
+    def _sde_impl(self, **kwargs: Any) -> Any:
+        raise NotImplementedError("NIG is a pure Lévy process, use terminal sampling.")
+
+    def _pde_impl(self, **kwargs: Any) -> Any:
+        raise NotImplementedError
+
+    def _closed_form_impl(self, **kwargs: Any) -> Any:
+        raise NotImplementedError

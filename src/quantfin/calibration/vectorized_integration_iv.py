@@ -12,17 +12,27 @@ if TYPE_CHECKING:
     from quantfin.atoms import Rate
     from quantfin.models import BaseModel
 
+
 class VectorizedIntegrationIVSolver:
     """
     A high-performance, vectorized Secant method solver for implied volatility
     for any model that supports a characteristic function.
     """
-    def __init__(self, max_iter: int = 20, tolerance: float = 1e-7, upper_bound: float = 200.0):
+
+    def __init__(
+        self, max_iter: int = 20, tolerance: float = 1e-7, upper_bound: float = 200.0
+    ):
         self.max_iter = max_iter
         self.tolerance = tolerance
         self.upper_bound = upper_bound
 
-    def solve(self, target_prices: np.ndarray, options: pd.DataFrame, model: BaseModel, rate: Rate) -> np.ndarray:
+    def solve(
+        self,
+        target_prices: np.ndarray,
+        options: pd.DataFrame,
+        model: BaseModel,
+        rate: Rate,
+    ) -> np.ndarray:
         """
         Calculates implied volatility for an array of options and prices.
         """
@@ -49,20 +59,22 @@ class VectorizedIntegrationIVSolver:
 
         return iv1
 
-    def _price_vectorized(self, iv_vector: np.ndarray, options: pd.DataFrame, model: BaseModel, rate: Rate) -> np.ndarray:
+    def _price_vectorized(
+        self, iv_vector: np.ndarray, options: pd.DataFrame, model: BaseModel, rate: Rate
+    ) -> np.ndarray:
         """
         Internal method to price a vector of options for a given vector of volatilities.
         """
         bsm_model = BSMModel(params={"sigma": 0.2})
         prices = np.zeros_like(iv_vector)
 
-        for T, group in options.groupby('maturity'):
+        for T, group in options.groupby("maturity"):
             idx = group.index
-            S, K = group['spot'].values, group['strike'].values
-            q, r = group['dividend'].values, rate.get_rate(T)
-            is_call = (group['optionType'].values == 'call')
+            S, K = group["spot"].values, group["strike"].values
+            q, r = group["dividend"].values, rate.get_rate(T)
+            is_call = group["optionType"].values == "call"
 
-            bsm_model.params['sigma'] = iv_vector[idx]
+            bsm_model.params["sigma"] = iv_vector[idx]
             phi = bsm_model.cf(t=T, spot=S, r=r, q=q)
             k_log = np.log(K)
 

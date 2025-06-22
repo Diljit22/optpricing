@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock
@@ -11,7 +10,11 @@ from quantfin.techniques.monte_carlo import MonteCarloTechnique
 
 # Define parameters
 merton_params = {
-    "sigma": 0.2, "lambda": 0.5, "mu_j": -0.1, "sigma_j": 0.15, "max_sum_terms": 100
+    "sigma": 0.2,
+    "lambda": 0.5,
+    "mu_j": -0.1,
+    "sigma_j": 0.15,
+    "max_sum_terms": 100,
 }
 model = MertonJumpModel(params=merton_params)
 stock = Stock(spot=100.0, dividend=0.01)
@@ -25,8 +28,8 @@ options_to_price = [
 techniques_to_run = [
     (ClosedFormTechnique(), "Closed-Form"),
     (IntegrationTechnique(), "Integration"),
-     (FFTTechnique(n=14), "FFT"),
-     (MonteCarloTechnique(n_paths=20000, n_steps=100, seed=42), "MC")
+    (FFTTechnique(n=14), "FFT"),
+    (MonteCarloTechnique(n_paths=20000, n_steps=100, seed=42), "MC"),
 ]
 
 # Create the config object

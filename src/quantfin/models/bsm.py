@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, Tuple
+from typing import Callable
 
 import numpy as np
 from scipy.stats import norm
@@ -15,18 +15,25 @@ class BSMModel(BaseModel):
     This model assumes the underlying asset follows a geometric Brownian motion
     with constant volatility and risk-free rate.
     """
+
     name: str = "Black-Scholes-Merton"
     supports_cf: bool = True
     supports_sde: bool = True
     supports_pde: bool = True
     has_closed_form: bool = True
 
-    default_params = {'sigma': 0.2}
+    default_params = {"sigma": 0.2}
     param_defs = {
-        'sigma': {'label': 'Volatility', 'default': 0.2, 'min': 0.01, 'max': 2.0, 'step': 0.01}
+        "sigma": {
+            "label": "Volatility",
+            "default": 0.2,
+            "min": 0.01,
+            "max": 2.0,
+            "step": 0.01,
+        }
     }
 
-    def __init__(self, params: Dict[str, float] | None = None):
+    def __init__(self, params: dict[str, float] | None = None):
         # If no params are given, use the class's default_params
         super().__init__(params or self.default_params)
 
@@ -43,7 +50,16 @@ class BSMModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
-    def _closed_form_impl(self, *, spot: float, strike: float, r: float, q: float, t: float,call: bool = True) -> float:
+    def _closed_form_impl(
+        self,
+        *,
+        spot: float,
+        strike: float,
+        r: float,
+        q: float,
+        t: float,
+        call: bool = True,
+    ) -> float:
         """
         Compute the Black-Scholes-Merton price in closed form.
         """
@@ -61,14 +77,27 @@ class BSMModel(BaseModel):
             price = strike * df_rate * norm.cdf(-d2) - spot * df_div * norm.cdf(-d1)
         return price
 
-    def delta_analytic(self, *, spot: float, strike: float, r: float, q: float, t: float, call: bool = True) -> float:
+    def delta_analytic(
+        self,
+        *,
+        spot: float,
+        strike: float,
+        r: float,
+        q: float,
+        t: float,
+        call: bool = True,
+    ) -> float:
         """Analytic delta for the BSM model."""
         sigma = self.params["sigma"]
-        d1 = (np.log(spot / strike) + (r - q + 0.5 * sigma**2) * t) / (sigma * np.sqrt(t))
+        d1 = (np.log(spot / strike) + (r - q + 0.5 * sigma**2) * t) / (
+            sigma * np.sqrt(t)
+        )
         df_div = np.exp(-q * t)
         return df_div * norm.cdf(d1) if call else -df_div * norm.cdf(-d1)
 
-    def gamma_analytic(self, *, spot: float, strike: float, r: float, q: float, t: float) -> float:
+    def gamma_analytic(
+        self, *, spot: float, strike: float, r: float, q: float, t: float
+    ) -> float:
         """Analytic gamma for the BSM model."""
         sigma = self.params["sigma"]
         sqrt_t = np.sqrt(t)
@@ -76,14 +105,25 @@ class BSMModel(BaseModel):
         df_div = np.exp(-q * t)
         return df_div * norm.pdf(d1) / (spot * sigma * sqrt_t)
 
-    def vega_analytic(self, *, spot: float, strike: float, r: float, q: float, t: float) -> float:
+    def vega_analytic(
+        self, *, spot: float, strike: float, r: float, q: float, t: float
+    ) -> float:
         """Analytic vega for the BSM model."""
         sigma = self.params["sigma"]
         sqrt_t = np.sqrt(t)
         d1 = (np.log(spot / strike) + (r - q + 0.5 * sigma**2) * t) / (sigma * sqrt_t)
         return spot * np.exp(-q * t) * norm.pdf(d1) * sqrt_t
 
-    def theta_analytic(self, *, spot: float, strike: float, r: float, q: float, t: float, call: bool = True) -> float:
+    def theta_analytic(
+        self,
+        *,
+        spot: float,
+        strike: float,
+        r: float,
+        q: float,
+        t: float,
+        call: bool = True,
+    ) -> float:
         """Analytic theta for the BSM model."""
         sigma = self.params["sigma"]
         sqrt_t = np.sqrt(t)
@@ -98,7 +138,16 @@ class BSMModel(BaseModel):
             term3 = r * strike * np.exp(-r * t) * norm.cdf(-d2)
         return term1 + term2 + term3
 
-    def rho_analytic(self, *, spot: float, strike: float, r: float, q: float, t: float, call: bool = True) -> float:
+    def rho_analytic(
+        self,
+        *,
+        spot: float,
+        strike: float,
+        r: float,
+        q: float,
+        t: float,
+        call: bool = True,
+    ) -> float:
         """Analytic rho for the BSM model."""
         sigma = self.params["sigma"]
         sqrt_t = np.sqrt(t)
@@ -110,25 +159,34 @@ class BSMModel(BaseModel):
         """Returns the characteristic function phi(u) for the log-spot price log(S_t)."""
         sigma = self.params["sigma"]
         drift = r - q - 0.5 * sigma**2
+
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
             mean_component = 1j * u * (np.log(spot) + drift * t)
             variance_component = -0.5 * (u**2) * (sigma**2) * t
             return np.exp(mean_component + variance_component)
+
         return phi
 
     def _sde_impl(self) -> Callable:
         """Returns the Euler-Maruyama stepper for the BSM log-price process."""
         sigma = self.params["sigma"]
-        def stepper(log_s_t: np.ndarray, r: float, q: float, dt: float, dw_t: np.ndarray) -> np.ndarray:
+
+        def stepper(
+            log_s_t: np.ndarray, r: float, q: float, dt: float, dw_t: np.ndarray
+        ) -> np.ndarray:
             drift = (r - q - 0.5 * sigma**2) * dt
             diffusion = sigma * dw_t
             return log_s_t + drift + diffusion
-        return stepper
 
+        return stepper
 
     def _pde_impl(self) -> PDECoeffs:
         """Returns the Black-Scholes PDE coefficients."""
         sigma = self.params["sigma"]
-        def coeffs(S: np.ndarray, r: float, q: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+        def coeffs(
+            S: np.ndarray, r: float, q: float
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
             return sigma**2 * S**2, (r - q) * S, -r * np.ones_like(S)
+
         return coeffs

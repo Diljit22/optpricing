@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock
@@ -9,9 +8,7 @@ from quantfin.techniques.integration import IntegrationTechnique
 from quantfin.techniques.monte_carlo import MonteCarloTechnique
 
 # Define reasonable Kou parameters
-kou_params = {
-    "sigma": 0.15, "lambda": 1.0, "p_up": 0.6, "eta1": 10.0, "eta2": 5.0
-}
+kou_params = {"sigma": 0.15, "lambda": 1.0, "p_up": 0.6, "eta1": 10.0, "eta2": 5.0}
 model = KouModel(params=kou_params)
 
 # Market and options

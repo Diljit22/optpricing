@@ -6,6 +6,7 @@ __doc__ = """
 This module defines the data structure for a zero-coupon bond.
 """
 
+
 @dataclass(frozen=True, slots=True)
 class ZeroCouponBond:
     """
@@ -18,6 +19,7 @@ class ZeroCouponBond:
     face_value : float, optional
         The face value of the bond, paid at maturity. Defaults to 1.0.
     """
+
     maturity: float
     face_value: float = 1.0
 

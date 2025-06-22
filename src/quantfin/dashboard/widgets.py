@@ -12,13 +12,18 @@ def render_parity_analysis_widget(market_data: pd.DataFrame, stock: Stock, rate:
 
     parity_model = ParityModel()
 
-    expiries = sorted(market_data['expiry'].unique())
-    selected_expiry = st.select_slider("Select Expiry to Analyze", options=[pd.to_datetime(e).strftime('%Y-%m-%d') for e in expiries])
+    expiries = sorted(market_data["expiry"].unique())
+    selected_expiry = st.select_slider(
+        "Select Expiry to Analyze",
+        options=[pd.to_datetime(e).strftime("%Y-%m-%d") for e in expiries],
+    )
 
-    expiry_df = market_data[market_data['expiry'] == pd.to_datetime(selected_expiry)].copy()
+    expiry_df = market_data[
+        market_data["expiry"] == pd.to_datetime(selected_expiry)
+    ].copy()
 
-    calls = expiry_df[expiry_df['optionType'] == 'call'].set_index('strike')
-    puts = expiry_df[expiry_df['optionType'] == 'put'].set_index('strike')
+    calls = expiry_df[expiry_df["optionType"] == "call"].set_index("strike")
+    puts = expiry_df[expiry_df["optionType"] == "put"].set_index("strike")
 
     # Find common strikes
     common_strikes = calls.index.intersection(puts.index)
@@ -30,10 +35,10 @@ def render_parity_analysis_widget(market_data: pd.DataFrame, stock: Stock, rate:
     puts = puts.loc[common_strikes]
 
     # C - P
-    price_diff = calls['last_price'] - puts['last_price']
+    price_diff = calls["last_price"] - puts["last_price"]
 
     # S*exp(-qT) - K*exp(-rT)
-    T = calls['maturity'].iloc[0]
+    T = calls["maturity"].iloc[0]
     r = rate.get_rate(T)
     q = stock.dividend
 
@@ -41,11 +46,15 @@ def render_parity_analysis_widget(market_data: pd.DataFrame, stock: Stock, rate:
 
     error = price_diff - parity_diff
 
-    results_df = pd.DataFrame({
-        'C - P': price_diff,
-        'S*e⁻qT - K*e⁻rT': parity_diff,
-        'Arbitrage Gap ($)': error
-    })
+    results_df = pd.DataFrame(
+        {
+            "C - P": price_diff,
+            "S*e⁻qT - K*e⁻rT": parity_diff,
+            "Arbitrage Gap ($)": error,
+        }
+    )
 
     st.dataframe(results_df)
-    st.caption("A non-zero 'Arbitrage Gap' suggests a violation of put-call parity (or stale data).")
+    st.caption(
+        "A non-zero 'Arbitrage Gap' suggests a violation of put-call parity (or stale data)."
+    )

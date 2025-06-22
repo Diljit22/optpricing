@@ -16,6 +16,7 @@ class BaseTechnique(ABC):
     A technique defines the algorithm used to compute a price from the core
     'atoms' (Option, Stock, Rate) and a given financial 'Model'.
     """
+
     @abstractmethod
     def price(
         self,
@@ -23,8 +24,8 @@ class BaseTechnique(ABC):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
-        **kwargs
-        ) -> PricingResult | np.ndarray:
+        **kwargs,
+    ) -> PricingResult | np.ndarray:
         """
         Calculate the price of an option.
 

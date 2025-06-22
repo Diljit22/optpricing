@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from scipy import integrate
@@ -20,18 +20,29 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
 
     It provides an analytic delta as a "free" byproduct of the pricing calculation.
     """
-    def __init__(self, *, upper_bound: float = 200.0, limit: int = 200, epsabs: float = 1e-9, epsrel: float = 1e-9):
+
+    def __init__(
+        self,
+        *,
+        upper_bound: float = 200.0,
+        limit: int = 200,
+        epsabs: float = 1e-9,
+        epsrel: float = 1e-9,
+    ):
         self.upper_bound = upper_bound
         self.limit = limit
         self.epsabs = epsabs
         self.epsrel = epsrel
         self._cached_results: dict[str, Any] = {}
 
-
-    def _price_and_delta(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any) -> Dict[str, float]:
+    def _price_and_delta(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+    ) -> dict[str, float]:
         """Internal method to perform the core calculation once."""
         if not model.supports_cf:
-            raise TypeError(f"Model '{model.name}' does not support a characteristic function.")
+            raise TypeError(
+                f"Model '{model.name}' does not support a characteristic function."
+            )
 
         S, K, T = stock.spot, option.strike, option.maturity
         r, q = rate.get_rate(T), stock.dividend
@@ -41,14 +52,30 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         integrand_p2 = lambda u: (np.exp(-1j * u * k_log) * phi(u)).imag / u
         integrand_p1 = lambda u: (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
 
-        integral_p2, _ = integrate.quad(integrand_p2, 1e-15, self.upper_bound, limit=self.limit, epsabs=self.epsabs, epsrel=self.epsrel)
+        integral_p2, _ = integrate.quad(
+            integrand_p2,
+            1e-15,
+            self.upper_bound,
+            limit=self.limit,
+            epsabs=self.epsabs,
+            epsrel=self.epsrel,
+        )
 
         phi_minus_i = phi(-1j)
         if np.abs(phi_minus_i) < 1e-12:
             P1 = np.nan
         else:
-            integral_p1, _ = integrate.quad(integrand_p1, 1e-15, self.upper_bound, limit=self.limit, epsabs=self.epsabs, epsrel=self.epsrel)
-            P1 = 0.5 + integral_p1 / (np.pi * np.real(phi_minus_i)) # Use real part of denominator
+            integral_p1, _ = integrate.quad(
+                integrand_p1,
+                1e-15,
+                self.upper_bound,
+                limit=self.limit,
+                epsabs=self.epsabs,
+                epsrel=self.epsrel,
+            )
+            P1 = 0.5 + integral_p1 / (
+                np.pi * np.real(phi_minus_i)
+            )  # Use real part of denominator
 
         P2 = 0.5 + integral_p2 / np.pi
 
@@ -66,12 +93,18 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         return {"price": price, "delta": delta}
 
-    def price(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any) -> PricingResult:
+    def price(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+    ) -> PricingResult:
         """Calculates the option price, caching the result and the 'free' delta."""
-        self._cached_results = self._price_and_delta(option, stock, model, rate, **kwargs)
-        return PricingResult(price=self._cached_results['price'])
+        self._cached_results = self._price_and_delta(
+            option, stock, model, rate, **kwargs
+        )
+        return PricingResult(price=self._cached_results["price"])
 
-    def delta(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any) -> float:
+    def delta(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+    ) -> float:
         """
         Returns the 'free' delta calculated during the pricing call,
         or falls back to the mixin if the analytic delta is not available.
@@ -79,7 +112,7 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         if not self._cached_results:
             self.price(option, stock, model, rate, **kwargs)
 
-        delta_val = self._cached_results.get('delta')
+        delta_val = self._cached_results.get("delta")
         if delta_val is not None and not np.isnan(delta_val):
             return delta_val
         else:

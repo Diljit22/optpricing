@@ -7,7 +7,7 @@ NIG_WORKFLOW_CONFIG = {
     "frozen": {},
     "bounds": {
         "alpha": (1.0, 50.0),
-        "beta": (-14.0, 14.0), # Must be |beta| < alpha
-        "delta": (0.1, 2.0)
-    }
+        "beta": (-14.0, 14.0),  # Must be |beta| < alpha
+        "delta": (0.1, 2.0),
+    },
 }

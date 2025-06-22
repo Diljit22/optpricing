@@ -1,4 +1,5 @@
 import pytest
+
 from quantfin.atoms import ExerciseStyle, Option, OptionType
 
 

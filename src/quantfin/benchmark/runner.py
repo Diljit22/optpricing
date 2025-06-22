@@ -14,11 +14,13 @@ def run_single_technique(technique, config):
         # Step 1: Price ---
 
         if "Price" not in metrics_to_run:
-            continue # Should not happen
+            continue  # Should not happen
 
         t0 = perf_counter()
         # Pass technique_kwargs here for models like BlacksApprox
-        pr = technique.price(opt, config.stock, config.model, config.rate, **config.technique_kwargs)
+        pr = technique.price(
+            opt, config.stock, config.model, config.rate, **config.technique_kwargs
+        )
         timings[opt]["Price"] = perf_counter() - t0
         results[opt]["Price"] = pr.price
 
@@ -31,9 +33,9 @@ def run_single_technique(technique, config):
             else:
                 method_name = metric.lower()
 
-            # Skip if the technique doesn't support the greek (e.g., a custom technique)
+                # Skip if the technique doesn't support the greek (e.g., a custom technique)
                 if not hasattr(technique, method_name):
-                    results[opt][metric] = float('nan')
+                    results[opt][metric] = float("nan")
                     timings[opt][metric] = 0.0
                     continue
 
@@ -43,14 +45,28 @@ def run_single_technique(technique, config):
 
             # Handle the special case for implied_volatility
             if metric == "ImpliedVol":
-                val = method_to_call(opt, config.stock, config.model, config.rate, target_price=pr.price, **config.technique_kwargs)
+                val = method_to_call(
+                    opt,
+                    config.stock,
+                    config.model,
+                    config.rate,
+                    target_price=pr.price,
+                    **config.technique_kwargs,
+                )
             else:
-                val = method_to_call(opt, config.stock, config.model, config.rate, **config.technique_kwargs)
+                val = method_to_call(
+                    opt,
+                    config.stock,
+                    config.model,
+                    config.rate,
+                    **config.technique_kwargs,
+                )
 
             timings[opt][metric] = perf_counter() - t0
             results[opt][metric] = val
 
     return results, timings
+
 
 def run_from_config(config_module_path: str):
     """Loads a config, runs the benchmark, and prints the report."""
@@ -92,11 +108,14 @@ def collect_benchmark_data(config):
 
         for opt in config.options:
             t0 = perf_counter()
-            pr = tech.price(opt, config.stock, config.model, config.rate, **config.technique_kwargs)
+            pr = tech.price(
+                opt, config.stock, config.model, config.rate, **config.technique_kwargs
+            )
             collated_timings[name][opt]["Price"] = perf_counter() - t0
             collated_results[name][opt]["Price"] = pr.price
 
     return collated_results, collated_timings
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

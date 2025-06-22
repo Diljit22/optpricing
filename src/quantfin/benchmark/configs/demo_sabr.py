@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock
@@ -25,12 +24,10 @@ config = BenchmarkConfig(
     name="SABR Model",
     model=model,
     model_params=sabr_params,
-    techniques=[
-        (MonteCarloTechnique(n_paths=50000, n_steps=100, seed=42), "MC")
-    ],
+    techniques=[(MonteCarloTechnique(n_paths=50000, n_steps=100, seed=42), "MC")],
     stock=stock,
     rate=rate,
     options=options_to_price,
     # Pass the initial volatility v0 to the MC technique
-    technique_kwargs={"v0": v0}
+    technique_kwargs={"v0": v0},
 )

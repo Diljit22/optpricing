@@ -26,8 +26,12 @@ def run_parity_demonstration():
         spot=S0, strike=K, r=r_known, t=T, q=q, call=False, option_price=put_price
     )
 
-    print(f"  - Given Call Price {call_price:.4f} -> Implied Put Price: {implied_put:.4f} (Actual: {put_price:.4f})")
-    print(f"  - Given Put Price  {put_price:.4f} -> Implied Call Price: {implied_call:.4f} (Actual: {call_price:.4f})")
+    print(
+        f"  - Given Call Price {call_price:.4f} -> Implied Put Price: {implied_put:.4f} (Actual: {put_price:.4f})"
+    )
+    print(
+        f"  - Given Put Price  {put_price:.4f} -> Implied Call Price: {implied_call:.4f} (Actual: {call_price:.4f})"
+    )
 
     # Test ImpliedRateModel
     implied_rate_model = ImpliedRateModel(params={"eps": 1e-8, "max_iter": 100})
@@ -41,6 +45,7 @@ def run_parity_demonstration():
     print(f"  - Implied Rate: {implied_r:.6f} (Known Rate: {r_known:.6f})")
     print(f"  - Error:        {implied_r - r_known:+.2e}")
     print("-" * 60)
+
 
 if __name__ == "__main__":
     run_parity_demonstration()

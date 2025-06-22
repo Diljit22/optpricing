@@ -6,6 +6,7 @@ __doc__ = """
 This module defines the data structure for representing the underlying asset.
 """
 
+
 @dataclass(frozen=True, slots=True)
 class Stock:
     """
@@ -26,6 +27,7 @@ class Stock:
         A list of times (in years) for the discrete dividend payments.
         Must correspond to `discrete_dividends`. Default is `None`.
     """
+
     spot: float
     volatility: float | None = None
     dividend: float = 0.0

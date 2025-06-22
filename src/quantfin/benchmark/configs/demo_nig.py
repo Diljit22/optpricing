@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock
@@ -25,9 +24,11 @@ config = BenchmarkConfig(
     name="Normal Inverse Gaussian (NIG) Model",
     model=model,
     model_params=nig_params,
-    techniques=[(IntegrationTechnique(), "Integration"), (FFTTechnique(n=14), "FFT"),
-                    (MonteCarloTechnique(n_paths=50000, n_steps=500, seed=42), "MC"),
-],
+    techniques=[
+        (IntegrationTechnique(), "Integration"),
+        (FFTTechnique(n=14), "FFT"),
+        (MonteCarloTechnique(n_paths=50000, n_steps=500, seed=42), "MC"),
+    ],
     stock=stock,
     rate=rate,
     options=options_to_price,

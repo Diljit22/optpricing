@@ -7,6 +7,7 @@ __doc__ = """
 This module defines the data structure for representing interest rates.
 """
 
+
 @dataclass(frozen=True, slots=True)
 class Rate:
     """
@@ -22,6 +23,7 @@ class Rate:
           and returns the continuously compounded zero rate for that maturity.
           Example: `lambda t: 0.02 + 0.01 * t`
     """
+
     rate: float | Callable[[float], float]
 
     def get_rate(self, t: float = 0) -> float:

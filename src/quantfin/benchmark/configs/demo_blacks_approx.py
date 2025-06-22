@@ -11,21 +11,23 @@ sigma = 0.30
 rate_val = 0.1
 spot = 40.0
 dividends = np.array([0.7, 0.7])
-div_times = np.array([3/12, 5/12])
+div_times = np.array([3 / 12, 5 / 12])
 
 model = BlacksApproxModel(params={"sigma": sigma})
 
 
 stock = Stock(
-    spot=spot,
-    volatility=sigma,
-    discrete_dividends=dividends,
-    ex_div_times=div_times
+    spot=spot, volatility=sigma, discrete_dividends=dividends, ex_div_times=div_times
 )
 rate = Rate(rate=rate_val)
 
 options_to_price = [
-    Option(strike=40.0, maturity=0.5, option_type=OptionType.CALL, exercise_style=ExerciseStyle.AMERICAN),
+    Option(
+        strike=40.0,
+        maturity=0.5,
+        option_type=OptionType.CALL,
+        exercise_style=ExerciseStyle.AMERICAN,
+    ),
 ]
 
 config = BenchmarkConfig(

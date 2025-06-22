@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -15,6 +15,7 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
     Fast Fourier Transform (FFT) pricer based on the Carr-Madan formula,
     preserving the original tuned logic for grid and parameter selection.
     """
+
     def __init__(self, *, n: int = 12, eta: float = 0.25, alpha: float | None = None):
         self.n = int(n)
         self.N = 1 << self.n
@@ -22,10 +23,14 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         self.alpha_user = alpha
         self._cached_results: dict[str, Any] = {}
 
-    def _price_and_greeks(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any) -> Dict[str, float]:
+    def _price_and_greeks(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+    ) -> dict[str, float]:
         """Internal method to perform the core FFT calculation once."""
         if not model.supports_cf:
-            raise TypeError(f"Model '{model.name}' does not support a characteristic function.")
+            raise TypeError(
+                f"Model '{model.name}' does not support a characteristic function."
+            )
 
         S0, K, T = stock.spot, option.strike, option.maturity
         r, q = rate.get_rate(T), stock.dividend
@@ -39,7 +44,11 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         else:
             alpha = 1.0 + 0.5 * vol_proxy * math.sqrt(T)
 
-        eta = self.base_eta * max(1.0, vol_proxy * math.sqrt(T)) if vol_proxy is not None else self.base_eta
+        eta = (
+            self.base_eta * max(1.0, vol_proxy * math.sqrt(T))
+            if vol_proxy is not None
+            else self.base_eta
+        )
 
         lambda_ = (2 * math.pi) / (self.N * eta)
         b = (self.N * lambda_) / 2.0
@@ -74,13 +83,17 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         return {"price": price}
 
-    def price(self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any) -> PricingResult:
+    def price(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+    ) -> PricingResult:
         """Calculates the option price using the FFT method."""
-        self._cached_results = self._price_and_greeks(option, stock, model, rate, **kwargs)
-        return PricingResult(price=self._cached_results['price'])
+        self._cached_results = self._price_and_greeks(
+            option, stock, model, rate, **kwargs
+        )
+        return PricingResult(price=self._cached_results["price"])
 
     @staticmethod
-    def _get_vol_proxy(model: BaseModel, kw: Dict[str, Any]) -> float | None:
+    def _get_vol_proxy(model: BaseModel, kw: dict[str, Any]) -> float | None:
         """Best-effort volatility proxy used for grid heuristics."""
         if "sigma" in model.params and model.params["sigma"] is not None:
             return model.params["sigma"]

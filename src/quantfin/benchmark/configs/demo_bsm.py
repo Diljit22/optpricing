@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock
@@ -33,13 +32,13 @@ techniques_to_run = [
     (LeisenReimerTechnique(steps=300), "LR"),
     (TOPMLatticeTechnique(steps=300), "TOPM"),
     (MonteCarloTechnique(n_paths=50000, n_steps=500, seed=42), "MC"),
-    #(LewisFFTTechnique(n=14), "FFT (Lewis)")
+    # (LewisFFTTechnique(n=14), "FFT (Lewis)")
 ]
 
 config = BenchmarkConfig(
     name="Black-Scholes-Merton Model vs. All Techniques",
     model=bsm_model,
-    model_params={"sigma": vol}, # Redundant but good for display
+    model_params={"sigma": vol},  # Redundant but good for display
     techniques=techniques_to_run,
     stock=stock,
     rate=rate,

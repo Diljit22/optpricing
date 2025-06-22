@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Dict
+from typing import Any
 
 from quantfin.models.base import BaseModel, ParamValidator
 
@@ -14,16 +14,17 @@ class PerpetualPutModel(BaseModel):
     exercise optimally. The risk-free rate and volatility are considered
     intrinsic parameters of the model itself.
     """
+
     name: str = "Perpetual Put"
     has_closed_form: bool = True
 
-    def __init__(self, params: Dict[str, float]) -> None:
+    def __init__(self, params: dict[str, float]) -> None:
         """
         Initializes the model with its parameters.
 
         Parameters
         ----------
-        params : Dict[str, float]
+        params : dict[str, float]
             A dictionary requiring 'sigma' and 'rate'.
         """
         super().__init__(params=params)
@@ -41,7 +42,9 @@ class PerpetualPutModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
-    def _closed_form_impl(self, *, spot: float, strike: float, q: float, **_: Any) -> float:
+    def _closed_form_impl(
+        self, *, spot: float, strike: float, q: float, **_: Any
+    ) -> float:
         """
         Calculates the price of a perpetual American put.
 
@@ -87,7 +90,9 @@ class PerpetualPutModel(BaseModel):
 
     #  Abstract Method Implementations
     def _cf_impl(self, *args: Any, **kwargs: Any) -> Any:
-        raise NotImplementedError(f"{self.name} does not support a characteristic function.")
+        raise NotImplementedError(
+            f"{self.name} does not support a characteristic function."
+        )
 
     def _sde_impl(self) -> Any:
         raise NotImplementedError(f"{self.name} does not support SDE sampling.")

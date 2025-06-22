@@ -9,11 +9,11 @@ CONFIG_FILE_PATH = PROJECT_ROOT / "config.yaml"
 if not CONFIG_FILE_PATH.exists():
     # Create a default config if it doesn't exist
     default_config = {
-        'polygon_api_key': 'YOUR_POLYGON_API_KEY_HERE',
-        'data_directory': 'data',
-        'artifacts_directory': 'artifacts',
+        "polygon_api_key": "YOUR_POLYGON_API_KEY_HERE",
+        "data_directory": "data",
+        "artifacts_directory": "artifacts",
     }
-    with open(CONFIG_FILE_PATH, 'w') as f:
+    with open(CONFIG_FILE_PATH, "w") as f:
         yaml.dump(default_config, f, default_flow_style=False)
     print(f"Created default config file at: {CONFIG_FILE_PATH}")
 
@@ -37,6 +37,13 @@ CALIBRATED_PARAMS_DIR = ARTIFACTS_DIR / "calibrated_params"
 CALIBRATION_LOGS_DIR = ARTIFACTS_DIR / "calibration_logs"
 
 # Ensure all directories exist
-for path in [DATA_DIR, ARTIFACTS_DIR, MARKET_SNAPSHOT_DIR, HISTORICAL_DIR,
-             BACKTEST_LOGS_DIR, CALIBRATED_PARAMS_DIR, CALIBRATION_LOGS_DIR]:
+for path in [
+    DATA_DIR,
+    ARTIFACTS_DIR,
+    MARKET_SNAPSHOT_DIR,
+    HISTORICAL_DIR,
+    BACKTEST_LOGS_DIR,
+    CALIBRATED_PARAMS_DIR,
+    CALIBRATION_LOGS_DIR,
+]:
     path.mkdir(parents=True, exist_ok=True)

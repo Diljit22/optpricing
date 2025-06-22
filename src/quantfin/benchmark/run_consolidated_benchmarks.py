@@ -30,7 +30,6 @@ DEMO_BENCHMARKS = [
 ]
 
 
-
 def main(benchmarks_to_run: list[str]):
     """
     Loads a list of benchmark configs, executes them to collect price data,
@@ -55,24 +54,28 @@ def main(benchmarks_to_run: list[str]):
             results, timings = collect_benchmark_data(config)
 
             # Store results for the final report
-            all_run_results.append({
-                "name": config.name,
-                "techniques": [name for _, name in config.techniques],
-                "results": results,
-                "timings": timings,
-                "options": config.options,
-                "error": None,
-                "traceback": None,
-            })
+            all_run_results.append(
+                {
+                    "name": config.name,
+                    "techniques": [name for _, name in config.techniques],
+                    "results": results,
+                    "timings": timings,
+                    "options": config.options,
+                    "error": None,
+                    "traceback": None,
+                }
+            )
 
         except Exception as e:
             print(f"\n!!!!!! ERROR executing {config_path} !!!!!!")
             # Store the error information for the final report
-            all_run_results.append({
-                "name": f"{config_path} (FAILED)",
-                "error": e,
-                "traceback": traceback.format_exc(),
-            })
+            all_run_results.append(
+                {
+                    "name": f"{config_path} (FAILED)",
+                    "error": e,
+                    "traceback": traceback.format_exc(),
+                }
+            )
 
         print(f"--- Finished executing {config_path} ---")
 

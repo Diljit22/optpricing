@@ -7,16 +7,21 @@ __doc__ = """
 This module defines the core data structures for representing financial options.
 """
 
+
 class OptionType(Enum):
     """Enumeration for the type of an option (Call or Put)."""
+
     CALL = "Call"
     PUT = "Put"
 
+
 class ExerciseStyle(Enum):
     """Enumeration for the exercise style of an option."""
+
     EUROPEAN = "European"
     AMERICAN = "American"
     BERMUDAN = "Bermudan"
+
 
 @dataclass(frozen=True, slots=True)
 class Option:
@@ -34,6 +39,7 @@ class Option:
     exercise_style : ExerciseStyle, optional
         The exercise style of the option, by default ExerciseStyle.EUROPEAN.
     """
+
     strike: float
     maturity: float
     option_type: OptionType

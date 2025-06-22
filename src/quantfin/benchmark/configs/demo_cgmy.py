@@ -1,4 +1,3 @@
-
 from quantfin.atoms.option import Option, OptionType
 from quantfin.atoms.rate import Rate
 from quantfin.atoms.stock import Stock
@@ -21,10 +20,7 @@ config = BenchmarkConfig(
     name="CGMY Model",
     model=model,
     model_params=cgmy_params,
-    techniques=[
-        (IntegrationTechnique(), "Integration"),
-        (FFTTechnique(n=14), "FFT")
-    ],
+    techniques=[(IntegrationTechnique(), "Integration"), (FFTTechnique(n=14), "FFT")],
     stock=stock,
     rate=rate,
     options=options_to_price,

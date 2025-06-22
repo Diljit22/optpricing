@@ -15,12 +15,13 @@ def save_historical_returns(tickers: list[str], period: str = "10y"):
             if data.empty:
                 print(f"  -> No data found for {ticker}. Skipping.")
                 continue
-            log_returns = np.log(data['Close'] / data['Close'].shift(1)).dropna()
+            log_returns = np.log(data["Close"] / data["Close"].shift(1)).dropna()
             filename = HISTORICAL_DIR / f"{ticker}_{period}_returns.parquet"
-            log_returns.to_frame(name='log_return').to_parquet(filename)
+            log_returns.to_frame(name="log_return").to_parquet(filename)
             print(f"  -> Saved to {filename}")
         except Exception as e:
             print(f"  -> FAILED to save data for {ticker}. Error: {e}")
+
 
 def load_historical_returns(ticker: str, period: str = "10y") -> pd.Series:
     """Loads historical log returns, fetching and saving them if not found."""
@@ -30,6 +31,6 @@ def load_historical_returns(ticker: str, period: str = "10y") -> pd.Series:
         save_historical_returns([ticker], period)
 
     if not filename.exists():
-         raise FileNotFoundError(f"Could not find or save historical data for {ticker}.")
+        raise FileNotFoundError(f"Could not find or save historical data for {ticker}.")
 
-    return pd.read_parquet(filename)['log_return']
+    return pd.read_parquet(filename)["log_return"]

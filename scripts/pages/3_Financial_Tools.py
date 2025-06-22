@@ -1,4 +1,3 @@
-
 import pandas as pd
 import streamlit as st
 
@@ -14,7 +13,7 @@ st.title("Financial Utilities & Tools")
 
 # Jump Parameter Fitter
 st.header("Historical Jump Parameter Fitter")
-TICKERS = ['SPY', 'AAPL', 'META', 'GOOGL', 'TSLA', 'NVDA', 'AMD', 'MSFT', 'AMZN', 'JPM']
+TICKERS = ["SPY", "AAPL", "META", "GOOGL", "TSLA", "NVDA", "AMD", "MSFT", "AMZN", "JPM"]
 ticker_jump = st.selectbox("Select Ticker for Jump Analysis", TICKERS)
 if st.button("Fit Jump Parameters"):
     with st.spinner(f"Loading 10y returns for {ticker_jump} and fitting..."):
@@ -34,15 +33,15 @@ bond_maturity = col3.number_input("Bond Maturity (T)", value=1.0, step=0.5)
 params = {}
 if model_name == "Vasicek":
     cols_vasicek = st.columns(3)
-    params['kappa'] = cols_vasicek[0].number_input("Mean Reversion (kappa)", value=0.86)
-    params['theta'] = cols_vasicek[1].number_input("Long-Term Mean (theta)", value=0.09)
-    params['sigma'] = cols_vasicek[2].number_input("Volatility (sigma)", value=0.02)
+    params["kappa"] = cols_vasicek[0].number_input("Mean Reversion (kappa)", value=0.86)
+    params["theta"] = cols_vasicek[1].number_input("Long-Term Mean (theta)", value=0.09)
+    params["sigma"] = cols_vasicek[2].number_input("Volatility (sigma)", value=0.02)
     model = VasicekModel(params=params)
-else: # CIR
+else:  # CIR
     cols_cir = st.columns(3)
-    params['kappa'] = cols_cir[0].number_input("Mean Reversion (kappa)", value=0.86)
-    params['theta'] = cols_cir[1].number_input("Long-Term Mean (theta)", value=0.09)
-    params['sigma'] = cols_cir[2].number_input("Volatility (sigma)", value=0.02)
+    params["kappa"] = cols_cir[0].number_input("Mean Reversion (kappa)", value=0.86)
+    params["theta"] = cols_cir[1].number_input("Long-Term Mean (theta)", value=0.09)
+    params["sigma"] = cols_cir[2].number_input("Volatility (sigma)", value=0.02)
     model = CIRModel(params=params)
 if st.button("Price Zero-Coupon Bond"):
     bond = ZeroCouponBond(maturity=bond_maturity)
@@ -60,9 +59,11 @@ spot_p = c3.number_input("Spot Price ", value=100.0)
 strike_p = c4.number_input("Strike Price ", value=100.0)
 T_p = c5.number_input("Maturity ", value=1.0)
 
-implied_rate_model = ImpliedRateModel(params={'eps': 1e-9, 'max_iter': 100})
+implied_rate_model = ImpliedRateModel(params={"eps": 1e-9, "max_iter": 100})
 try:
-    implied_r = implied_rate_model.price_closed_form(call_price=call_p, put_price=put_p, spot=spot_p, strike=strike_p, t=T_p, q=0)
+    implied_r = implied_rate_model.price_closed_form(
+        call_price=call_p, put_price=put_p, spot=spot_p, strike=strike_p, t=T_p, q=0
+    )
     st.metric("Implied Risk-Free Rate (r)", f"{implied_r:.4%}")
 except Exception as e:
     st.error(f"Could not calculate implied rate: {e}")

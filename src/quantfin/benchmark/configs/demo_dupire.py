@@ -23,6 +23,8 @@ def mock_vol_surface(t: float, s: np.ndarray) -> np.ndarray:
 
     log_moneyness = np.log(safe_s / 100.0)
     return 0.20 + 0.1 * log_moneyness + 0.5 * log_moneyness**2
+
+
 # Create the Dupire Model ---
 # The 'params' dictionary holds the callable surface object.
 dupire_params = {"vol_surface": mock_vol_surface}
@@ -41,10 +43,8 @@ options_to_price = [
 config = BenchmarkConfig(
     name="Dupire Local Volatility Model",
     model=model,
-    model_params={"surface": "smile function"}, # For display
-    techniques=[
-        (MonteCarloTechnique(n_paths=50000, n_steps=252, seed=42), "MC")
-    ],
+    model_params={"surface": "smile function"},  # For display
+    techniques=[(MonteCarloTechnique(n_paths=50000, n_steps=252, seed=42), "MC")],
     stock=stock,
     rate=rate,
     options=options_to_price,

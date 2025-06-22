@@ -29,7 +29,10 @@ from .vg import VarianceGammaModel
 
 __all__ = [
     # Base
-    "BaseModel", "CF", "PDECoeffs", "ParamValidator",
+    "BaseModel",
+    "CF",
+    "PDECoeffs",
+    "ParamValidator",
     # Models
     "BatesModel",
     "BlacksApproxModel",
