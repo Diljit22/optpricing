@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Market Data Manager
 
-Coming soon.
+::: src.quantfin.data.market_data_manager

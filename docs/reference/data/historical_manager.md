@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Historical Data Manager
 
-Coming soon.
+::: src.quantfin.data.historical_manager

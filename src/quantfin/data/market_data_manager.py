@@ -47,6 +47,7 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
             (chain_df["last_price"] > 0.01) & (chain_df["maturity"] > 1 / 365.25)
         ].copy()
         return chain_df
+
     except Exception as e:
         print(f"  -> FAILED to fetch live yfinance data for {ticker}. Error: {e}")
         return None
@@ -108,23 +109,37 @@ def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
         df = pd.DataFrame(data)
         df["maturity"] = (df["expiry"] - pd.Timestamp.now()).dt.days / 365.25
         return df
+
     except Exception as e:
         print(f"An error occurred while fetching live Polygon data: {e}")
         return None
 
 
-# Public API Functions
-
-
 def get_live_option_chain(ticker: str) -> pd.DataFrame | None:
     """
-    Fetches a live option chain from the provider specified in config.yaml.
+    Fetches a live option chain from the configured data provider.
+
+    The data provider is determined by the `live_data_provider` key in the
+    `config.yaml` file. Supported providers are "yfinance" and "polygon".
+
+    Parameters
+    ----------
+    ticker : str
+        The stock ticker for which to fetch the option chain, e.g., 'SPY'.
+
+    Returns
+    -------
+    pd.DataFrame | None
+        A DataFrame containing the formatted option chain data, or None if
+        the fetch fails or no data is returned.
     """
     provider = _config.get("live_data_provider", "yfinance").lower()
     if provider == "polygon":
         return _fetch_from_polygon(ticker)
+
     elif provider == "yfinance":
         return _fetch_from_yfinance(ticker)
+
     else:
         print(
             f"Warning: Unknown live_data_provider '{provider}'. Defaulting to yfinance."
@@ -133,31 +148,77 @@ def get_live_option_chain(ticker: str) -> pd.DataFrame | None:
 
 
 def save_market_snapshot(tickers: list[str]):
-    """Saves a snapshot of the current market option chain for a list of tickers."""
+    """
+    Saves a snapshot of the current market option chain for given tickers.
+
+    For each ticker, it fetches the live option chain using
+    `get_live_option_chain` and saves it to a parquet file named with the
+    ticker and the current date.
+
+    Parameters
+    ----------
+    tickers : list[str]
+        A list of stock tickers to process, e.g., ['SPY', 'AAPL'].
+    """
     today_str = date.today().strftime("%Y-%m-%d")
+
     print(f"--- Saving Market Data Snapshot for {today_str} ---")
     for ticker in tickers:
         chain_df = get_live_option_chain(ticker)
+
         if chain_df is None or chain_df.empty:
             print(f"  -> No valid option data found for {ticker}. Skipping.")
             continue
+
         filename = MARKET_SNAPSHOT_DIR / f"{ticker}_{today_str}.parquet"
         chain_df.to_parquet(filename)
         print(f"  -> Successfully saved {len(chain_df)} options to {filename}")
 
 
 def load_market_snapshot(ticker: str, snapshot_date: str) -> pd.DataFrame | None:
-    """Loads a previously saved market data snapshot."""
+    """
+    Loads a previously saved market data snapshot for a specific date.
+
+    Parameters
+    ----------
+    ticker : str
+        The stock ticker of the desired snapshot, e.g., 'SPY'.
+    snapshot_date : str
+        The date of the snapshot in 'YYYY-MM-DD' format.
+
+    Returns
+    -------
+    pd.DataFrame | None
+        A DataFrame containing the snapshot data, or None if the file
+        is not found.
+    """
     filename = MARKET_SNAPSHOT_DIR / f"{ticker}_{snapshot_date}.parquet"
     if not filename.exists():
         print(f"Error: Snapshot file not found: {filename}")
         return None
+
     print(f"Loading data from {filename}...")
     return pd.read_parquet(filename)
 
 
 def get_available_snapshot_dates(ticker: str) -> list[str]:
-    """lists all available snapshot dates for a given ticker."""
+    """
+    Lists all available snapshot dates for a given ticker.
+
+    Scans the market data directory for saved parquet files corresponding
+    to the ticker and extracts the date from the filenames.
+
+    Parameters
+    ----------
+    ticker : str
+        The stock ticker to search for, e.g., 'SPY'.
+
+    Returns
+    -------
+    list[str]
+        A sorted list of available dates in 'YYYY-MM-DD' format, from
+        most recent to oldest.
+    """
     try:
         files = [
             f.name
@@ -168,5 +229,6 @@ def get_available_snapshot_dates(ticker: str) -> list[str]:
             [f.replace(f"{ticker}_", "").replace(".parquet", "") for f in files],
             reverse=True,
         )
+
     except FileNotFoundError:
         return []
