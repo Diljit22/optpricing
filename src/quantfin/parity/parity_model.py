@@ -85,7 +85,7 @@ class ParityModel(BaseModel):
         r: float,
         t: float,
         call: bool,
-        option_price: float,
+        option_price: float,  # noqa: F841
     ) -> tuple[float, float]:
         """
         Return absolute (lower, upper) no-arbitrage bounds for an option.
@@ -103,7 +103,7 @@ class ParityModel(BaseModel):
         call : bool
             True if `option_price` is for a call, False if it's for a put.
         option_price : float
-            The price of the known option.
+            The price of the known option. In this case it is a place holder.
 
         Returns
         -------

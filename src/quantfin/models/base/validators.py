@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import dict
-
 __doc__ = """
 Provides a utility class for validating parameters passed to financial models.
 """

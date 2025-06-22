@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Implied Rate Model
 
-Coming soon.
+::: src.quantfin.parity.implied_rate.ImpliedRateModel

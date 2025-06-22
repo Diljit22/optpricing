@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Parity Model
 
-Coming soon.
+::: src.quantfin.parity.parity_model.ParityModel
