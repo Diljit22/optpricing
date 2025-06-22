@@ -5,12 +5,36 @@ import streamlit as st
 from quantfin.atoms import Rate, Stock
 from quantfin.parity import ParityModel
 
+__doc__ = """
+Contains reusable Streamlit components (widgets) for displaying
+specific analyses on the dashboard, such as put-call parity checks.
+"""
 
-def render_parity_analysis_widget(market_data: pd.DataFrame, stock: Stock, rate: Rate):
-    """Creates a Streamlit container to display put-call parity analysis."""
+
+def render_parity_analysis_widget(
+    market_data: pd.DataFrame,
+    stock: Stock,
+    rate: Rate,
+):
+    """
+    Creates a Streamlit container to display put-call parity analysis.
+
+    This function takes market data and computes the arbitrage gap based on
+    the put-call parity relationship for a user-selected expiration date.
+
+    Parameters
+    ----------
+    market_data : pd.DataFrame
+        The full option chain data for the asset.
+    stock : Stock
+        The underlying Stock object, containing spot price and dividend yield.
+    rate : Rate
+        The risk-free Rate object.
+    """
     st.subheader("Put-Call Parity Analysis")
 
-    parity_model = ParityModel()
+    # TODO: support for ParityModel; needs vecotrizing. Currently do it here.
+    parity_model = ParityModel()  # noqa: F841
 
     expiries = sorted(market_data["expiry"].unique())
     selected_expiry = st.select_slider(
@@ -55,6 +79,7 @@ def render_parity_analysis_widget(market_data: pd.DataFrame, stock: Stock, rate:
     )
 
     st.dataframe(results_df)
-    st.caption(  # noqa: E501
-        "A non-zero 'Arbitrage Gap' suggests a violation of put-call parity (or stale data)."
+    st.caption(
+        "A non-zero 'Arbitrage Gap' suggests a violation of put-call parity "
+        "(or stale data)."  # noqa: E501
     )

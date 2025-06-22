@@ -71,6 +71,7 @@ nav:
       - Getting Started: guide/getting_started.md
   - API Reference:
       - Atoms:
+          - reference/atoms/index.md
           - Bond: reference/atoms/bond.md
           - Option: reference/atoms/option.md
           - Rate: reference/atoms/rate.md
@@ -78,7 +79,13 @@ nav:
       - Calibration:
           - Calibrator: reference/calibration/calibrator.md
           - IV Surface: reference/calibration/iv_surface.md
+      - Dashboard:
+          - reference/dashboard/index.md
+          - Plots: reference/dashboard/plots.md
+          - Service: reference/dashboard/service.md
+          - Widgets: reference/dashboard/widgets.md
       - Data:
+          - reference/data/index.md
           - Historical Manager: reference/data/historical_manager.md
           - Market Data Manager: reference/data/market_data_manager.md
       - Models:
@@ -86,8 +93,8 @@ nav:
           - Black-Scholes-Merton: reference/models/bsm.md
           - Heston: reference/models/heston.md
           - Merton Jump Diffusion: reference/models/merton_jump.md
-          - And...: reference/models/index.md
       - Parity:
+          - reference/parity/index.md
           - Implied Rate: reference/parity/implied_rate.md
           - Parity Model: reference/parity/parity_model.md
       - Techniques:

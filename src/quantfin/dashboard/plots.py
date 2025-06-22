@@ -3,6 +3,11 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
+__doc__ = """
+Contains plotting functions used by the dashboard to visualize
+volatility surfaces and smiles.
+"""
+
 
 def plot_smiles_by_expiry(
     market_surface: pd.DataFrame,
@@ -10,7 +15,29 @@ def plot_smiles_by_expiry(
     ticker: str,
     snapshot_date: str,
 ):
-    """Generates a matplotlib figure with volatility smiles for key expiries."""
+    """
+    Generates a matplotlib figure with volatility smiles for key expiries.
+
+    Compares the market implied volatility to the volatilities implied by
+    calibrated models across different strikes for a few selected expiration dates.
+
+    Parameters
+    ----------
+    market_surface : pd.DataFrame
+        DataFrame containing the market's implied volatility surface.
+        Must have 'expiry', 'strike', and 'iv' columns.
+    model_surfaces : dict[str, pd.DataFrame]
+        A dictionary mapping model names to their implied volatility surfaces.
+    ticker : str
+        The stock ticker, used for the plot title.
+    snapshot_date : str
+        The snapshot date, used for the plot title.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The matplotlib figure object containing the subplots of volatility smiles.
+    """
     expiries = sorted(market_surface["expiry"].unique())
     # Select up to 4 expiries to plot
     plot_indices = np.linspace(0, len(expiries) - 1, min(4, len(expiries)), dtype=int)
@@ -64,7 +91,27 @@ def plot_smiles_by_expiry(
 def plot_iv_surface_3d(
     market_surface: pd.DataFrame, model_surfaces: dict[str, pd.DataFrame], ticker: str
 ):
-    """Creates an interactive 3D plot of the volatility surfaces."""
+    """
+    Creates an interactive 3D plot of the volatility surfaces.
+
+    Renders the market IV surface as a mesh and overlays the model-implied
+    IV surfaces as line plots for comparison.
+
+    Parameters
+    ----------
+    market_surface : pd.DataFrame
+        DataFrame containing the market's implied volatility surface.
+        Must have 'maturity', 'strike', and 'iv' columns.
+    model_surfaces : dict[str, pd.DataFrame]
+        A dictionary mapping model names to their implied volatility surfaces.
+    ticker : str
+        The stock ticker, used for the plot title.
+
+    Returns
+    -------
+    plotly.graph_objects.Figure
+        The Plotly figure object for the 3D surface plot.
+    """
     fig = go.Figure()
     fig.add_trace(
         go.Mesh3d(
