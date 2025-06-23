@@ -8,10 +8,12 @@ from quantfin.techniques.base import LatticeTechnique
 
 from .kernels.lattice_kernels import _crr_pricer
 
+__doc__ = """
+Defines the Cox-Ross-Rubinstein (CRR) binomial lattice pricing technique.
+"""
 
 class CRRTechnique(LatticeTechnique):
     """Cox-Ross-Rubinstein binomial lattice technique."""
-
     def _price_and_get_nodes(
         self,
         option: Option,
@@ -19,6 +21,28 @@ class CRRTechnique(LatticeTechnique):
         model: BaseModel,
         rate: Rate,
     ) -> dict[str, Any]:
+        """
+        Prices the option using the CRR kernel.
+
+        This method extracts the necessary numerical parameters from the input
+        objects and passes them to the low-level `_crr_pricer` kernel.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model, used to get volatility.
+        rate : Rate
+            The risk-free rate structure.
+
+        Returns
+        -------
+        dict[str, Any]
+            A dictionary from the kernel containing the price and node values.
+        """
         sigma = model.params.get("sigma", stock.volatility)
         return _crr_pricer(
             S0=stock.spot,
