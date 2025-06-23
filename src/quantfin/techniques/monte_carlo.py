@@ -9,7 +9,7 @@ from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
 from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 
-from .mc_kernels import (
+from .kernels.mc_kernels import (
     bates_kernel,
     bsm_kernel,
     dupire_kernel,

@@ -7,11 +7,13 @@ methods for pricing options.
 
 from .base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 from .closed_form import ClosedFormTechnique
+from .crr import CRRTechnique
 from .fft import FFTTechnique
 from .integration import IntegrationTechnique
-from .lattice import CRRTechnique, LeisenReimerTechnique, TOPMTechnique
+from .leisen_reimer import LeisenReimerTechnique
 from .monte_carlo import MonteCarloTechnique
 from .pde import PDETechnique
+from .topm import TOPMTechnique
 
 __all__ = [
     "BaseTechnique",
