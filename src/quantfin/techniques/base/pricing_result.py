@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+__doc__ = """
+Defines a simple data container for pricing results.
+"""
+
 
 @dataclass(frozen=True)
 class PricingResult:

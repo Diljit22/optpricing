@@ -1,5 +1,3 @@
----
-title: TODO
----
+# FFT (Fast Fourier Transform) Technique
 
-Coming soon.
+::: src.quantfin.techniques.fft.FFTTechnique

@@ -11,11 +11,18 @@ if TYPE_CHECKING:
     from quantfin.atoms import Option, Rate, Stock
     from quantfin.models import BaseModel
 
+__doc__ = """
+Provides a mixin class for calculating implied volatility.
+"""
+
 
 class IVMixin:
     """
     Calculates Black-Scholes implied volatility for a given price using a
     root-finding algorithm.
+
+    This implementation uses Brent's method for speed and precision, with a
+    fallback to a more robust Secant method if the initial search fails.
     """
 
     def implied_volatility(
@@ -30,6 +37,34 @@ class IVMixin:
         tol: float = 1e-6,
         **kwargs: Any,
     ) -> float:
+        """
+        Calculates the implied volatility for a given option price.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The model to use for pricing. Note: IV is always calculated
+            relative to the Black-Scholes-Merton model.
+        rate : Rate
+            The risk-free rate structure.
+        target_price : float
+            The market price of the option for which to find the IV.
+        low : float, optional
+            The lower bound for the volatility search, by default 1e-6.
+        high : float, optional
+            The upper bound for the volatility search, by default 5.0.
+        tol : float, optional
+            The tolerance for the root-finding algorithm, by default 1e-6.
+
+        Returns
+        -------
+        float
+            The implied volatility, or `np.nan` if the search fails.
+        """
         bsm_solver_model = BSMModel(params={"sigma": 0.3})
 
         def bsm_price_minus_target(vol: float) -> float:
@@ -56,7 +91,15 @@ class IVMixin:
         return iv
 
     @staticmethod
-    def _secant_iv(fn: Any, x0: float, tol: float, max_iter: int) -> float:
+    def _secant_iv(
+        fn: Any,
+        x0: float,
+        tol: float,
+        max_iter: int,
+    ) -> float:
+        """
+        A simple Secant method implementation as a fallback for root finding.
+        """
         x1 = x0 * 1.1
         fx0 = fn(x0)
         for _ in range(max_iter):

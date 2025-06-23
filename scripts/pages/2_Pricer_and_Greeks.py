@@ -7,6 +7,7 @@ from quantfin.techniques import *
 
 st.set_page_config(layout="wide", page_title="QuantFin | Pricer")
 st.title("On-Demand Pricer & Greek Analysis")
+# ruff: noqa: E501
 st.caption(
     "Price any option with any model and technique. Manually set all parameters to see their effect."
 )

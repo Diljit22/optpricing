@@ -1,5 +1,3 @@
----
-title: TODO
----
+# IVMixin
 
-Coming soon.
+::: src.quantfin.techniques.base.iv_mixin.IVMixin

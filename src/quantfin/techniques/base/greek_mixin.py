@@ -7,6 +7,10 @@ import numpy as np
 
 from quantfin.techniques.base.random_utils import crn
 
+__doc__ = """
+Provides a mixin class with default numerical implementations for option Greeks.
+"""
+
 if TYPE_CHECKING:
     from quantfin.atoms import Option, Rate, Stock
     from quantfin.models import BaseModel
@@ -18,6 +22,8 @@ class GreekMixin:
 
     This mixin is designed to be side-effect-free. It creates modified copies
     of the input objects for shifted calculations rather than mutating them in place.
+    It also supports Common Random Numbers (CRN) for variance reduction in
+    Monte Carlo-based calculations by checking for a `self.rng` attribute.
     """
 
     def delta(
@@ -29,6 +35,27 @@ class GreekMixin:
         h_frac: float = 1e-3,
         **kwargs: Any,
     ) -> float:
+        """
+        Calculates delta using a central difference formula.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use for the calculation.
+        rate : Rate
+            The risk-free rate structure.
+        h_frac : float, optional
+            The fractional step size for shifting the spot price, by default 1e-3.
+
+        Returns
+        -------
+        float
+            The calculated delta.
+        """
         h = stock.spot * h_frac
         stock_up = replace(stock, spot=stock.spot + h)
         stock_dn = replace(stock, spot=stock.spot - h)
@@ -54,6 +81,27 @@ class GreekMixin:
         h_frac: float = 1e-3,
         **kw: Any,
     ) -> float:
+        """
+        Calculates gamma using a central difference formula.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use for the calculation.
+        rate : Rate
+            The risk-free rate structure.
+        h_frac : float, optional
+            The fractional step size for shifting the spot price, by default 1e-3.
+
+        Returns
+        -------
+        float
+            The calculated gamma.
+        """
         h = stock.spot * h_frac
         stock_up = replace(stock, spot=stock.spot + h)
         stock_dn = replace(stock, spot=stock.spot - h)
@@ -82,6 +130,29 @@ class GreekMixin:
         h: float = 1e-4,
         **kw: Any,
     ) -> float:
+        """
+        Calculates vega using a central difference formula.
+
+        Returns `np.nan` if the model does not have a 'sigma' parameter.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use for the calculation.
+        rate : Rate
+            The risk-free rate structure.
+        h : float, optional
+            The absolute step size for shifting volatility, by default 1e-4.
+
+        Returns
+        -------
+        float
+            The calculated vega.
+        """
         if "sigma" not in model.params:
             return np.nan
 
@@ -110,6 +181,27 @@ class GreekMixin:
         h: float = 1e-5,
         **kw: Any,
     ) -> float:
+        """
+        Calculates theta using a central difference formula.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use for the calculation.
+        rate : Rate
+            The risk-free rate structure.
+        h : float, optional
+            The absolute step size for shifting maturity, by default 1e-5.
+
+        Returns
+        -------
+        float
+            The calculated theta.
+        """
         T0 = option.maturity
         opt_up = replace(option, maturity=T0 + h)
         opt_dn = replace(option, maturity=max(T0 - h, 1e-12))  # Avoid maturity of 0
@@ -135,6 +227,27 @@ class GreekMixin:
         h: float = 1e-4,
         **kw: Any,
     ) -> float:
+        """
+        Calculates rho using a central difference formula.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use for the calculation.
+        rate : Rate
+            The risk-free rate structure.
+        h : float, optional
+            The absolute step size for shifting the interest rate, by default 1e-4.
+
+        Returns
+        -------
+        float
+            The calculated rho.
+        """
         r0 = rate.get_rate(option.maturity)
         rate_up = replace(rate, rate=r0 + h)
         rate_dn = replace(rate, rate=r0 - h)

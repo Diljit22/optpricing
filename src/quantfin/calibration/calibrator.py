@@ -19,9 +19,8 @@ class Calibrator:
         self.stock = stock
         self.rate = rate
         self.technique = select_fastest_technique(model)
-        print(
-            f"Calibrator using '{self.technique.__class__.__name__}' for model '{model.name}'."
-        )
+        _class_name = self.technique.__class__.__name__
+        print(f"Calibrator using '{_class_name}' for model '{model.name}'.")
 
     def _objective_function(
         self,

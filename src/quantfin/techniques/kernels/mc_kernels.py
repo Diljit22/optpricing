@@ -3,10 +3,33 @@ from __future__ import annotations
 import numba
 import numpy as np
 
+__doc__ = """
+This module contains JIT-compiled (`numba`) kernels for simulating the SDE
+paths of different financial models. These functions are designed for performance.
+"""
+
+# NOTE: Detailed docstrings are provided for each kernel, but they are placed
+# outside the function body as Numba in `nopython` mode does not support them.
+# The information is still valuable for developers reading the code.
+
+# Docstring for bsm_kernel
+"""
+JIT-compiled kernel for BSM SDE simulation.
+d(logS) = (r - q - 0.5*sigma^2)dt + sigma*dW
+"""
+
 
 @numba.jit(nopython=True, fastmath=True, cache=True)
-def bsm_kernel(n_paths, n_steps, log_s0, r, q, sigma, dt, dw):
-    """JIT-compiled kernel for BSM SDE simulation."""
+def bsm_kernel(
+    n_paths,
+    n_steps,
+    log_s0,
+    r,
+    q,
+    sigma,
+    dt,
+    dw,
+):
     log_s = np.full(n_paths, log_s0)
     drift = (r - q - 0.5 * sigma**2) * dt
     for i in range(n_steps):
@@ -14,11 +37,28 @@ def bsm_kernel(n_paths, n_steps, log_s0, r, q, sigma, dt, dw):
     return log_s
 
 
+# Docstring for heston_kernel
+"""
+JIT-compiled kernel for Heston SDE simulation (Full Truncation).
+"""
+
+
 @numba.jit(nopython=True, fastmath=True, cache=True)
 def heston_kernel(
-    n_paths, n_steps, log_s0, v0, r, q, kappa, theta, rho, vol_of_vol, dt, dw1, dw2
+    n_paths,
+    n_steps,
+    log_s0,
+    v0,
+    r,
+    q,
+    kappa,
+    theta,
+    rho,
+    vol_of_vol,
+    dt,
+    dw1,
+    dw2,
 ):
-    """JIT-compiled kernel for Heston SDE simulation (Full Truncation)."""
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
     for i in range(n_steps):
@@ -29,11 +69,27 @@ def heston_kernel(
     return log_s
 
 
+# Docstring for merton_kernel
+"""
+JIT-compiled kernel for Merton Jump-Diffusion SDE simulation.
+"""
+
+
 @numba.jit(nopython=True, fastmath=True, cache=True)
 def merton_kernel(
-    n_paths, n_steps, log_s0, r, q, sigma, lambda_, mu_j, sigma_j, dt, dw, jump_counts
+    n_paths,
+    n_steps,
+    log_s0,
+    r,
+    q,
+    sigma,
+    lambda_,
+    mu_j,
+    sigma_j,
+    dt,
+    dw,
+    jump_counts,
 ):
-    """JIT-compiled kernel for Merton Jump-Diffusion SDE simulation."""
     log_s = np.full(n_paths, log_s0)
     compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
     drift = (r - q - 0.5 * sigma**2 - compensator) * dt
@@ -49,6 +105,12 @@ def merton_kernel(
                     log_s[path_idx] += jump_sizes[jump_idx]
                     jump_idx += 1
     return log_s
+
+
+# Docstring for bates_kernel
+"""
+JIT-compiled kernel for Bates (Heston + Jumps) SDE simulation.
+"""
 
 
 @numba.jit(nopython=True, fastmath=True, cache=True)
@@ -71,7 +133,6 @@ def bates_kernel(
     dw2,
     jump_counts,
 ):
-    """JIT-compiled kernel for Bates (Heston + Jumps) SDE simulation."""
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
     compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
@@ -97,9 +158,27 @@ def bates_kernel(
     return log_s
 
 
+# Docstring for sabr_kernel
+"""
+JIT-compiled kernel for SABR SDE simulation.
+"""
+
+
 @numba.jit(nopython=True, fastmath=True, cache=True)
-def sabr_kernel(n_paths, n_steps, s0, v0, r, q, alpha, beta, rho, dt, dw1, dw2):
-    """JIT-compiled kernel for SABR SDE simulation."""
+def sabr_kernel(
+    n_paths,
+    n_steps,
+    s0,
+    v0,
+    r,
+    q,
+    alpha,
+    beta,
+    rho,
+    dt,
+    dw1,
+    dw2,
+):
     s = np.full(n_paths, s0)
     v = np.full(n_paths, v0)  # v is sigma_t in SABR
     rho_bar = np.sqrt(1 - rho**2)
@@ -114,6 +193,12 @@ def sabr_kernel(n_paths, n_steps, s0, v0, r, q, alpha, beta, rho, dt, dw1, dw2):
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * dw2[:, i])
 
     return s
+
+
+# Docstring for sabr_jump_kernel
+"""
+JIT-compiled kernel for SABR with log-normal jumps on the spot process.
+"""
 
 
 @numba.jit(nopython=True, fastmath=True, cache=True)
@@ -135,7 +220,6 @@ def sabr_jump_kernel(
     dw2,
     jump_counts,
 ):
-    """JIT-compiled kernel for SABR with log-normal jumps on the spot process."""
     s = np.full(n_paths, s0)
     v = np.full(n_paths, v0)  # v is sigma_t
     rho_bar = np.sqrt(1 - rho**2)
@@ -162,6 +246,12 @@ def sabr_jump_kernel(
     return s
 
 
+# Docstring for kou_kernel
+"""
+JIT-compiled kernel for Kou Double-Exponential Jump-Diffusion SDE.
+"""
+
+
 @numba.jit(nopython=True, fastmath=True, cache=True)
 def kou_kernel(
     n_paths,
@@ -178,7 +268,6 @@ def kou_kernel(
     dw,
     jump_counts,
 ):
-    """JIT-compiled kernel for Kou Double-Exponential Jump-Diffusion SDE."""
     log_s = np.full(n_paths, log_s0)
     compensator = lambda_ * (
         (p_up * eta1 / (eta1 - 1)) + ((1 - p_up) * eta2 / (eta2 + 1)) - 1
@@ -219,13 +308,25 @@ def kou_kernel(
     return log_s
 
 
+# Docstring for dupire_kernel
+"""
+JIT-compiled kernel for Dupire Local Volatility SDE simulation.
+Note: Numba cannot compile the vol_surface_func itself, so this kernel
+will have a slight overhead from calling back into Python for the vol lookup.
+"""
+
+
 @numba.jit(nopython=True, fastmath=True, cache=True)
-def dupire_kernel(n_paths, n_steps, log_s0, r, q, dt, dw, vol_surface_func):
-    """
-    JIT-compiled kernel for Dupire Local Volatility SDE simulation.
-    Note: Numba cannot compile the vol_surface_func itself, so this kernel
-    will have a slight overhead from calling back into Python for the vol lookup.
-    """
+def dupire_kernel(
+    n_paths,
+    n_steps,
+    log_s0,
+    r,
+    q,
+    dt,
+    dw,
+    vol_surface_func,
+):
     log_s = np.full(n_paths, log_s0)
     for i in range(n_steps):
         t_current = i * dt

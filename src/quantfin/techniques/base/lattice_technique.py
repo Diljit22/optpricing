@@ -23,36 +23,79 @@ class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
     without rebuilding the tree.
     """
 
-    def __init__(self, steps: int = 200, is_american: bool = False):
+    def __init__(
+        self,
+        steps: int = 200,
+        is_american: bool = False,
+    ):
+        """
+        Initializes the lattice technique.
+
+        Parameters
+        ----------
+        steps : int, optional
+            The number of time steps in the lattice, by default 200.
+        is_american : bool, optional
+            True if pricing an American option, False for European. Defaults to False.
+        """
         self.steps = int(steps)
         self.is_american = bool(is_american)
         self._cached_nodes: dict[str, Any] = {}
+        self._cache_key: tuple | None = None
+
+    def _get_cache_key(
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+    ) -> tuple:
+        """Creates a unique, hashable key from the pricing inputs."""
+        return (option, stock, model, rate, self.steps, self.is_american)
 
     def price(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> PricingResult:
         """Prices the option and caches the necessary nodes for Greek calculations."""
+        self._cache_key = self._get_cache_key(option, stock, model, rate)
         results = self._price_and_get_nodes(option, stock, model, rate)
         self._cached_nodes = results
         return PricingResult(price=results["price"])
 
     def delta(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
-        """Calculates delta, using cached nodes if available."""
-        if not self._cached_nodes:
+        """Calculates delta, using cached nodes if available and valid."""
+        if self._get_cache_key(option, stock, model, rate) != self._cache_key:
             self.price(option, stock, model, rate)
+
         cache = self._cached_nodes
         return (cache["price_up"] - cache["price_down"]) / (
             cache["spot_up"] - cache["spot_down"]
         )
 
     def gamma(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
-        """Calculates gamma, using cached nodes if available."""
-        if not self._cached_nodes:
+        """Calculates gamma, using cached nodes if available and valid."""
+        if self._get_cache_key(option, stock, model, rate) != self._cache_key:
             self.price(option, stock, model, rate)
+
         cache = self._cached_nodes
         if "price_mid" in cache:  # Trinomial Case
             h1 = cache["spot_up"] - cache["spot_mid"]
@@ -70,6 +113,17 @@ class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
 
     @abstractmethod
     def _price_and_get_nodes(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
     ) -> dict[str, Any]:
+        """
+        Abstract method for concrete lattice implementations.
+
+        This method should perform the actual lattice calculation and return a
+        dictionary containing the option price and all necessary adjacent node
+        values for calculating delta and gamma.
+        """
         raise NotImplementedError

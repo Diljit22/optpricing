@@ -1,5 +1,3 @@
----
-title: TODO
----
+# GreekMixin
 
-Coming soon.
+::: src.quantfin.techniques.base.greek_mixin.GreekMixin

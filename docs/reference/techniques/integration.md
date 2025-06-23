@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Integration Technique
 
-Coming soon.
+::: src.quantfin.techniques.integration.IntegrationTechnique

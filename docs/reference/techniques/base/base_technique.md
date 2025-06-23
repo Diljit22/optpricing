@@ -1,5 +1,3 @@
----
-title: TODO
----
+# BaseTechnique
 
-Coming soon.
+::: src.quantfin.techniques.base.base_technique.BaseTechnique

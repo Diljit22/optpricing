@@ -5,6 +5,12 @@ from typing import Any
 
 import numpy as np
 
+__doc__ = """
+This module contains the low-level implementations for various lattice-based
+option pricing algorithms. These functions are designed to be pure and operate
+on numerical inputs.
+"""
+
 
 def _crr_pricer(
     S0: float,
@@ -17,6 +23,35 @@ def _crr_pricer(
     is_call: bool,
     is_am: bool,
 ) -> dict[str, Any]:
+    """
+    Cox-Ross-Rubinstein binomial tree pricer.
+
+    Parameters
+    ----------
+    S0 : float
+        Initial asset price.
+    K : float
+        Strike price.
+    T : float
+        Time to maturity in years.
+    r : float
+        Risk-free interest rate.
+    q : float
+        Dividend yield.
+    sigma : float
+        Volatility of the asset.
+    N : int
+        Number of steps in the tree.
+    is_call : bool
+        True for a call option, False for a put.
+    is_am : bool
+        True for an American option, False for European.
+
+    Returns
+    -------
+    dict[str, Any]
+        A dictionary containing the option price and node values for Greek calcs.
+    """
     if sigma < 1e-6:
         sigma = 1e-6
     dt = T / N
@@ -70,6 +105,35 @@ def _lr_pricer(
     is_call: bool,
     is_am: bool,
 ) -> dict[str, Any]:
+    """
+    Leisen-Reimer binomial tree pricer with Peizer-Pratt inversion.
+
+    Parameters
+    ----------
+    S0 : float
+        Initial asset price.
+    K : float
+        Strike price.
+    T : float
+        Time to maturity in years.
+    r : float
+        Risk-free interest rate.
+    q : float
+        Dividend yield.
+    sigma : float
+        Volatility of the asset.
+    N : int
+        Number of steps in the tree.
+    is_call : bool
+        True for a call option, False for a put.
+    is_am : bool
+        True for an American option, False for European.
+
+    Returns
+    -------
+    dict[str, Any]
+        A dictionary containing the option price and node values for Greek calcs.
+    """
     if sigma < 1e-6:
         price = max(0.0, S0 - K) if is_call else max(0.0, K - S0)
         return {
@@ -132,6 +196,9 @@ def _lr_pricer(
 
 
 def _peizer_pratt(z: float, N: int) -> float:
+    """
+    Peizer-Pratt inversion method for Leisen-Reimer tree.
+    """
     if abs(z) > 50:
         return 1.0 if z > 0 else 0.0
     term = z / (N + 1 / 3 + 0.1 / (N + 1))
@@ -151,6 +218,35 @@ def _topm_pricer(
     is_call: bool,
     is_am: bool,
 ) -> dict[str, Any]:
+    """
+    Kamrad-Ritchken trinomial tree pricer.
+
+    Parameters
+    ----------
+    S0 : float
+        Initial asset price.
+    K : float
+        Strike price.
+    T : float
+        Time to maturity in years.
+    r : float
+        Risk-free interest rate.
+    q : float
+        Dividend yield.
+    vol : float
+        Volatility of the asset.
+    N : int
+        Number of steps in the tree.
+    is_call : bool
+        True for a call option, False for a put.
+    is_am : bool
+        True for an American option, False for European.
+
+    Returns
+    -------
+    dict[str, Any]
+        A dictionary containing the option price and node values for Greek calcs.
+    """
     if vol < 1e-6:
         vol = 1e-6
     dt = T / N

@@ -8,7 +8,8 @@ st.set_page_config(
 st.title("Welcome to the QuantFin Library Showcase!")
 st.sidebar.success("Select a tool above to begin.")
 
-st.markdown(  # noqa: E501
+# ruff: noqa: E501
+st.markdown(
     """
     This application is a showcase for a comprehensive, high-performance
     quantitative finance library built in Python.

@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Closed-Form Technique
 
-Coming soon.
+::: src.quantfin.techniques.closed_form.ClosedFormTechnique

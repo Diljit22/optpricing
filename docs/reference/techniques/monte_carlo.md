@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Monte Carlo Technique
 
-Coming soon.
+::: src.quantfin.techniques.monte_carlo.MonteCarloTechnique

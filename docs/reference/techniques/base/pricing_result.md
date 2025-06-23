@@ -1,5 +1,3 @@
----
-title: TODO
----
+# PricingResult
 
-Coming soon.
+::: src.quantfin.techniques.base.pricing_result.PricingResult

@@ -8,6 +8,10 @@ from quantfin.atoms import Option, Rate, Stock
 from quantfin.models import BaseModel
 from quantfin.techniques.base.pricing_result import PricingResult
 
+__doc__ = """
+Defines the abstract base class for all pricing techniques.
+"""
+
 
 class BaseTechnique(ABC):
     """
@@ -31,14 +35,16 @@ class BaseTechnique(ABC):
 
         Parameters
         ----------
-        option : Option
-            The option contract to be priced.
+        option : Option | np.ndarray
+            The option contract(s) to be priced.
         stock : Stock
             The underlying asset's properties.
         model : BaseModel
             The financial model to use for the calculation.
         rate : Rate
             The risk-free rate structure.
+        **kwargs : Any
+            Additional keyword arguments required by specific techniques or models.
 
         Returns
         -------

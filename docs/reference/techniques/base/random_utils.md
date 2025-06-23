@@ -1,5 +1,3 @@
----
-title: TODO
----
+# RandomUtils
 
-Coming soon.
+::: src.quantfin.techniques.base.random_utils
