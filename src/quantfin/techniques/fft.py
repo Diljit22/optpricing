@@ -9,6 +9,11 @@ from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
 from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 
+__doc__ = """
+Defines a pricing technique based on the Fast Fourier Transform (FFT) of the
+dampened, risk-neutral option price, following the Carr-Madan formula.
+"""
+
 
 class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
@@ -16,7 +21,26 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
     preserving the original tuned logic for grid and parameter selection.
     """
 
-    def __init__(self, *, n: int = 12, eta: float = 0.25, alpha: float | None = None):
+    def __init__(
+        self,
+        *,
+        n: int = 12,
+        eta: float = 0.25,
+        alpha: float | None = None,
+    ):
+        """
+        Initializes the FFT solver.
+
+        Parameters
+        ----------
+        n : int, optional
+            The exponent for the number of grid points (N = 2^n), by default 12.
+        eta : float, optional
+            The spacing of the grid in the frequency domain, by default 0.25.
+        alpha : float | None, optional
+            The dampening parameter. If None, it is auto-tuned based on a
+            volatility proxy from the model. Defaults to None.
+        """
         self.n = int(n)
         self.N = 1 << self.n
         self.base_eta = float(eta)
@@ -24,9 +48,26 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         self._cached_results: dict[str, Any] = {}
 
     def _price_and_greeks(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> dict[str, float]:
-        """Internal method to perform the core FFT calculation once."""
+        """Internal method to perform the core FFT calculation once.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use. Must support a characteristic function.
+        rate : Rate
+            The risk-free rate structure.
+        """
         if not model.supports_cf:
             raise TypeError(
                 f"Model '{model.name}' does not support a characteristic function."
@@ -84,17 +125,48 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         return {"price": price}
 
     def price(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> PricingResult:
-        """Calculates the option price using the FFT method."""
+        """
+        Calculates the option price using the FFT method.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use. Must support a characteristic function.
+        rate : Rate
+            The risk-free rate structure.
+
+        Returns
+        -------
+        PricingResult
+            An object containing the calculated price.
+        """
         self._cached_results = self._price_and_greeks(
             option, stock, model, rate, **kwargs
         )
         return PricingResult(price=self._cached_results["price"])
 
     @staticmethod
-    def _get_vol_proxy(model: BaseModel, kw: dict[str, Any]) -> float | None:
-        """Best-effort volatility proxy used for grid heuristics."""
+    def _get_vol_proxy(
+        model: BaseModel,
+        kw: dict[str, Any],
+    ) -> float | None:
+        """
+        Finds a best-effort volatility proxy from the model or kwargs.
+
+        This is used for the heuristic auto-tuning of the FFT grid parameters.
+        It checks for 'sigma', 'v0', and 'vol_of_vol' in that order.
+        """
         if "sigma" in model.params and model.params["sigma"] is not None:
             return model.params["sigma"]
         if "v0" in kw and kw["v0"] is not None:

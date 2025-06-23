@@ -6,6 +6,10 @@ from quantfin.atoms import Option, OptionType, Rate, Stock, ZeroCouponBond
 from quantfin.models import BaseModel
 from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 
+__doc__ = """
+Defines a pricing technique for models that provide a closed-form solution.
+"""
+
 
 class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
@@ -17,7 +21,11 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
     from `GreekMixin`.
     """
 
-    def __init__(self, *, use_analytic_greeks: bool = True):
+    def __init__(
+        self,
+        *,
+        use_analytic_greeks: bool = True,
+    ):
         """
         Initializes the technique.
 
@@ -41,6 +49,33 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
     ) -> PricingResult:
         """
         Prices the instrument using the model's closed-form solution.
+
+        This method dynamically builds the required parameters based on the
+        type of instrument being priced (e.g., Option or ZeroCouponBond) and
+        calls the model's `price_closed_form` method.
+
+        Parameters
+        ----------
+        option : Option | ZeroCouponBond
+            The instrument to be priced.
+        stock : Stock
+            The underlying asset's properties. For rate models, `stock.spot` is
+            re-interpreted as the initial short rate `r0`.
+        model : BaseModel
+            The financial model to use. Must have `has_closed_form=True`.
+        rate : Rate
+            The risk-free rate structure.
+
+        Returns
+        -------
+        PricingResult
+            An object containing the calculated price.
+
+        Raises
+        ------
+        TypeError
+            If the model does not have a closed-form solution or if the
+            instrument type is not supported.
         """
         if not model.has_closed_form:
             raise TypeError(f"{model.name} has no closed-form solver.")
@@ -98,9 +133,27 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         return PricingResult(price=price)
 
     def delta(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
-        """Overrides GreekMixin to use analytic delta if available."""
+        """Overrides GreekMixin to use analytic delta if available.
+
+         Parameters
+        ----------
+        option : Option | ZeroCouponBond
+            The instrument to be priced.
+        stock : Stock
+            The underlying asset's properties. For rate models, `stock.spot` is
+            re-interpreted as the initial short rate `r0`.
+        model : BaseModel
+            The financial model to use. Must have `has_closed_form=True`.
+        rate : Rate
+            The risk-free rate structure.
+        """
         if self.use_analytic_greeks and hasattr(model, "delta_analytic"):
             return model.delta_analytic(
                 spot=stock.spot,
@@ -113,9 +166,27 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         return super().delta(option, stock, model, rate, **kwargs)
 
     def gamma(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
-        """Overrides GreekMixin to use analytic gamma if available."""
+        """Overrides GreekMixin to use analytic gamma if available.
+
+        Parameters
+        ----------
+        option : Option | ZeroCouponBond
+            The instrument to be priced.
+        stock : Stock
+            The underlying asset's properties. For rate models, `stock.spot` is
+            re-interpreted as the initial short rate `r0`.
+        model : BaseModel
+            The financial model to use. Must have `has_closed_form=True`.
+        rate : Rate
+            The risk-free rate structure.
+        """
         if self.use_analytic_greeks and hasattr(model, "gamma_analytic"):
             return model.gamma_analytic(
                 spot=stock.spot,
@@ -127,9 +198,27 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         return super().gamma(option, stock, model, rate, **kwargs)
 
     def vega(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
-        """Overrides GreekMixin to use analytic vega if available."""
+        """Overrides GreekMixin to use analytic vega if available.
+
+        Parameters
+        ----------
+        option : Option | ZeroCouponBond
+            The instrument to be priced.
+        stock : Stock
+            The underlying asset's properties. For rate models, `stock.spot` is
+            re-interpreted as the initial short rate `r0`.
+        model : BaseModel
+            The financial model to use. Must have `has_closed_form=True`.
+        rate : Rate
+            The risk-free rate structure.
+        """
         if self.use_analytic_greeks and hasattr(model, "vega_analytic"):
             return model.vega_analytic(
                 spot=stock.spot,
@@ -141,9 +230,27 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         return super().vega(option, stock, model, rate, **kwargs)
 
     def theta(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
-        """Overrides GreekMixin to use analytic theta if available."""
+        """Overrides GreekMixin to use analytic theta if available.
+
+        Parameters
+        ----------
+        option : Option | ZeroCouponBond
+            The instrument to be priced.
+        stock : Stock
+            The underlying asset's properties. For rate models, `stock.spot` is
+            re-interpreted as the initial short rate `r0`.
+        model : BaseModel
+            The financial model to use. Must have `has_closed_form=True`.
+        rate : Rate
+            The risk-free rate structure.
+        """
         if self.use_analytic_greeks and hasattr(model, "theta_analytic"):
             return model.theta_analytic(
                 spot=stock.spot,
@@ -156,9 +263,27 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         return super().theta(option, stock, model, rate, **kwargs)
 
     def rho(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
-        """Overrides GreekMixin to use analytic rho if available."""
+        """Overrides GreekMixin to use analytic rho if available.
+
+        Parameters
+        ----------
+        option : Option | ZeroCouponBond
+            The instrument to be priced.
+        stock : Stock
+            The underlying asset's properties. For rate models, `stock.spot` is
+            re-interpreted as the initial short rate `r0`.
+        model : BaseModel
+            The financial model to use. Must have `has_closed_form=True`.
+        rate : Rate
+            The risk-free rate structure.
+        """
         if self.use_analytic_greeks and hasattr(model, "rho_analytic"):
             return model.rho_analytic(
                 spot=stock.spot,

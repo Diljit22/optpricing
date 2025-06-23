@@ -21,10 +21,15 @@ from .kernels.mc_kernels import (
     sabr_kernel,
 )
 
+__doc__ = """
+Defines a universal Monte Carlo pricing engine that dispatches to specialized,
+JIT-compiled kernels based on the financial model provided.
+"""
+
 
 class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
-    A high-performance, universal Monte Carlo engine that dispatches to
+    A universal Monte Carlo engine that dispatches to
     specialized, JIT-compiled kernels for different model types.
     """
 
@@ -36,6 +41,20 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         antithetic: bool = True,
         seed: int | None = None,
     ):
+        """
+        Initializes the Monte Carlo engine.
+
+        Parameters
+        ----------
+        n_paths : int, optional
+            The number of simulation paths, by default 20_000.
+        n_steps : int, optional
+            The number of time steps in each path, by default 100.
+        antithetic : bool, optional
+            Whether to use antithetic variates for variance reduction, by default True.
+        seed : int | None, optional
+            Seed for the random number generator for reproducibility, by default None.
+        """
         if antithetic and n_paths % 2 != 0:
             n_paths += 1
         self.n_paths = n_paths
@@ -46,7 +65,29 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
     def price(
         self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
     ) -> PricingResult:
-        """Prices an option using the appropriate Monte Carlo simulation method."""
+        """
+        Prices an option using the appropriate Monte Carlo simulation method.
+
+        This method acts as a dispatcher, selecting the correct simulation
+        strategy (SDE path, pure Lévy, or exact sampler) based on the
+        capabilities of the provided model.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use for the simulation.
+        rate : Rate
+            The risk-free rate structure.
+
+        Returns
+        -------
+        PricingResult
+            An object containing the calculated price.
+        """
         if not (model.supports_sde or getattr(model, "is_pure_levy", False)):
             raise TypeError(f"Model '{model.name}' does not support simulation.")
 

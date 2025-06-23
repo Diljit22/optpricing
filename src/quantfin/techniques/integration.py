@@ -9,6 +9,11 @@ from quantfin.atoms import Option, OptionType, Rate, Stock
 from quantfin.models import BaseModel
 from quantfin.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 
+__doc__ = """
+Defines a pricing technique based on the Gil-Pelaez inversion formula,
+solved using numerical quadrature.
+"""
+
 
 class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
@@ -29,6 +34,20 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         epsabs: float = 1e-9,
         epsrel: float = 1e-9,
     ):
+        """
+        Initializes the numerical integration solver.
+
+        Parameters
+        ----------
+        upper_bound : float, optional
+            The upper limit of the integration, by default 200.0.
+        limit : int, optional
+            The maximum number of sub-intervals for the integration, by default 200.
+        epsabs : float, optional
+            The absolute error tolerance for the integration, by default 1e-9.
+        epsrel : float, optional
+            The relative error tolerance for the integration, by default 1e-9.
+        """
         self.upper_bound = upper_bound
         self.limit = limit
         self.epsabs = epsabs
@@ -36,9 +55,26 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         self._cached_results: dict[str, Any] = {}
 
     def _price_and_delta(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> dict[str, float]:
-        """Internal method to perform the core calculation once."""
+        """Internal method to perform the core calculation once.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use. Must support a characteristic function.
+        rate : Rate
+            The risk-free rate structure.
+        """
         if not model.supports_cf:
             raise TypeError(
                 f"Model '{model.name}' does not support a characteristic function."
@@ -94,20 +130,66 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         return {"price": price, "delta": delta}
 
     def price(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> PricingResult:
-        """Calculates the option price, caching the result and the 'free' delta."""
+        """
+        Calculates the option price and caches the 'free' analytic delta.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use. Must support a characteristic function.
+        rate : Rate
+            The risk-free rate structure.
+
+        Returns
+        -------
+        PricingResult
+            An object containing the calculated price.
+        """
         self._cached_results = self._price_and_delta(
             option, stock, model, rate, **kwargs
         )
         return PricingResult(price=self._cached_results["price"])
 
     def delta(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> float:
         """
-        Returns the 'free' delta calculated during the pricing call,
-        or falls back to the mixin if the analytic delta is not available.
+        Returns the 'free' delta calculated during the pricing call.
+
+        If the cache is empty or the analytic delta calculation failed, it
+        falls back to the numerical finite difference method from `GreekMixin`.
+
+        Parameters
+        ----------
+        option : Option
+            The option contract to be priced.
+        stock : Stock
+            The underlying asset's properties.
+        model : BaseModel
+            The financial model to use. Must support a characteristic function.
+        rate : Rate
+            The risk-free rate structure.
+
+        Returns
+        -------
+        float
+            Delta of the option.
         """
         if not self._cached_results:
             self.price(option, stock, model, rate, **kwargs)
