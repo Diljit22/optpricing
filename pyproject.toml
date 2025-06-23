@@ -43,6 +43,7 @@ dev = [
     "ruff",
     "mkdocs",
     "mkdocs-material",
+    "mkdocstrings",
     "line_profiler",
 ]
 
