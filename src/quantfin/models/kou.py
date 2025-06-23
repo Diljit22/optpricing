@@ -6,9 +6,13 @@ import numpy as np
 
 from quantfin.models.base import CF, BaseModel, ParamValidator
 
+__doc__ = """
+Defines the Kou double-exponential jump-diffusion model.
+"""
+
 
 class KouModel(BaseModel):
-    """Kou (2002) double-exponential jump-diffusion model."""
+    """Kou double-exponential jump-diffusion model."""
 
     name: str = "Kou Double-Exponential Jump"
     supports_cf: bool = True
@@ -24,35 +28,35 @@ class KouModel(BaseModel):
     }
     param_defs = {
         "sigma": {
-            "label": "Volatility (σ)",
+            "label": "Volatility",
             "default": 0.15,
             "min": 0.01,
             "max": 1.0,
             "step": 0.01,
         },
         "lambda": {
-            "label": "Jump Intensity (λ)",
+            "label": "Jump Intensity",
             "default": 1.0,
             "min": 0.0,
             "max": 10.0,
             "step": 0.1,
         },
         "p_up": {
-            "label": "Up Prob (p)",
+            "label": "Up Prob",
             "default": 0.6,
             "min": 0.0,
             "max": 1.0,
             "step": 0.05,
         },
         "eta1": {
-            "label": "Up Size (η1)",
+            "label": "Up Size",
             "default": 10.0,
             "min": 0.1,
             "max": 50.0,
             "step": 0.5,
         },
         "eta2": {
-            "label": "Down Size (η2)",
+            "label": "Down Size",
             "default": 5.0,
             "min": 0.1,
             "max": 50.0,
@@ -61,9 +65,18 @@ class KouModel(BaseModel):
     }
 
     def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the Kou Double-Exponential Jump model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+        """
         super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
+        """Validate the models parameter."""
         p = self.params
         req = ["sigma", "lambda", "p_up", "eta1", "eta2"]
         ParamValidator.require(p, req, model=self.name)
@@ -79,7 +92,25 @@ class KouModel(BaseModel):
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
     def _cf_impl(self, *, t: float, spot: float, r: float, q: float, **_: Any) -> CF:
-        """Kou characteristic function for the log-spot price log(S_t)."""
+        """
+        Kou characteristic function for the log-spot price log(S_t).
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         p = self.params
         sigma, lambda_, p_up, eta1, eta2 = (
             p["sigma"],

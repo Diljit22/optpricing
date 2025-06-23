@@ -4,6 +4,10 @@ from typing import Any
 
 from quantfin.models.base import BaseModel, ParamValidator
 
+__doc__ = """
+Defines the Stochastic Alpha, Beta, Rho (SABR) model.
+"""
+
 
 class SABRModel(BaseModel):
     """
@@ -14,8 +18,21 @@ class SABRModel(BaseModel):
     supports_sde: bool = True
     has_variance_process: bool = True
     is_sabr: bool = True
+    default_params = {"alpha": 0.5, "beta": 0.8, "rho": -0.6}
+
+    def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the SABR model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+        """
+        super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
+        """Validates that 'alpha', 'beta', and 'rho' are present and positive."""
         p = self.params
         req = ["alpha", "beta", "rho"]
         ParamValidator.require(p, req, model=self.name)

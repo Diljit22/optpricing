@@ -6,10 +6,14 @@ import numpy as np
 
 from quantfin.models.base import CF, BaseModel, ParamValidator
 
+__doc__ = """
+Defines the Heston stochastic volatility model.
+"""
+
 
 class HestonModel(BaseModel):
     """
-    Heston (1993) stochastic volatility model.
+    Heston stochastic volatility model.
 
     This model describes the evolution of an asset's price where the volatility
     itself is a random process, following a Cox-Ingersoll-Ross (CIR) process.
@@ -68,6 +72,14 @@ class HestonModel(BaseModel):
     }
 
     def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the Heston model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+        """
         super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
@@ -79,7 +91,7 @@ class HestonModel(BaseModel):
         ParamValidator.bounded(p, "rho", -1.0, 1.0, model=self.name)
         if 2 * p["kappa"] * p["theta"] < p["vol_of_vol"] ** 2:
             print(
-                f"Warning: Heston parameters for {self.name} do not satisfy the Feller condition."
+                f"Warning: Params for {self.name} do not satisfy the Feller condition."
             )
 
     def __eq__(self, other: object) -> bool:
@@ -100,7 +112,27 @@ class HestonModel(BaseModel):
         v0: float,
         **_: Any,
     ) -> CF:
-        """Heston characteristic function for the log-spot price log(S_t)."""
+        """
+        Heston characteristic function for the log-spot price log(S_t).
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+        v0 : float
+            The initial variance of the asset's returns.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         p = self.params
         kappa, theta, rho, vol_of_vol = (
             p["kappa"],

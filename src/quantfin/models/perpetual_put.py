@@ -5,6 +5,10 @@ from typing import Any
 
 from quantfin.models.base import BaseModel, ParamValidator
 
+__doc__ = """
+Defines a model for pricing a perpetual American put option.
+"""
+
 
 class PerpetualPutModel(BaseModel):
     """
@@ -18,14 +22,17 @@ class PerpetualPutModel(BaseModel):
     name: str = "Perpetual Put"
     has_closed_form: bool = True
 
+    default_params = {"sigma": 0.20, "rate": 0.08}
+
     def __init__(self, params: dict[str, float]) -> None:
         """
         Initializes the model with its parameters.
 
         Parameters
         ----------
-        params : dict[str, float]
-            A dictionary requiring 'sigma' and 'rate'.
+        params : dict[str, float] | None, optional
+            A dictionary requiring 'sigma' and 'rate'. If None, `default_params`
+            are used.
         """
         super().__init__(params=params)
 
@@ -66,8 +73,6 @@ class PerpetualPutModel(BaseModel):
             The strike price of the option.
         q : float
             The continuously compounded dividend yield of the asset.
-        **_ : Any
-            Catches and ignores any other arguments passed by the technique.
 
         Returns
         -------

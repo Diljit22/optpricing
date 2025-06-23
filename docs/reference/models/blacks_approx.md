@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Black's Approximation Model
 
-Coming soon.
+::: src.quantfin.models.blacks_approx.BlacksApproxModel

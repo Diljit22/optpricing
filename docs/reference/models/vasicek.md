@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Vasicek Model
 
-Coming soon.
+::: src.quantfin.models.vasicek.VasicekModel

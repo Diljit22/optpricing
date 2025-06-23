@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Merton Jump-Diffusion Model
 
-Coming soon.
+::: src.quantfin.models.merton_jump.MertonJumpModel

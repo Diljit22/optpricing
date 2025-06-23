@@ -8,21 +8,38 @@ import numpy as np
 from quantfin.models.base import BaseModel, ParamValidator
 from quantfin.models.bsm import BSMModel
 
+__doc__ = """
+Defines Black's (1975) approximation for pricing an American call option
+on a stock paying discrete dividends.
+"""
+
 
 class BlacksApproxModel(BaseModel):
     """
-    Black's (1975) approximation for an American call on a stock with discrete dividends.
+    Black's approximation for an American call on a stock with discrete dividends.
     """
 
     name: str = "Black's Approximation"
     has_closed_form: bool = True
     cf_kwargs = BaseModel.cf_kwargs + ("discrete_dividends", "ex_div_times")
 
+    default_params = {"sigma": 0.30}
+
     def __init__(self, params: dict[str, float]):
+        """
+        Initializes the Black's Approximation model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+            Must contain 'sigma'.
+        """
         super().__init__(params)
         self.bsm_solver = BSMModel(params={"sigma": self.params["sigma"]})
 
     def _validate_params(self) -> None:
+        """Validate the 'sigma' parameter."""
         ParamValidator.require(self.params, ["sigma"], model=self.name)
         ParamValidator.positive(self.params, ["sigma"], model=self.name)
 
@@ -38,6 +55,38 @@ class BlacksApproxModel(BaseModel):
         ex_div_times: np.ndarray,
         q: float | None = None,
     ) -> float:
+        """
+        Calculates the price by comparing holding vs. exercising before each dividend.
+
+        Parameters
+        ----------
+        spot : float
+            The current price of the underlying asset.
+        strike : float
+            The strike price of the option.
+        r : float
+            The continuously compounded risk-free rate.
+        t : float
+            The time to maturity of the option, in years.
+        call : bool, optional
+            Must be True, as the model is for calls only. Defaults to True.
+        discrete_dividends : np.ndarray
+            An array of discrete dividend amounts.
+        ex_div_times : np.ndarray
+            An array of ex-dividend dates, in years.
+
+        Returns
+        -------
+        float
+            The approximated price of the American call option.
+
+        Raises
+        ------
+        NotImplementedError
+            If the option is a put.
+        ValueError
+            If `discrete_dividends` is empty.
+        """
         if not call:
             raise NotImplementedError(
                 "Black's Approximation is for American calls only."

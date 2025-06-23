@@ -9,6 +9,10 @@ from scipy.special import factorial
 from quantfin.models.base import CF, BaseModel, ParamValidator
 from quantfin.models.bsm import BSMModel
 
+__doc__ = """
+Defines the Merton jump-diffusion model.
+"""
+
 
 class MertonJumpModel(BaseModel):
     """
@@ -60,11 +64,21 @@ class MertonJumpModel(BaseModel):
     }
 
     def __init__(self, params: dict[str, float]):
+        """
+        Initializes the Merton Jump-Diffusion model.
+        Uses BSMModel instance for the core diffusion
+
+        Parameters
+        ----------
+        params : dict[str, float]
+            A dictionary of model parameters.
+        """
+
         super().__init__(params)
-        # BSMModel instance for the core diffusion
         self.bsm_solver = BSMModel(params={"sigma": self.params["sigma"]})
 
     def _validate_params(self) -> None:
+        """Validates parameters for diffusion and jump components."""
         p = self.params
         req = ["lambda", "mu_j", "sigma_j", "sigma", "max_sum_terms"]
         ParamValidator.require(p, req, model=self.name)
@@ -82,7 +96,29 @@ class MertonJumpModel(BaseModel):
         t: float,
         call: bool = True,
     ) -> float:
-        """Merton's closed-form solution as a sum of BSM prices."""
+        """
+        Merton's closed-form solution as a sum of BSM prices.
+
+        Parameters
+        ----------
+        spot : float
+            The current price of the underlying asset.
+        strike : float
+            The strike price of the option.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+        t : float
+            The time to maturity of the option, in years.
+        call : bool, optional
+            True for a call option, False for a put. Defaults to True.
+
+        Returns
+        -------
+        float
+            The price of the European option.
+        """
         lambda_ = self.params["lambda"]
         mu_j = self.params["mu_j"]
         sigma_j = self.params["sigma_j"]
@@ -121,7 +157,27 @@ class MertonJumpModel(BaseModel):
         spot: float,
         r: float,
         q: float,
+        **_: Any,
     ) -> CF:
+        """
+        Merton characteristic function for the log-spot price log(S_t).
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         p = self.params
         sigma, lambda_, mu_j, sigma_j = p["sigma"], p["lambda"], p["mu_j"], p["sigma_j"]
         drift = r - q - 0.5 * sigma**2

@@ -8,10 +8,14 @@ from quantfin.models.base import CF, BaseModel, ParamValidator
 from quantfin.models.heston import HestonModel
 from quantfin.models.merton_jump import MertonJumpModel
 
+__doc__ = """
+Defines the Bates stochastic volatility with jumps model.
+"""
+
 
 class BatesModel(BaseModel):
     """
-    Bates (1996) stochastic volatility jump-diffusion model.
+    Bates stochastic volatility jump-diffusion model.
 
     This model combines the Heston stochastic volatility process with Merton's
     log-normal jump-diffusion process, providing a rich framework for capturing
@@ -38,6 +42,14 @@ class BatesModel(BaseModel):
     param_defs = {**HestonModel.param_defs, **MertonJumpModel.param_defs}
 
     def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the Bates model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+        """
         super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
@@ -68,7 +80,27 @@ class BatesModel(BaseModel):
         v0: float,
         **_: Any,
     ) -> CF:
-        """Bates characteristic function, a product of Heston and Merton CFs."""
+        """
+        Bates characteristic function, a product of Heston and Merton CFs.
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+        v0 : float
+            The initial variance of the asset's returns.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         p = self.params
         kappa, theta, rho, vol_of_vol = (
             p["kappa"],

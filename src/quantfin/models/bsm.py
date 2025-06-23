@@ -7,6 +7,10 @@ from scipy.stats import norm
 
 from quantfin.models.base import CF, BaseModel, ParamValidator, PDECoeffs
 
+__doc__ = """
+Defines the Black-Scholes-Merton (BSM) model for pricing European options.
+"""
+
 
 class BSMModel(BaseModel):
     """
@@ -34,7 +38,15 @@ class BSMModel(BaseModel):
     }
 
     def __init__(self, params: dict[str, float] | None = None):
-        # If no params are given, use the class's default_params
+        """
+        Initializes the BSM model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+            Must contain 'sigma'.
+        """
         super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
@@ -61,7 +73,27 @@ class BSMModel(BaseModel):
         call: bool = True,
     ) -> float:
         """
-        Compute the Black-Scholes-Merton price in closed form.
+        Computes the Black-Scholes-Merton price in closed form.
+
+        Parameters
+        ----------
+        spot : float
+            The current price of the underlying asset.
+        strike : float
+            The strike price of the option.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+        t : float
+            The time to maturity of the option, in years.
+        call : bool, optional
+            True for a call option, False for a put. Defaults to True.
+
+        Returns
+        -------
+        float
+            The price of the European option.
         """
         sigma = self.params["sigma"]
         sqrt_t = np.sqrt(t)
@@ -176,7 +208,25 @@ class BSMModel(BaseModel):
         q: float,
         **_,
     ) -> CF:
-        """Returns the characteristic function phi(u) for the log-spot price log(S_t)."""
+        """
+        Returns the characteristic function phi(u) for the log-spot price log(S_t).
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         sigma = self.params["sigma"]
         drift = r - q - 0.5 * sigma**2
 

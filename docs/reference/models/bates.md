@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Bates Model
 
-Coming soon.
+::: src.quantfin.models.bates.BatesModel

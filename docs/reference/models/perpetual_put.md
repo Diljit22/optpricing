@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Perpetual Put Model
 
-Coming soon.
+::: src.quantfin.models.perpetual_put.PerpetualPutModel

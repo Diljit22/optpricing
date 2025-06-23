@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Kou Model
 
-Coming soon.
+::: src.quantfin.models.kou.KouModel

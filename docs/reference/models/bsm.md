@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Black-Scholes-Merton Model
 
-Coming soon.
+::: src.quantfin.models.bsm.BSMModel
