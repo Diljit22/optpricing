@@ -12,8 +12,10 @@ __doc__ = """
 Defines the Cox-Ross-Rubinstein (CRR) binomial lattice pricing technique.
 """
 
+
 class CRRTechnique(LatticeTechnique):
     """Cox-Ross-Rubinstein binomial lattice technique."""
+
     def _price_and_get_nodes(
         self,
         option: Option,

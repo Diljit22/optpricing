@@ -12,6 +12,7 @@ __doc__ = """
 Defines the Leisen-Reimer binomial lattice pricing technique.
 """
 
+
 class LeisenReimerTechnique(LatticeTechnique):
     """Leisen-Reimer binomial lattice technique with Peizer-Pratt inversion."""
 

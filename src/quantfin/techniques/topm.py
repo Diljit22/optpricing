@@ -12,6 +12,7 @@ __doc__ = """
 Defines the Kamrad-Ritchken trinomial lattice pricing technique (TOPM).
 """
 
+
 class TOPMTechnique(LatticeTechnique):
     """Kamrad-Ritchken trinomial lattice technique."""
 
