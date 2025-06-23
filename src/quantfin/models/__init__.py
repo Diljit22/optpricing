@@ -28,17 +28,18 @@ from .vasicek import VasicekModel
 from .vg import VarianceGammaModel
 
 __all__ = [
-    # Base
+    # Base Components
     "BaseModel",
     "CF",
     "PDECoeffs",
     "ParamValidator",
-    # Models
+    # Concrete Models
     "BatesModel",
     "BlacksApproxModel",
     "BSMModel",
     "CEVModel",
     "CGMYModel",
+    "CIRModel",
     "DupireLocalVolModel",
     "HestonModel",
     "HyperbolicModel",
@@ -50,5 +51,4 @@ __all__ = [
     "SABRModel",
     "VarianceGammaModel",
     "VasicekModel",
-    "CIRModel",
 ]
