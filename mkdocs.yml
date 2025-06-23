@@ -77,8 +77,14 @@ nav:
           - Rate: reference/atoms/rate.md
           - Stock: reference/atoms/stock.md
       - Calibration:
+          - reference/calibration/index.md
           - Calibrator: reference/calibration/calibrator.md
+          - Jump Parameter Fitting: reference/calibration/fit_jump_parameters.md
+          - Market Parameter Fitting: reference/calibration/fit_market_params.md
           - IV Surface: reference/calibration/iv_surface.md
+          - Technique Selector: reference/calibration/technique_selector.md
+          - Vectorized BSM IV: reference/calibration/vectorized_bsm_iv.md
+          - Vectorized Integration IV: reference/calibration/vectorized_integration_iv.md
       - Dashboard:
           - reference/dashboard/index.md
           - Plots: reference/dashboard/plots.md

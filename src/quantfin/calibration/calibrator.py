@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize, minimize_scalar
@@ -7,13 +9,41 @@ from quantfin.models import BaseModel
 
 from .technique_selector import select_fastest_technique
 
+__doc__ = """
+Defines the main Calibrator class used to fit financial models to market data.
+"""
+
 
 class Calibrator:
-    """A generic class for calibrating financial models to market data."""
+    """
+    A generic class for calibrating financial models to market data.
+
+    This class orchestrates the process of finding the model parameters that
+    minimize the difference between model prices and observed market prices.
+    """
 
     def __init__(
-        self, model: BaseModel, market_data: pd.DataFrame, stock: Stock, rate: Rate
+        self,
+        model: BaseModel,
+        market_data: pd.DataFrame,
+        stock: Stock,
+        rate: Rate,
     ):
+        """
+        Initializes the Calibrator.
+
+        Parameters
+        ----------
+        model : BaseModel
+            The financial model to be calibrated (e.g., HestonModel).
+        market_data : pd.DataFrame
+            A DataFrame containing market prices of options. Must include
+            'strike', 'maturity', 'optionType', and 'marketPrice' columns.
+        stock : Stock
+            The underlying asset's properties.
+        rate : Rate
+            The risk-free rate structure.
+        """
         self.model = model
         self.market_data = market_data
         self.stock = stock
@@ -69,7 +99,28 @@ class Calibrator:
         bounds: dict[str, tuple],
         frozen_params: dict[str, float] = None,
     ) -> dict[str, float]:
-        """Performs the calibration using an optimization algorithm."""
+        """
+        Performs the calibration using an optimization algorithm.
+
+        This method uses `scipy.optimize.minimize` (or `minimize_scalar` for
+        a single parameter) to find the optimal set of parameters that
+        minimizes the objective function.
+
+        Parameters
+        ----------
+        initial_guess : dict[str, float]
+            A dictionary of initial guesses for the parameters to be fitted.
+        bounds : dict[str, tuple]
+            A dictionary mapping parameter names to their (min, max) bounds.
+        frozen_params : dict[str, float] | None, optional
+            A dictionary of parameters to hold constant during the optimization.
+            Defaults to None.
+
+        Returns
+        -------
+        dict[str, float]
+            A dictionary containing the full set of calibrated and frozen parameters.
+        """
         frozen_params = frozen_params or {}
         params_to_fit_names = [p for p in initial_guess if p not in frozen_params]
         print(f"Fitting parameters: {params_to_fit_names}")

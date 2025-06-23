@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Calibrator
 
-Coming soon.
+::: src.quantfin.calibration.calibrator.Calibrator

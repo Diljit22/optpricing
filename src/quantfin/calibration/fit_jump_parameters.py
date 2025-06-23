@@ -1,12 +1,38 @@
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 
+__doc__ = """
+Provides a utility function to estimate jump parameters from historical data.
+"""
+
 
 def fit_jump_params_from_history(
-    log_returns: pd.Series, threshold_stds: float = 3.0
+    log_returns: pd.Series,
+    threshold_stds: float = 3.0,
 ) -> dict:
     """
     Estimates jump parameters and diffusion volatility from historical returns.
+
+    This function separates historical log returns into a "diffusion" component
+    (normal daily movements) and a "jump" component (extreme movements) based
+    on a standard deviation threshold. It then calculates the annualized
+    parameters for a jump-diffusion model like Merton's.
+
+    Parameters
+    ----------
+    log_returns : pd.Series
+        A pandas Series of daily log returns.
+    threshold_stds : float, optional
+        The number of standard deviations to use as a threshold for identifying
+        jumps, by default 3.0.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the estimated parameters: 'sigma', 'lambda',
+        'mu_j', and 'sigma_j'.
     """
     print("Fitting jump parameters from historical returns...")
 

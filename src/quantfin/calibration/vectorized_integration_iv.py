@@ -13,6 +13,12 @@ if TYPE_CHECKING:
     from quantfin.models import BaseModel
 
 
+__doc__ = """
+Defines a high-performance, vectorized solver for implied volatility using
+numerical integration of the characteristic function.
+"""
+
+
 class VectorizedIntegrationIVSolver:
     """
     A high-performance, vectorized Secant method solver for implied volatility
@@ -20,8 +26,23 @@ class VectorizedIntegrationIVSolver:
     """
 
     def __init__(
-        self, max_iter: int = 20, tolerance: float = 1e-7, upper_bound: float = 200.0
+        self,
+        max_iter: int = 20,
+        tolerance: float = 1e-7,
+        upper_bound: float = 200.0,
     ):
+        """
+        Initializes the vectorized IV solver.
+
+        Parameters
+        ----------
+        max_iter : int, optional
+            Maximum number of iterations for the Secant method, by default 20.
+        tolerance : float, optional
+            Error tolerance for convergence, by default 1e-7.
+        upper_bound : float, optional
+            The upper limit for the numerical integration, by default 200.0.
+        """
         self.max_iter = max_iter
         self.tolerance = tolerance
         self.upper_bound = upper_bound
@@ -35,6 +56,26 @@ class VectorizedIntegrationIVSolver:
     ) -> np.ndarray:
         """
         Calculates implied volatility for an array of options and prices.
+
+        This method uses a vectorized Secant root-finding algorithm. The pricing
+        at each step is performed using a vectorized version of the Gil-Pelaez
+        inversion formula.
+
+        Parameters
+        ----------
+        target_prices : np.ndarray
+            An array of market prices for which to find the implied volatility.
+        options : pd.DataFrame
+            A DataFrame of option contracts.
+        model : BaseModel
+            The financial model to use for pricing.
+        rate : Rate
+            The risk-free rate structure.
+
+        Returns
+        -------
+        np.ndarray
+            An array of calculated implied volatilities.
         """
         iv0 = np.full_like(target_prices, 0.20)
         iv1 = np.full_like(target_prices, 0.25)
@@ -60,7 +101,11 @@ class VectorizedIntegrationIVSolver:
         return iv1
 
     def _price_vectorized(
-        self, iv_vector: np.ndarray, options: pd.DataFrame, model: BaseModel, rate: Rate
+        self,
+        iv_vector: np.ndarray,
+        options: pd.DataFrame,
+        model: BaseModel,
+        rate: Rate,
     ) -> np.ndarray:
         """
         Internal method to price a vector of options for a given vector of volatilities.
