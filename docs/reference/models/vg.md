@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Variance Gamma (VG) Model
 
-Coming soon.
+::: src.quantfin.models.vg.VarianceGammaModel

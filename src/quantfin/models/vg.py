@@ -6,6 +6,10 @@ import numpy as np
 
 from quantfin.models.base import CF, BaseModel, ParamValidator
 
+__doc__ = """
+Defines the Variance Gamma (VG) model, a pure-jump Lévy process.
+"""
+
 
 class VarianceGammaModel(BaseModel):
     """Variance Gamma (VG) model, a pure-jump Lévy process."""
@@ -40,6 +44,14 @@ class VarianceGammaModel(BaseModel):
     }
 
     def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the Variance Gamma (VG) model.
+
+        Parameters
+        ----------
+        params : dict[str, float]
+            A dictionary of model parameters.
+        """
         super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
@@ -56,7 +68,37 @@ class VarianceGammaModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
-    def _cf_impl(self, *, t: float, spot: float, r: float, q: float, **_: Any) -> CF:
+    def _cf_impl(
+        self,
+        *,
+        t: float,
+        spot: float,
+        r: float,
+        q: float,
+        **_: Any,
+    ) -> CF:
+        """
+        Variance Gamma characteristic function for the log-spot price log(S_t).
+
+        This is the risk-neutral characteristic function, which includes the
+        drift adjustment.
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         compensator = np.log(self.raw_cf(t=1.0)(-1j))
         drift = r - q - compensator
 
@@ -66,6 +108,22 @@ class VarianceGammaModel(BaseModel):
         return phi
 
     def raw_cf(self, *, t: float) -> Callable:
+        """
+        Returns the raw characteristic function of the VG process itself.
+
+        This function represents the characteristic function of the process
+        before the risk-neutral drift adjustment is applied.
+
+        Parameters
+        ----------
+        t : float
+            The time horizon.
+
+        Returns
+        -------
+        Callable
+            The raw characteristic function.
+        """
         p = self.params
         sigma, nu, theta = p["sigma"], p["nu"], p["theta"]
 
@@ -80,6 +138,27 @@ class VarianceGammaModel(BaseModel):
         size: int,
         rng: np.random.Generator,
     ) -> np.ndarray:
+        """
+        Generates exact samples of the terminal log-return for the VG process.
+
+        This leverages the representation of the VG process as a Brownian
+        motion with drift, time-changed by a Gamma process.
+
+        Parameters
+        ----------
+        T : float
+            The time to maturity, in years.
+        size : int
+            The number of samples to generate.
+        rng : np.random.Generator
+            A random number generator instance for reproducibility.
+
+        Returns
+        -------
+        np.ndarray
+            An array of simulated terminal log-returns.
+        """
+
         p = self.params
         sigma, nu, theta = p["sigma"], p["nu"], p["theta"]
         gamma_time = rng.gamma(shape=T / nu, scale=nu, size=size)

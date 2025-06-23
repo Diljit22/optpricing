@@ -5,6 +5,10 @@ from typing import Any
 
 from quantfin.models.base import BaseModel, ParamValidator
 
+__doc__ = """
+Defines the Cox-Ingersoll-Ross (1985) mean-reverting interest rate model.
+"""
+
 
 class CIRModel(BaseModel):
     """
@@ -14,6 +18,18 @@ class CIRModel(BaseModel):
 
     name: str = "Cox-Ingersoll-Ross"
     has_closed_form: bool = True
+    default_params = {"kappa": 0.86, "theta": 0.09, "sigma": 0.02}
+
+    def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the CIR model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+        """
+        super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
         p = self.params
@@ -30,7 +46,24 @@ class CIRModel(BaseModel):
         t: float,
         **_: Any,
     ) -> float:
-        """Calculates the price of a Zero-Coupon Bond."""
+        """
+        Calculates the price of a Zero-Coupon Bond.
+
+        Note: Re-interprets 'spot' as the initial short rate r0 and 't' as
+        the bond's maturity T. Ignores other option-specific parameters.
+
+        Parameters
+        ----------
+        spot : float
+            The initial short rate, r0.
+        t : float
+            The maturity of the bond, in years.
+
+        Returns
+        -------
+        float
+            The price of the zero-coupon bond.
+        """
         r0, T = spot, t
         p = self.params
         kappa, theta, sigma = p["kappa"], p["theta"], p["sigma"]

@@ -6,6 +6,10 @@ import numpy as np
 
 from quantfin.models.base import CF, BaseModel, ParamValidator
 
+__doc__ = """
+Defines the Normal Inverse Gaussian (NIG) model, a pure-jump Lévy process.
+"""
+
 
 class NIGModel(BaseModel):
     """Normal Inverse Gaussian (NIG) model, a pure-jump Lévy process."""
@@ -13,6 +17,19 @@ class NIGModel(BaseModel):
     name: str = "Normal Inverse Gaussian"
     supports_cf: bool = True
     is_pure_levy: bool = True
+
+    default_params = {"alpha": 15.0, "beta": -5.0, "delta": 0.5}
+
+    def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the NIG model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+        """
+        super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
         p = self.params
@@ -39,7 +56,28 @@ class NIGModel(BaseModel):
         q: float,
         **_: Any,
     ) -> CF:
-        """Risk-neutral characteristic function for the log-spot price log(S_t)."""
+        """
+        Risk-neutral characteristic function for the log-spot price log(S_t).
+
+        This is the risk-neutral characteristic function, which includes the
+        drift adjustment.
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         p = self.params
         alpha, beta, delta = p["alpha"], p["beta"], p["delta"]
         compensator = delta * (
@@ -62,7 +100,22 @@ class NIGModel(BaseModel):
         return phi
 
     def raw_cf(self, *, t: float) -> Callable:
-        """Returns the CF of the raw NIG process, without drift or spot."""
+        """
+        Returns the CF of the raw NIG process, without drift or spot.
+
+        This function represents the characteristic function of the process
+        before the risk-neutral drift adjustment is applied.
+
+        Parameters
+        ----------
+        t : float
+            The time horizon.
+
+        Returns
+        -------
+        Callable
+            The raw characteristic function.
+        """
         p = self.params
         alpha, beta, delta = p["alpha"], p["beta"], p["delta"]
 
@@ -85,7 +138,26 @@ class NIGModel(BaseModel):
         size: int,
         rng: np.random.Generator,
     ) -> np.ndarray:
-        """Draws samples from the terminal distribution of the raw NIG process."""
+        """
+        Generates exact samples of the terminal log-return for the NIG process.
+
+        This leverages the representation of the NIG process as a Brownian
+        motion with drift, time-changed by an Inverse Gaussian process.
+
+        Parameters
+        ----------
+        T : float
+            The time to maturity, in years.
+        size : int
+            The number of samples to generate.
+        rng : np.random.Generator
+            A random number generator instance for reproducibility.
+
+        Returns
+        -------
+        np.ndarray
+            An array of simulated terminal log-returns.
+        """
         from scipy.stats import invgauss
 
         p = self.params

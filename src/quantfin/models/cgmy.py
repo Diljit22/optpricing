@@ -7,6 +7,10 @@ from scipy.special import gamma as gamma_func
 
 from quantfin.models.base import CF, BaseModel, ParamValidator
 
+__doc__ = """
+Defines the CGMY (Carr, Geman, Madan, Yor, 2002) pure-jump Lévy model.
+"""
+
 
 class CGMYModel(BaseModel):
     """
@@ -20,6 +24,20 @@ class CGMYModel(BaseModel):
     name: str = "CGMY"
     supports_cf: bool = True
     is_pure_levy: bool = True
+
+    default_params = {"C": 0.02, "G": 5.0, "M": 5.0, "Y": 1.2}
+
+    def __init__(self, params: dict[str, float] | None = None):
+        """
+        Initializes the CGMY model.
+
+        Parameters
+        ----------
+        params : dict[str, float] | None, optional
+            A dictionary of model parameters. If None, `default_params` are used.
+            Defaults to None.
+        """
+        super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
         """Validates the C, G, M, and Y parameters."""
@@ -51,7 +69,28 @@ class CGMYModel(BaseModel):
         q: float,
         **_: Any,
     ) -> CF:
-        """Risk-neutral characteristic function for the log-spot price log(S_t)."""
+        """
+        Risk-neutral characteristic function for the log-spot price log(S_t).
+
+        This is the risk-neutral characteristic function, which includes the
+        drift adjustment.
+
+        Parameters
+        ----------
+        t : float
+            The time to maturity of the option, in years.
+        spot : float
+            The current price of the underlying asset.
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+
+        Returns
+        -------
+        CF
+            The characteristic function.
+        """
         compensator = np.log(self.raw_cf(t=1.0)(-1j))
         drift = r - q - np.real(compensator)
 
@@ -61,7 +100,22 @@ class CGMYModel(BaseModel):
         return phi
 
     def raw_cf(self, *, t: float) -> Callable:
-        """Returns the CF of the raw CGMY process, without drift or spot."""
+        """
+        Returns the CF of the raw CGMY process, without drift or spot.
+
+        This function represents the characteristic function of the process
+        before the risk-neutral drift adjustment is applied.
+
+        Parameters
+        ----------
+        t : float
+            The time horizon.
+
+        Returns
+        -------
+        Callable
+            The raw characteristic function.
+        """
         p = self.params
         C, G, M, Y = p["C"], p["G"], p["M"], p["Y"]
 
@@ -83,10 +137,29 @@ class CGMYModel(BaseModel):
         rng: np.random.Generator,
     ) -> np.ndarray:
         """
-        Draws samples from the terminal distribution of the raw CGMY process.
+        Generates exact samples of the terminal log-return for the CGMY process.
 
         NOTE: This is only implemented for the special case Y=1, where the
         process is a difference of two time-changed Brownian motions.
+
+        Parameters
+        ----------
+        T : float
+            The time to maturity, in years.
+        size : int
+            The number of samples to generate.
+        rng : np.random.Generator
+            A random number generator instance for reproducibility.
+
+        Returns
+        -------
+        np.ndarray
+            An array of simulated terminal log-returns.
+
+        Raises
+        ------
+        NotImplementedError
+            If the model parameter Y is not equal to 1.
         """
         p = self.params
         C, G, M, Y = p["C"], p["G"], p["M"], p["Y"]

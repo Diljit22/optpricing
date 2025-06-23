@@ -73,7 +73,6 @@ class MertonJumpModel(BaseModel):
         params : dict[str, float]
             A dictionary of model parameters.
         """
-
         super().__init__(params)
         self.bsm_solver = BSMModel(params={"sigma": self.params["sigma"]})
 

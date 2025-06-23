@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Normal Inverse Gaussian (NIG) Model
 
-Coming soon.
+::: src.quantfin.models.nig.NIGModel

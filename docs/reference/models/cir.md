@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Cox-Ingersoll-Ross (CIR) Model
 
-Coming soon.
+::: src.quantfin.models.cir.CIRModel

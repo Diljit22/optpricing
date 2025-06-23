@@ -1,5 +1,3 @@
----
-title: TODO
----
+# CGMY Model
 
-Coming soon.
+::: src.quantfin.models.cgmy.CGMYModel
