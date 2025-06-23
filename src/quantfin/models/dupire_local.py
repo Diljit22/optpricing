@@ -6,11 +6,28 @@ from quantfin.models.base import BaseModel
 
 
 class DupireLocalVolModel(BaseModel):
-    """Dupire (1994) Local Volatility model."""
+    """Dupire Local Volatility model."""
 
     name: str = "Dupire Local Volatility"
     supports_sde: bool = True
     is_local_vol: bool = True
+
+    default_params = {"vol_surface": lambda T, K: 0.2}
+
+    def __init__(self, params: dict[str, Any] | None = None):
+        """
+        Initializes the Dupire Local Volatility model.
+
+        The key parameter for this model is 'vol_surface', a callable function
+        that takes maturity (T) and strike (K) and returns the local volatility.
+
+        Parameters
+        ----------
+        params : dict[str, Any] | None, optional
+            A dictionary of model parameters. If None, a default constant
+            volatility surface is used. Defaults to None.
+        """
+        super().__init__(params or self.default_params)
 
     def _validate_params(self) -> None:
         if "vol_surface" not in self.params or not callable(self.params["vol_surface"]):

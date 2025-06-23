@@ -1,5 +1,3 @@
----
-title: TODO
----
+# Hyperbolic Model
 
-Coming soon.
+::: src.quantfin.models.hyperbolic.HyperbolicModel

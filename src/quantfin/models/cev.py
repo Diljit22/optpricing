@@ -84,7 +84,7 @@ class CEVModel(BaseModel):
         # Handle the boundary case where gamma -> 1 (which is BSM)
         if abs(1.0 - gamma) < 1e-6:
             drift = (r - 0.5 * sigma**2) * T
-            diffusion = sigma * np.sqrt(T) * np.random.standard_normal(size)
+            diffusion = sigma * np.sqrt(T) * np.random.standard_normal(size)  # noqa: NPY002
             return S0 * np.exp(drift + diffusion)
 
         df = 2 + 2 / (1 - gamma)
