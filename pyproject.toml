@@ -46,6 +46,7 @@ dev = [
     "mkdocstrings[python]",
     "mkdocs-section-index",
     "line_profiler",
+    "typer",
 ]
 
 [project.urls]

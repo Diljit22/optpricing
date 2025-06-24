@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import pandas as pd
 
 from quantfin.config import BACKTEST_LOGS_DIR
@@ -11,6 +13,8 @@ __doc__ = """
 Defines the BacktestWorkflow for running a model calibration and evaluation
 over a series of historical market data snapshots.
 """
+
+logger = logging.getLogger(__name__)
 
 
 class BacktestWorkflow:
@@ -47,18 +51,19 @@ class BacktestWorkflow:
         """
         available_dates = get_available_snapshot_dates(self.ticker)
         if len(available_dates) < 2:
-            print(
-                "Backtest for "
-                f"{self.model_config['name']} "
-                "requires at least 2 days of data. Skipping."
+            logger.warning(
+                "Backtest for %s requires at least 2 days of data. Skipping.",
+                self.model_config["name"],
             )
             return
 
         for i in range(len(available_dates) - 1):
             calib_date, eval_date = available_dates[i], available_dates[i + 1]
-            print(
-                "\n--- Processing Period: Calibrate on "
-                f"{calib_date}, Evaluate on {eval_date} ---"
+
+            logger.info(
+                "--- Processing Period: Calibrate on %s, Evaluate on %s ---",
+                calib_date,
+                eval_date,
             )
 
             calib_data = load_market_snapshot(self.ticker, calib_date)
@@ -73,7 +78,9 @@ class BacktestWorkflow:
             calib_workflow.run()
 
             if calib_workflow.results["Status"] != "Success":
-                print("    -> Calibration failed. Skipping evaluation for this period.")
+                logger.warning(
+                    "Calibration failed. Skipping evaluation for this period."
+                )
                 continue
 
             calibrated_model = self.model_config["model_class"](
@@ -87,9 +94,8 @@ class BacktestWorkflow:
             # run the first part of the eval workflow to get the correct r, q, and stock
             eval_workflow.run()
             if eval_workflow.results["Status"] != "Success":
-                print(
-                    "    -> Evaluation setup failed. "
-                    "Skipping evaluation for this period."
+                logger.warning(
+                    "Evaluation setup failed. Skipping evaluation for this period."
                 )
                 continue
 
@@ -97,9 +103,11 @@ class BacktestWorkflow:
                 calibrated_model, eval_workflow.stock, eval_workflow.rate
             )
 
-            print(
-                "  -> Out-of-Sample RMSE for "
-                f"{self.model_config['name']} on {eval_date}: {rmse:.4f}"
+            logger.info(
+                "Out-of-Sample RMSE for %s on %s: %.4f",
+                self.model_config["name"],
+                eval_date,
+                rmse,
             )
 
             self.results.append(
@@ -115,11 +123,11 @@ class BacktestWorkflow:
         Saves the collected backtest results to a CSV file in the artifacts directory.
         """
         if not self.results:
-            print("No backtest results to save.")
+            logger.info("No backtest results to save.")
             return
 
         df = pd.DataFrame(self.results)
         today_str = pd.Timestamp.now().strftime("%Y-%m-%d")
         filepath = BACKTEST_LOGS_DIR / f"{self.ticker}_backtest_{today_str}.csv"
         df.to_csv(filepath, index=False)
-        print(f"\nDetailed backtest log saved to: {filepath}")
+        logger.info("Detailed backtest log saved to: %s", filepath)
