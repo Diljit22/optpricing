@@ -1,11 +1,9 @@
 # API Keys
-polygon_api_key: "YOUR_POLYGON_API_KEY_HERE" 
-
-# Data Directories
-data_directory: "data"
-market_snapshot_directory: "market_data_snapshots"
-historical_directory: "historical_data"
-artifacts_directory: "artifacts"
+polygon_api_key: "YOUR_POLYGON_API_KEY_HERE"
 
 # Live Data Configuration
 live_data_provider: "yfinance"  # Options: "yfinance", "polygon"
+
+# Base Directory Configuration
+data_directory: "data"
+artifacts_directory: "artifacts"

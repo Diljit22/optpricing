@@ -7,18 +7,44 @@ from quantfin.data import get_available_snapshot_dates, load_market_snapshot
 
 from .daily_workflow import DailyWorkflow
 
+__doc__ = """
+Defines the BacktestWorkflow for running a model calibration and evaluation
+over a series of historical market data snapshots.
+"""
+
 
 class BacktestWorkflow:
     """
     Orchestrates a backtest for a single model over multiple historical snapshots.
+
+    This workflow iterates through available historical data, using each day's
+    data to calibrate a model and the subsequent day's data to evaluate its
+    out-of-sample performance.
     """
 
     def __init__(self, ticker: str, model_config: dict):
+        """
+        Initializes the backtest workflow.
+
+        Parameters
+        ----------
+        ticker : str
+            The stock ticker to run the backtest for.
+        model_config : dict
+            A dictionary "recipe" defining how to calibrate the model.
+        """
         self.ticker = ticker.upper()
         self.model_config = model_config
         self.results = []
 
     def run(self):
+        """
+        Executes the full backtesting loop.
+
+        It fetches available dates, then for each calibration/evaluation pair,
+        it runs a `DailyWorkflow` to calibrate the model and then evaluates
+        the out-of-sample RMSE on the next day's data.
+        """
         available_dates = get_available_snapshot_dates(self.ticker)
         if len(available_dates) < 2:
             print(
@@ -85,7 +111,9 @@ class BacktestWorkflow:
             )
 
     def save_results(self):
-        """Saves the collected backtest results to a CSV file."""
+        """
+        Saves the collected backtest results to a CSV file in the artifacts directory.
+        """
         if not self.results:
             print("No backtest results to save.")
             return

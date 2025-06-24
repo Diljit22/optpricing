@@ -5,15 +5,23 @@ This library provides a comprehensive suite of tools for pricing financial
 derivatives, calibrating models, and analyzing market data.
 """
 
-# Core Data Structures (Atoms) & Results
-from .atoms import ExerciseStyle, Option, OptionType, Rate, Stock, ZeroCouponBond
+# Core Data Structures (Atoms)
+from .atoms import (
+    ExerciseStyle,
+    Option,
+    OptionType,
+    Rate,
+    Stock,
+    ZeroCouponBond,
+)
 
-# Calibration & Workflows
+# Calibration
 from .calibration import Calibrator, VolatilitySurface
 
 # Models
 from .models import (
     BatesModel,
+    BlacksApproxModel,
     BSMModel,
     CEVModel,
     CGMYModel,
@@ -24,6 +32,7 @@ from .models import (
     KouModel,
     MertonJumpModel,
     NIGModel,
+    PerpetualPutModel,
     SABRJumpModel,
     SABRModel,
     VarianceGammaModel,
@@ -55,8 +64,9 @@ __all__ = [
     "Rate",
     "Stock",
     "ZeroCouponBond",
-    # Models
+    # Models (alphabetically sorted)
     "BatesModel",
+    "BlacksApproxModel",
     "BSMModel",
     "CEVModel",
     "CGMYModel",
@@ -69,11 +79,12 @@ __all__ = [
     "MertonJumpModel",
     "NIGModel",
     "ParityModel",
+    "PerpetualPutModel",
     "SABRJumpModel",
     "SABRModel",
     "VarianceGammaModel",
     "VasicekModel",
-    # Techniques
+    # Techniques (alphabetically sorted)
     "ClosedFormTechnique",
     "CRRTechnique",
     "FFTTechnique",
@@ -82,7 +93,7 @@ __all__ = [
     "MonteCarloTechnique",
     "PDETechnique",
     "TOPMTechnique",
-    # Workflows
+    # Workflows & Calibration
     "BacktestWorkflow",
     "Calibrator",
     "DailyWorkflow",

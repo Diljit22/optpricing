@@ -117,7 +117,6 @@ nav:
           - SABR Jump: reference/models/sabr_jump.md
           - Vasicek: reference/models/vasicek.md
           - VG (Variance Gamma): reference/models/vg.md
-
       - Parity:
           - reference/parity/index.md
           - Implied Rate: reference/parity/implied_rate.md
@@ -144,6 +143,7 @@ nav:
           - Monte Carlo: reference/techniques/monte_carlo.md
           - PDE (Finite Difference): reference/techniques/pde.md
           - TOPM (Trinomial Option Pricing Model): reference/techniques/topm.md
-  - Benchmark:
-      - Introduction: benchmark/index.md
-      - Running Benchmarks: benchmark/running.md
+      - Workflows:
+          - reference/workflows/index.md
+          - Daily Workflow: reference/workflows/daily_workflow.md
+          - Backtest Workflow: reference/workflows/backtest_workflow.md
