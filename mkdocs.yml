@@ -69,6 +69,7 @@ nav:
       - Introduction: guide/introduction.md
       - Installation: guide/installation.md
       - Getting Started: guide/getting_started.md
+      - Command-Line Reference: reference/cli.md
   - API Reference:
       - Atoms:
           - reference/atoms/index.md

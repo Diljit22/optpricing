@@ -1,46 +1,43 @@
 import streamlit as st
 
+from quantfin.config import _config
 from quantfin.dashboard.service import DashboardService
 from quantfin.data import get_available_snapshot_dates
-from quantfin.workflows.configs import (
-    BSM_WORKFLOW_CONFIG,
-    HESTON_WORKFLOW_CONFIG,
-    MERTON_WORKFLOW_CONFIG,
-)
+from quantfin.workflows.configs import ALL_MODEL_CONFIGS
 
 st.set_page_config(layout="wide", page_title="QuantFin | Calibration")
 st.title("Model Calibration & IV Surface Analysis")
 st.caption(
     "Calibrate models to market data and visualize the resulting volatility smiles."
 )
-
-AVAILABLE_MODELS = {
-    "BSM": BSM_WORKFLOW_CONFIG,
-    "Merton": MERTON_WORKFLOW_CONFIG,
-    "Heston": HESTON_WORKFLOW_CONFIG,
-}
+AVAILABLE_TICKERS = _config.get("default_tickers", ["SPY", "AAPL"])
 
 with st.sidebar:
     st.header("Configuration")
-    ticker = st.selectbox("Ticker", ("SPY", "AAPL", "META", "GOOGL", "TSLA"))
+    ticker = st.selectbox("Ticker", AVAILABLE_TICKERS)
     data_source_options = get_available_snapshot_dates(ticker)
     snapshot_date = st.selectbox("Snapshot Date", data_source_options)
     model_selection = st.multiselect(
         "Select Models to Calibrate",
-        list(AVAILABLE_MODELS.keys()),
-        default=["BSM", "Merton"],
+        list(ALL_MODEL_CONFIGS.keys()),
+        default=["Merton"],
     )
     run_button = st.button("Run Calibration Analysis")
 
 if run_button:
-    selected_configs = {name: AVAILABLE_MODELS[name] for name in model_selection}
+    selected_configs = {name: ALL_MODEL_CONFIGS[name] for name in model_selection}
     with st.spinner("Initializing analysis..."):
         service = DashboardService(ticker, snapshot_date, selected_configs)
-        service.run_calibrations()
-        smile_fig, surface_fig = service.get_iv_plots()
-        st.session_state.service = service
-        st.session_state.smile_fig = smile_fig
-        st.session_state.surface_fig = surface_fig
+        try:
+            service.run_calibrations()
+            smile_fig, surface_fig = service.get_iv_plots()
+            st.session_state.service = service
+            st.session_state.smile_fig = smile_fig
+            st.session_state.surface_fig = surface_fig
+        except Exception as e:
+            st.error(f"An error occurred during analysis: {e}")
+            if "service" in st.session_state:
+                del st.session_state.service
 
 if "service" in st.session_state:
     service = st.session_state.service

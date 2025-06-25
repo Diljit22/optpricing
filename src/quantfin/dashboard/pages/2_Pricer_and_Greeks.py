@@ -122,15 +122,12 @@ if st.button("Calculate Price & Greeks"):
     # Calculate and Display
     with st.spinner("Calculating..."):
         try:
-            # Create a dictionary to hold the results
             results_data = {}
 
-            # Price
             results_data["Price"] = technique.price(
                 option, stock, model, rate, **pricing_kwargs
             ).price
 
-            # Greeks
             results_data["Delta"] = technique.delta(
                 option, stock, model, rate, **pricing_kwargs
             )
@@ -150,4 +147,4 @@ if st.button("Calculate Price & Greeks"):
             st.dataframe(pd.DataFrame([results_data]))
         except Exception as e:
             st.error(f"Calculation failed: {e}")
-            st.exception(e)  # print full traceback for debugging
+            st.exception(e)

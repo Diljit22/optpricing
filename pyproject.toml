@@ -26,7 +26,8 @@ dependencies = [
     "pandas==2.2.3",
     "numba",
     "pyyaml",
-    "polygon-api-client"
+    "polygon-api-client",
+    "typer",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +37,7 @@ app = [
     "plotly==6.1.2",
     "yfinance==0.2.63",
     "tabulate",
+
 ]
 dev = [
     "pytest",
@@ -46,21 +48,16 @@ dev = [
     "mkdocstrings[python]",
     "mkdocs-section-index",
     "line_profiler",
-    "typer",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/Diljit22/qf"
 
 [project.scripts]
-quantfin-dashboard = "quantfin.cli:launch_dashboard"
-quantfin-benchmark = "quantfin.cli:run_benchmark"
-quantfin-backtest = "scripts.run_backtest:main"
-quantfin-calibrate = "scripts.run_calib:main"
-quantfin-dl-hist = "scripts.download_historical_data:main"
+quantfin = "quantfin.cli:app"
 
 [tool.setuptools.packages.find]
-where = ["src", "scripts"]
+where = ["src"]
 
 [tool.ruff]
 line-length = 88

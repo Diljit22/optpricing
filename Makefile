@@ -3,7 +3,7 @@
 fix:
 	@echo "Ruff format + fix"
 	ruff format .
-	ruff check --fix src/quantfin tests scripts
+	ruff check --fix src/quantfin tests
 
 dev:
 	@echo "Re-install in editable mode (with [dev] extras)"
@@ -20,12 +20,12 @@ test:
 
 clean:
 	@echo "Cleaning Python byte-code caches"
-	python scripts/devtools/clean_cache.py
+	python devtools/clean_cache.py
 
 tree:
 	@echo "Project tree"
-	python scripts/devtools/project_tree.py
+	python devtools/project_tree.py
 
 price:
 	@echo "All Models/Techs"
-	python scripts/devtools/run_informal_test.py
+	python scripts/demo/benchmark.py

@@ -7,3 +7,31 @@ live_data_provider: "yfinance"  # Options: "yfinance", "polygon"
 # Base Directory Configuration
 data_directory: "data"
 artifacts_directory: "artifacts"
+
+# Used by 'quantfin data download --all'
+default_tickers:
+  - SPY
+  - QQQ
+  - AAPL
+  - MSFT
+  - GOOGL
+  - AMZN
+  - NVDA
+  - META
+  - TSLA
+  - JPM
+  - GS
+  - BAC
+  - JNJ
+  - UNH
+  - PFE
+  - WMT
+  - HD
+  - NKE
+  - XOM
+  - CVX
+  - BA
+  - CAT
+  - AMC
+  - GME
+  - AMD
