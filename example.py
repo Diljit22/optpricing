@@ -1,5 +1,5 @@
-from quantfin import Option, Stock, Rate, OptionType, ZeroCouponBond
-from quantfin.models import BSMModel, VasicekModel, CIRModel
+from quantfin import Option, OptionType, Rate, Stock, ZeroCouponBond
+from quantfin.models import BSMModel, CIRModel, VasicekModel
 from quantfin.techniques import ClosedFormTechnique
 
 # 1. Define an option, underlying and rate
