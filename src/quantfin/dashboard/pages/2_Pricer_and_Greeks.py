@@ -87,18 +87,30 @@ option_type = cols[1].selectbox("Option Type", ("CALL", "PUT"))
 # Dynamic Model Parameter Inputs
 st.subheader(f"{model_name} Model Parameters")
 params = {}
-if hasattr(dummy_model_instance, "param_defs"):
-    param_defs = dummy_model_instance.param_defs
+
+if hasattr(dummy_model_instance, "default_params"):
+    param_defs = getattr(dummy_model_instance, "param_defs", {})
+
     num_cols = 4
     cols = st.columns(num_cols)
-    for i, (p_name, p_def) in enumerate(param_defs.items()):
+
+    for i, (p_name, p_default_value) in enumerate(
+        dummy_model_instance.default_params.items()
+    ):
+        p_def = param_defs.get(p_name, {})
+
+        # Skip technical/non-user-facing parameters
+        if p_name in ["max_sum_terms"]:
+            continue
+
         params[p_name] = cols[i % num_cols].number_input(
-            p_def["label"],
-            value=p_def["default"],
+            label=p_def.get("label", p_name.replace("_", " ").title()),
+            value=float(p_default_value),
             min_value=p_def.get("min"),
             max_value=p_def.get("max"),
-            step=p_def.get("step"),
+            step=p_def.get("step", 0.01),
             format="%.4f",
+            key=f"{model_name}_{p_name}",  # Unique key to avoid widget state issues
         )
 
 if st.button("Calculate Price & Greeks"):
