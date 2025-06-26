@@ -12,6 +12,7 @@ from quantfin.data import (
     get_available_snapshot_dates,
     load_market_snapshot,
     save_historical_returns,
+    save_market_snapshot,
 )
 from quantfin.workflows import BacktestWorkflow, DailyWorkflow
 from quantfin.workflows.configs import ALL_MODEL_CONFIGS
@@ -322,3 +323,50 @@ def demo(
             fg=typer.colors.RED,
         )
         raise typer.Exit(code=1)
+
+
+@data_app.command(name="snapshot")
+def save_snapshot(
+    tickers: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--ticker",
+            "-t",
+            help="Stock ticker to snapshot. Can be used multiple times.",
+        ),
+    ] = None,
+    all_default: Annotated[
+        bool,
+        typer.Option(
+            "--all", help="Snapshot all default tickers specified in config.yaml."
+        ),
+    ] = False,
+):
+    """
+    Fetches and saves a live market data snapshot for specified tickers.
+
+    The data provider (yfinance or polygon) is determined by your config.yaml file.
+    """
+    if all_default:
+        tickers_to_download = _config.get("default_tickers", [])
+        if not tickers_to_download:
+            typer.secho(
+                "Error: --all flag used, but no 'default_tickers' in config.yaml.",
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+        typer.echo("Saving live market snapshots for all default tickers...")
+    elif tickers:
+        tickers_to_download = tickers
+        typer.echo(
+            f"Saving live market snapshots; tickers: {', '.join(tickers_to_download)}"
+        )
+    else:
+        typer.secho(
+            "Error: Please provide at least one --ticker or use the --all flag.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    save_market_snapshot(tickers_to_download)
+    typer.secho("Snapshot complete.", fg=typer.colors.GREEN)
