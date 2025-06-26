@@ -29,12 +29,6 @@ test:
 	@echo "Test suite"
 	pytest
 
-clean:
-	@echo "Cleaning Python byte-code and build artifact caches..."
-	# This command is more standard and removes the need for clean_cache.py
-	find . -type d -name "__pycache__" -exec rm -r {} +
-	find . -type d -name "*.egg-info" -exec rm -r {} +
-
 demo:
 	@echo "Running benchmark demo..."
 	quantfin demo
