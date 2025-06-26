@@ -1,7 +1,7 @@
 # QuantFin
 
 [![CI/CD](https://github.com/diljit22/quantfin/actions/workflows/ci.yml/badge.svg)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
-[![PyPI Version](https://badge.fury.io/py/quantfin.svg)](https://pypi.org/project/quantfin/)
+[![PyPI Version](https://badge.fury.io/py/quantfin.svg)](https://pypi.org/project/optPricing/2.0.0/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
@@ -26,7 +26,7 @@ Get started in minutes using the command-line interface.
 
 ```bash
 # 1. Install the library with all features, including the dashboard
-pip install quantfin[app]
+pip install "optPricing[app,dev]"
 
 # 2. Download historical data for a ticker (used by some models)
 quantfin data download --ticker SPY
@@ -42,10 +42,10 @@ quantfin demo
 
 For a detailed tutorial, full API reference, and more examples, please see the official documentation.
 
-- **Getting Started**: [Installation Guide](installation.md) · [Walkthrough](getting_started.md)  
-- **Documentation**: [API Reference](reference/atoms/index.md)
-- **Interactive Dashboard**: [Launch the UI](dashboard.md)  
-- **About Me**: [LinkedIn]([dashboard.md](https://www.linkedin.com/in/singhdiljit/))  
+- **Getting Started**: [Installation Guide](./installation.md) · [Walkthrough](./getting_started.md)  
+- **Documentation**: [API Reference](./reference/atoms/index.md)  
+- **Interactive Dashboard**: [Launch the UI](./dashboard.md)  
+- **About Me**: [LinkedIn](https://www.linkedin.com/in/singhdiljit/)
 
 To explore all available commands, run:
 

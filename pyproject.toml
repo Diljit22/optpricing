@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "quantfin"
+name = "optPricing"
 version = "2.0.0"
 authors = [
   { name="Diljit Singh", email="first_last22@google.com" },
@@ -53,7 +53,8 @@ dev = [
 "Homepage" = "https://diljit22.github.io/quantFin/"
 
 [project.scripts]
-quantfin = "quantfin.cli:app"
+optPricing = "quantfin.cli:app"
+quantfin   = "quantfin.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]

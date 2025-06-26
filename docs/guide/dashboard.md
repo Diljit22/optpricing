@@ -8,7 +8,7 @@ providing a visual interface for the library's core features.
 To use the dashboard, you must first install the library with the `[app]` extra dependencies:
 
 ```bash
-pip install quantfin[app]
+pip install optPricing[app]
 ```
 
 Once installed, you can launch the application from your terminal with a single command:

@@ -58,31 +58,3 @@ def test_backtest_command(mock_backtest_workflow):
     mock_backtest_workflow.assert_called_once()
     mock_workflow_instance.run.assert_called_once()
     mock_workflow_instance.save_results.assert_called_once()
-
-
-@patch("quantfin.cli.subprocess.run")
-def test_demo_command_full(mock_subprocess_run):
-    """
-    Tests the 'demo' command without a specific model.
-    """
-    result = runner.invoke(app, ["demo"])
-    assert result.exit_code == 0
-    mock_subprocess_run.assert_called_once()
-    # Check that the command is just 'python benchmark.py'
-    assert len(mock_subprocess_run.call_args.args[0]) == 2
-    assert "benchmark.py" in str(mock_subprocess_run.call_args.args[0][1])
-
-
-@patch("quantfin.cli.subprocess.run")
-def test_demo_command_specific_model(mock_subprocess_run):
-    """
-    Tests the 'demo' command with a specific model argument.
-    """
-    result = runner.invoke(app, ["demo", "BSM"])
-    assert result.exit_code == 0
-    mock_subprocess_run.assert_called_once()
-    # Check that the command is 'python benchmark.py BSM'
-    command_list = mock_subprocess_run.call_args.args[0]
-    assert len(command_list) == 3
-    assert "benchmark.py" in str(command_list[1])
-    assert command_list[2] == "BSM"

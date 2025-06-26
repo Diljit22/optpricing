@@ -36,17 +36,17 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
         chain_df = pd.concat(all_options, ignore_index=True)
         today_date = datetime.combine(date.today(), datetime.min.time())
         chain_df["maturity"] = (chain_df["expiry"] - today_date).dt.days / 365.25
-        chain_df["last_price"] = (chain_df["bid"] + chain_df["ask"]) / 2.0
+        chain_df["marketPrice"] = (chain_df["bid"] + chain_df["ask"]) / 2.0
         chain_df["spot_price"] = ticker_obj.fast_info.get(
             "last_price", ticker_obj.history("1d")["Close"].iloc[0]
         )
 
         chain_df.dropna(
-            subset=["last_price", "strike", "maturity", "impliedVolatility"],
+            subset=["marketPrice", "strike", "maturity", "impliedVolatility"],
             inplace=True,
         )
         chain_df = chain_df[
-            (chain_df["last_price"] > 0.01) & (chain_df["maturity"] > 1 / 365.25)
+            (chain_df["marketPrice"] > 0.01) & (chain_df["maturity"] > 1 / 365.25)
         ].copy()
         return chain_df
 

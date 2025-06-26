@@ -13,7 +13,7 @@ The quickest way to see QuantFin in action is with the included benchmark script
 **Prerequisite**: install the library if you haven’t already:
 
 ```bash
-pip install quantfin
+pip install optPricing
 ```
 
 Then execute:
@@ -206,7 +206,7 @@ pytest
 Make sure you have the `[app]` extras installed:
 
 ```bash
-pip install quantfin[app]
+pip install optPricing[app]
 ```
 
 Then run:

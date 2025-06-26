@@ -18,7 +18,7 @@ fix:
 
 dev:
 	@echo "Re-install in editable mode (with [dev,app] extras)"
-	-pip uninstall -y quantfin || true
+	-pip uninstall -y optPricing || true
 	pip install -e '.[dev,app]'
 
 docs:

@@ -11,6 +11,7 @@ Thank you for your interest in improving QuantFin! Even though this is a small p
    git clone https://github.com/Diljit22/quantFin.git
    cd quantFin
    ```
+
 3. **Install** development dependencies:
 
    ```bash
@@ -25,6 +26,7 @@ Thank you for your interest in improving QuantFin! Even though this is a small p
   ruff format .
   ruff check .
   ```
+  
 * Please write clear, modular code and include docstrings in NumPy style.
 
 ## Testing

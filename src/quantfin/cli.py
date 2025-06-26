@@ -3,17 +3,27 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
-from typing import Annotated
+from importlib import resources
+from pathlib import Path
+from typing import Annotated, Optional
 
+import numpy as np
+import pandas as pd
 import typer
 
-from quantfin.config import PROJECT_ROOT, _config
+from quantfin.atoms import Option, OptionType, Rate, Stock
+from quantfin.calibration import fit_rate_and_dividend
+from quantfin.calibration.technique_selector import select_fastest_technique
+from quantfin.config import _config
 from quantfin.data import (
     get_available_snapshot_dates,
+    get_live_option_chain,
     load_market_snapshot,
     save_historical_returns,
     save_market_snapshot,
 )
+from quantfin.models import BaseModel
+from quantfin.parity import ImpliedRateModel
 from quantfin.workflows import BacktestWorkflow, DailyWorkflow
 from quantfin.workflows.configs import ALL_MODEL_CONFIGS
 
@@ -26,7 +36,7 @@ calibrations, backtests, data management tasks, and launching the dashboard.
 
 # Create the main Typer application
 app = typer.Typer(
-    name="quantfin",
+    name="optPricing",
     help="A quantitative finance library for option pricing and analysis.",
     add_completion=False,
 )
@@ -34,6 +44,9 @@ app = typer.Typer(
 # Create a subcommand for data-related tasks
 data_app = typer.Typer(name="data", help="Tools for downloading and managing data.")
 app.add_typer(data_app)
+
+tools_app = typer.Typer(name="tools", help="Miscellaneous financial utility tools.")
+app.add_typer(tools_app)
 
 
 # Utility function for logging setup
@@ -57,25 +70,13 @@ def dashboard():
     Launches the Streamlit dashboard application.
     """
     # Note: We point directly to the source file now.
-    app_path = PROJECT_ROOT / "src" / "quantfin" / "dashboard" / "app.py"
-    typer.echo(f"Launching Streamlit dashboard from: {app_path}")
-
-    if not app_path.exists():
-        typer.secho(
-            f"Error: Dashboard entry point not found at '{app_path}'.",
-            fg=typer.colors.RED,
-        )
-        raise typer.Exit(code=1)
-
     try:
-        subprocess.run(
-            ["streamlit", "run", str(app_path)],
-            check=True,
-        )
+        with resources.path("quantfin.dashboard", "app.py") as app_path:
+            typer.echo(f"Launching Streamlit dashboard from: {app_path}")
+            subprocess.run(["streamlit", "run", str(app_path)], check=True)
     except FileNotFoundError:
         typer.secho(
-            "Error: 'streamlit' command not found; install: "
-            "'pip install quantfin[app]'",
+            "Error: 'streamlit' command not found; 'pip install optpricing[app]'",
             fg=typer.colors.RED,
         )
         raise typer.Exit(code=1)
@@ -174,6 +175,11 @@ def calibrate(
     """
     setup_logging(verbose)
 
+    current_dir = Path.cwd()
+    artifacts_base_dir = current_dir / _config.get("artifacts_directory", "artifacts")
+    calibrated_params_dir = artifacts_base_dir / "calibrated_params"
+    calibrated_params_dir.mkdir(parents=True, exist_ok=True)
+
     # --- 1. Determine the snapshot date to use ---
     if date is None:
         typer.echo(
@@ -248,7 +254,7 @@ def calibrate(
             }
             # Example filename: SPY_Heston_2023-01-01.json
             filename = f"{ticker}_{model_name}_{date}.json"
-            save_path = PROJECT_ROOT / "artifacts" / "calibrated_params" / filename
+            save_path = calibrated_params_dir / filename
             with open(save_path, "w") as f:
                 json.dump(params_to_save, f, indent=4)
             typer.echo(f"  - Saved parameters to: {save_path}")
@@ -308,21 +314,12 @@ def demo(
     If a model name is provided (e.g., 'BSM'), it runs only that benchmark.
     Otherwise, it runs the full suite.
     """
-    benchmark_script_path = PROJECT_ROOT / "demo" / "benchmark.py"
-    typer.echo(f"Executing benchmark demo from: {benchmark_script_path}")
-
-    command_to_run = ["python", str(benchmark_script_path)]
-    if model_name:
-        command_to_run.append(model_name)
-
-    try:
-        subprocess.run(command_to_run, check=True)
-    except FileNotFoundError:
-        typer.secho(
-            f"Error: Demo script not found at '{benchmark_script_path}'.",
-            fg=typer.colors.RED,
-        )
-        raise typer.Exit(code=1)
+    typer.secho(
+        "The 'demo' command for developers and requires the full source repository.",
+        fg=typer.colors.YELLOW,
+    )
+    typer.echo("Please run 'make demo' from the project's root directory instead.")
+    raise typer.Exit()
 
 
 @data_app.command(name="snapshot")
@@ -370,3 +367,174 @@ def save_snapshot(
 
     save_market_snapshot(tickers_to_download)
     typer.secho("Snapshot complete.", fg=typer.colors.GREEN)
+
+
+@app.command()
+def price(
+    ticker: Annotated[
+        str, typer.Option("--ticker", "-t", help="Stock ticker for the option.")
+    ],
+    strike: Annotated[
+        float, typer.Option("--strike", "-k", help="Strike price of the option.")
+    ],
+    maturity: Annotated[
+        str,
+        typer.Option("--maturity", "-T", help="Maturity date in YYYY-MM-DD format."),
+    ],
+    option_type: Annotated[
+        str, typer.Option("--type", help="Option type: 'call' or 'put'.")
+    ] = "call",
+    model: Annotated[
+        str, typer.Option("--model", "-m", help="The model to use for pricing.")
+    ] = "BSM",
+    param: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--param",
+            help="Set a model parameter (e.g., 'sigma=0.2'). Can use multiple times.",
+        ),
+    ] = None,
+):
+    """Prices a single option using live market data and user model parameters."""
+    msg = (
+        f"Pricing {ticker} {strike} {option_type.upper()} expiring {maturity} "
+        f"using {model} model..."
+    )
+    typer.echo(msg)
+
+    # 1. Parse model parameters
+    model_params = {}
+    if param:
+        for p in param:
+            try:
+                key, value = p.split("=")
+                model_params[key.strip()] = float(value)
+            except ValueError:
+                typer.secho(
+                    f"Invalid format for parameter: '{p}'. Use 'key=value'.",
+                    fg=typer.colors.RED,
+                )
+                raise typer.Exit(code=1)
+
+    # 2. Get live market data for r, q, and spot
+    typer.echo("Fetching live market data...")
+    live_chain = get_live_option_chain(ticker)
+    if live_chain is None or live_chain.empty:
+        typer.secho(
+            f"Error: Could not fetch live option chain for {ticker}.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    spot = live_chain["spot_price"].iloc[0]
+    calls = live_chain[live_chain["optionType"] == "call"]
+    puts = live_chain[live_chain["optionType"] == "put"]
+    r, q = fit_rate_and_dividend(calls, puts, spot)
+    typer.echo(
+        f"Live Data -> Spot: {spot:.2f}, Implied Rate: {r:.4f}, Implied Div: {q:.4f}"
+    )
+
+    # 3. Create objects and price
+    stock = Stock(spot=spot, dividend=q)
+    rate = Rate(rate=r)
+    maturity_years = (pd.to_datetime(maturity) - pd.Timestamp.now()).days / 365.25
+    option = Option(
+        strike=strike,
+        maturity=maturity_years,
+        option_type=OptionType[option_type.upper()],
+    )
+
+    model_class = ALL_MODEL_CONFIGS[model]["model_class"]
+    model_instance = model_class(params=model_params)
+    technique = select_fastest_technique(model_instance)
+
+    # Prepare kwargs for techniques that need extra info (e.g., Heston's v0)
+    pricing_kwargs = model_params.copy()
+
+    price_result = technique.price(
+        option, stock, model_instance, rate, **pricing_kwargs
+    )
+    delta = technique.delta(option, stock, model_instance, rate, **pricing_kwargs)
+    gamma = technique.gamma(option, stock, model_instance, rate, **pricing_kwargs)
+    vega = technique.vega(option, stock, model_instance, rate, **pricing_kwargs)
+
+    # 4. Display results
+    typer.secho("\n--- Pricing Results ---", fg=typer.colors.CYAN)
+    typer.echo(f"Price: {price_result.price:.4f}")
+    typer.echo(f"Delta: {delta:.4f}")
+    typer.echo(f"Gamma: {gamma:.4f}")
+    typer.echo(f"Vega:  {vega:.4f}")
+
+
+@tools_app.command(name="implied-rate")
+def get_implied_rate(
+    ticker: Annotated[
+        str, typer.Option("--ticker", "-t", help="Stock ticker for the option pair.")
+    ],
+    strike: Annotated[
+        float, typer.Option("--strike", "-k", help="Strike price of the option pair.")
+    ],
+    maturity: Annotated[
+        str,
+        typer.Option("--maturity", "-T", help="Maturity date in YYYY-MM-DD format."),
+    ],
+):
+    """Calculates the implied risk-free rate from a live call-put pair."""
+    typer.echo(
+        f"Fetching live prices for {ticker} {strike} options expiring {maturity}..."
+    )
+
+    live_chain = get_live_option_chain(ticker)
+    if live_chain is None or live_chain.empty:
+        typer.secho(
+            f"Error: Could not fetch live option chain for {ticker}.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    maturity_dt = pd.to_datetime(maturity).date()
+    chain_for_expiry = live_chain[live_chain["expiry"].dt.date == maturity_dt]
+
+    call_option = chain_for_expiry[
+        (chain_for_expiry["strike"] == strike)
+        & (chain_for_expiry["optionType"] == "call")
+    ]
+    put_option = chain_for_expiry[
+        (chain_for_expiry["strike"] == strike)
+        & (chain_for_expiry["optionType"] == "put")
+    ]
+
+    if call_option.empty or put_option.empty:
+        typer.secho(
+            f"Error: Did not find both: call & put for strike {strike} on {maturity}.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    call_price = call_option["marketPrice"].iloc[0]
+    put_price = put_option["marketPrice"].iloc[0]
+
+    spot_price = call_option["spot_price"].iloc[0]
+    maturity_years = call_option["maturity"].iloc[0]
+
+    pair_msg = (
+        f"Found Pair -> Call Price: {call_price:.2f}, Put Price: {put_price:.2f}, "
+        f"Spot: {spot_price:.2f}"
+    )
+    typer.echo(pair_msg)
+
+    implied_rate_model = ImpliedRateModel(params={})
+    try:
+        implied_r = implied_rate_model.price_closed_form(
+            call_price=call_price,
+            put_price=put_price,
+            spot=spot_price,
+            strike=strike,
+            t=maturity_years,
+            q=0,
+        )
+        typer.secho(
+            f"\nImplied Risk-Free Rate (r): {implied_r:.4%}", fg=typer.colors.GREEN
+        )
+    except Exception as e:
+        typer.secho(f"\nError calculating implied rate: {e}", fg=typer.colors.RED)
