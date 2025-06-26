@@ -1,4 +1,15 @@
-.PHONY: fix dev docs test clean tree
+.PHONY: help fix dev docs test clean demo tree
+
+# This 'help' target is a common pattern to make the Makefile self-documenting.
+help:
+	@echo "Available commands:"
+	@echo "  make fix       : Auto-format and lint the code with Ruff."
+	@echo "  make dev       : Re-install the library in editable mode with all dependencies."
+	@echo "  make docs      : Serve the documentation site locally for live preview."
+	@echo "  make test      : Run the full pytest test suite."
+	@echo "  make clean     : Remove all Python cache files."
+	@echo "  make demo      : Run the benchmark/demo script."
+	@echo "  make tree      : Display the clean project directory tree."
 
 fix:
 	@echo "Ruff format + fix"
@@ -6,9 +17,9 @@ fix:
 	ruff check --fix src/quantfin tests
 
 dev:
-	@echo "Re-install in editable mode (with [dev] extras)"
+	@echo "Re-install in editable mode (with [dev,app] extras)"
 	-pip uninstall -y quantfin || true
-	pip install -e '.[dev]'
+	pip install -e '.[dev,app]'
 
 docs:
 	@echo "MkDocs live server"
@@ -19,13 +30,15 @@ test:
 	pytest
 
 clean:
-	@echo "Cleaning Python byte-code caches"
-	python devtools/clean_cache.py
+	@echo "Cleaning Python byte-code and build artifact caches..."
+	# This command is more standard and removes the need for clean_cache.py
+	find . -type d -name "__pycache__" -exec rm -r {} +
+	find . -type d -name "*.egg-info" -exec rm -r {} +
+
+demo:
+	@echo "Running benchmark demo..."
+	quantfin demo
 
 tree:
 	@echo "Project tree"
 	python devtools/project_tree.py
-
-price:
-	@echo "All Models/Techs"
-	python scripts/demo/benchmark.py

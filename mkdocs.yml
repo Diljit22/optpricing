@@ -21,7 +21,6 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
-    #- navigation.tabs
     - navigation.sections
     - toc.integrate
     - navigation.top
@@ -57,8 +56,6 @@ markdown_extensions:
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.mark
-  #- pymdownx.tabbed:
-  #    alternate_style: true
   - toc:
       permalink: "#"
 
@@ -69,7 +66,7 @@ nav:
       - Introduction: guide/introduction.md
       - Installation: guide/installation.md
       - Getting Started: guide/getting_started.md
-      - Command-Line Reference: reference/cli.md
+      - Dashboard: guide/dashboard.md
   - API Reference:
       - Atoms:
           - reference/atoms/index.md
@@ -148,3 +145,5 @@ nav:
           - reference/workflows/index.md
           - Daily Workflow: reference/workflows/daily_workflow.md
           - Backtest Workflow: reference/workflows/backtest_workflow.md
+      - CLI:
+          - CLI Usage: reference/cli.md
