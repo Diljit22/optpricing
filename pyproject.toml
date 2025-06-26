@@ -27,17 +27,14 @@ dependencies = [
     "pyyaml==6.0.2",
     "polygon-api-client==1.14.6",
     "typer==0.15.2",
-]
-
-[project.optional-dependencies]
-app = [
     "streamlit==1.45.1",
     "matplotlib==3.10.1",
     "plotly==6.1.2",
     "yfinance==0.2.63",
     "tabulate==0.9.0",
-
 ]
+
+[project.optional-dependencies]
 dev = [
     "pytest==8.3.5",
     "pytest-cov==6.2.1",
@@ -55,6 +52,9 @@ dev = [
 [project.scripts]
 optPricing = "quantfin.cli:app"
 quantfin   = "quantfin.cli:app"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
