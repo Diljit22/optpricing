@@ -43,14 +43,14 @@ quantfin demo
 For a detailed tutorial, full API reference, and more examples, please see the official documentation.
 
 - **Getting Started**:  
-  [Installation Guide](https://diljit22.github.io/quantFin/installation/) ·  
-  [Walkthrough](https://diljit22.github.io/quantFin/getting_started/)
+  [Installation Guide](https://diljit22.github.io/quantFin/guide/installation/) ·  
+  [Walkthrough](https://diljit22.github.io/quantFin/guide/getting_started/)
 
 - **Documentation**:  
-  [API Reference](https://diljit22.github.io/quantFin/reference/atoms/)
+  [API Reference](https://diljit22.github.io/quantFin)
 
 - **Interactive Dashboard**:  
-  [Launch the UI](https://diljit22.github.io/quantFin/dashboard/)
+  [Launch the UI](https://diljit22.github.io/quantFin/guide/dashboard/)
 
 - **About Me**:  
   [LinkedIn](https://www.linkedin.com/in/singhdiljit/)
