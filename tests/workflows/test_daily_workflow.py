@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from quantfin.workflows import DailyWorkflow
+from optpricing.workflows import DailyWorkflow
 
 
 @pytest.fixture
@@ -32,10 +32,10 @@ def setup():
 
 
 @patch(
-    "quantfin.workflows.daily_workflow.fit_rate_and_dividend",
+    "optpricing.workflows.daily_workflow.fit_rate_and_dividend",
     return_value=(0.05, 0.01),
 )
-@patch("quantfin.workflows.daily_workflow.Calibrator")
+@patch("optpricing.workflows.daily_workflow.Calibrator")
 def test_daily_workflow_success_path(mock_calibrator, mock_fit_r_q, setup):
     """
     Tests the successful execution path of the daily workflow.
@@ -59,7 +59,7 @@ def test_daily_workflow_success_path(mock_calibrator, mock_fit_r_q, setup):
     assert workflow.results["Calibrated Params"]["sigma"] == 0.25
 
 
-@patch("quantfin.workflows.daily_workflow.fit_rate_and_dividend")
+@patch("optpricing.workflows.daily_workflow.fit_rate_and_dividend")
 def test_daily_workflow_failure_path(mock_fit_r_q, setup):
     """
     Tests that the workflow correctly handles exceptions and records a failure.

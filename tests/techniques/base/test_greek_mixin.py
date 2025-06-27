@@ -3,9 +3,9 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.models import BSMModel
-from quantfin.techniques.base import BaseTechnique, GreekMixin, PricingResult
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.models import BSMModel
+from optpricing.techniques.base import BaseTechnique, GreekMixin, PricingResult
 
 
 # Create a dummy technique that uses the GreekMixin for testing

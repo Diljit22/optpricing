@@ -1,3 +1,3 @@
 # Parity Model
 
-::: src.quantfin.parity.parity_model.ParityModel
+::: src.optpricing.parity.parity_model.ParityModel

@@ -1,3 +1,3 @@
 # CRR (Cox-Ross-Rubinstein) Technique
 
-::: src.quantfin.techniques.crr.CRRTechnique
+::: src.optpricing.techniques.crr.CRRTechnique

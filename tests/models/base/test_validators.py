@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models.base import ParamValidator
+from optpricing.models.base import ParamValidator
 
 MODEL_NAME = "TestModel"
 

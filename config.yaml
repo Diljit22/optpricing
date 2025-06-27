@@ -8,7 +8,7 @@ live_data_provider: "yfinance"  # Options: "yfinance", "polygon"
 data_directory: "data"
 artifacts_directory: "artifacts"
 
-# Used by 'quantfin data download --all'
+# Used by 'optpricing data download --all'
 default_tickers:
   - SPY
   - QQQ

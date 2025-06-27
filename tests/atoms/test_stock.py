@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.atoms import Stock
+from optpricing.atoms import Stock
 
 
 def test_stock_creation():

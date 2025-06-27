@@ -1,10 +1,10 @@
 # Introduction
 
-Welcome to the QuantFin library! This documentation is your comprehensive guide to understanding and using all the features this library has to offer.
+Welcome to the optpricing library! This documentation is your comprehensive guide to understanding and using all the features this library has to offer.
 
-## What is QuantFin?
+## What is optpricing?
 
-QuantFin is a Python library designed to provide a toolkit for quantitative finance, with a primary focus on the pricing and analysis of financial derivatives.
+optpricing is a Python library designed to provide a toolkit for quantitative finance, with a primary focus on the pricing and analysis of financial derivatives.
 
 The library is organized around a few core concepts; understanding these will help you navigate the codebase and documentation.
 

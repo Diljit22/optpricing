@@ -48,11 +48,11 @@ dev = [
 ]
 
 [project.urls]
-"Homepage" = "https://diljit22.github.io/quantFin/"
+"Homepage" = "https://diljit22.github.io/optpricing/"
 
 [project.scripts]
-optPricing = "quantfin.cli:app"
-quantfin   = "quantfin.cli:app"
+optPricing = "optpricing.cli:app"
+optpricing   = "optpricing.cli:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -77,5 +77,5 @@ skip-magic-trailing-comma = false
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q --cov=src/quantfin --cov-report=term-missing"
+addopts = "-ra -q --cov=src/optpricing --cov-report=term-missing"
 testpaths = ["tests"]

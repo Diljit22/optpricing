@@ -1,3 +1,3 @@
 # Calibrator
 
-::: src.quantfin.calibration.calibrator.Calibrator
+::: src.optpricing.calibration.calibrator.Calibrator

@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.parity import ImpliedRateModel
+from optpricing.parity import ImpliedRateModel
 
 # Test data based on a known BSM model output
 # S=100, K=100, T=1, r=0.05, q=0.01, vol=0.2

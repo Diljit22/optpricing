@@ -2,9 +2,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.models import BSMModel
-from quantfin.techniques import IntegrationTechnique
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.models import BSMModel
+from optpricing.techniques import IntegrationTechnique
 
 
 # Common setup for tests
@@ -77,7 +77,7 @@ def test_free_delta_accuracy(setup):
     assert integration_delta == pytest.approx(bsm_delta, abs=1e-6)
 
 
-@patch("quantfin.techniques.base.greek_mixin.GreekMixin.delta")
+@patch("optpricing.techniques.base.greek_mixin.GreekMixin.delta")
 def test_delta_fallback_mechanism(mock_super_delta, setup):
     """
     Tests that the delta method falls back to the superclass's implementation

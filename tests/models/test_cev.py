@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import CEVModel
+from optpricing.models import CEVModel
 
 # Common parameters for tests
 PARAMS = {"sigma": 0.8, "gamma": 0.7}

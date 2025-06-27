@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models import SABRModel
+from optpricing.models import SABRModel
 
 # Common parameters for tests
 PARAMS = {"alpha": 0.5, "beta": 0.8, "rho": -0.6}

@@ -1,3 +1,3 @@
 # Historical Data Manager
 
-::: src.quantfin.data.historical_manager
+::: src.optpricing.data.historical_manager

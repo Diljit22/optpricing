@@ -1,6 +1,6 @@
 # Using the Interactive Dashboard
 
-The `quantfin` library includes an interactive dashboard built with Streamlit,
+The `optpricing` library includes an interactive dashboard built with Streamlit,
 providing a visual interface for the library's core features.
 
 ## Launching the Dashboard
@@ -14,7 +14,7 @@ pip install optPricing[app]
 Once installed, you can launch the application from your terminal with a single command:
 
 ```bash
-quantfin dashboard
+optpricing dashboard
 ```
 
 This will open the application in a new browser tab.

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.techniques.base.random_utils import crn
+from optpricing.techniques.base.random_utils import crn
 
 
 def test_crn_resets_state_and_allows_reuse():

@@ -1,6 +1,6 @@
 # Installation
 
-The QuantFin library is published on the Python Package Index (PyPI) and can be easily installed using `pip`. A Python version of 3.10 or higher is required.
+The optpricing library is published on the Python Package Index (PyPI) and can be easily installed using `pip`. A Python version of 3.10 or higher is required.
 
 ## Standard Installation
 
@@ -24,10 +24,10 @@ This is the recommended installation if you plan to use the visual tools.
 
 ## Developer Installation
 
-If you wish to contribute to the development of QuantFin, or if you want to make local modifications to the source code, you should clone the repository and install it in "editable" mode.
+If you wish to contribute to the development of optpricing, or if you want to make local modifications to the source code, you should clone the repository and install it in "editable" mode.
 
 ```bash
-git clone https://github.com/diljit22/quantfin.git
-cd quantfin
+git clone https://github.com/diljit22/optpricing.git
+cd optpricing
 pip install -e .[app,dev]
 ```

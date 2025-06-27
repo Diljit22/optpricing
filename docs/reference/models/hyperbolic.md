@@ -1,3 +1,3 @@
 # Hyperbolic Model
 
-::: src.quantfin.models.hyperbolic.HyperbolicModel
+::: src.optpricing.models.hyperbolic.HyperbolicModel

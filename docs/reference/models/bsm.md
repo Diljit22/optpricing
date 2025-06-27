@@ -1,3 +1,3 @@
 # Black-Scholes-Merton Model
 
-::: src.quantfin.models.bsm.BSMModel
+::: src.optpricing.models.bsm.BSMModel

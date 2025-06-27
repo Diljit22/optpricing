@@ -1,3 +1,3 @@
 # Monte Carlo Technique
 
-::: src.quantfin.techniques.monte_carlo.MonteCarloTechnique
+::: src.optpricing.techniques.monte_carlo.MonteCarloTechnique

@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models import KouModel
+from optpricing.models import KouModel
 
 # Common parameters for tests
 PARAMS = {"sigma": 0.15, "lambda": 1.0, "p_up": 0.6, "eta1": 10.0, "eta2": 5.0}

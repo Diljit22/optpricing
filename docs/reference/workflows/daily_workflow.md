@@ -1,3 +1,3 @@
 # Daily Workflow
 
-::: src.quantfin.workflows.daily_workflow.DailyWorkflow
+::: src.optpricing.workflows.daily_workflow.DailyWorkflow

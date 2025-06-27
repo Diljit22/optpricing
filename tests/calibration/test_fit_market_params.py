@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quantfin.calibration.fit_market_params import (
+from optpricing.calibration.fit_market_params import (
     find_atm_options,
     fit_rate_and_dividend,
 )

@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models import CIRModel
+from optpricing.models import CIRModel
 
 # Common parameters for tests
 PARAMS = {"kappa": 0.86, "theta": 0.09, "sigma": 0.02}

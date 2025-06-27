@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import BlacksApproxModel
+from optpricing.models import BlacksApproxModel
 
 # Common parameters for tests
 PARAMS = {"sigma": 0.30}

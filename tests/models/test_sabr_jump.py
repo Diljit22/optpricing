@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models import SABRJumpModel
+from optpricing.models import SABRJumpModel
 
 # Common parameters for tests
 PARAMS = {

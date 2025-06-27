@@ -3,9 +3,9 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.calibration import Calibrator
-from quantfin.models import BSMModel
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.calibration import Calibrator
+from optpricing.models import BSMModel
 
 
 @pytest.fixture
@@ -37,7 +37,7 @@ def test_objective_function(setup):
     calibrator = setup
 
     # Patch print within the objective function to avoid formatting MagicMocks
-    with patch("quantfin.calibration.calibrator.print"):
+    with patch("optpricing.calibration.calibrator.print"):
         error = calibrator._objective_function(
             params_to_fit_values=[0.2], params_to_fit_names=["sigma"], frozen_params={}
         )
@@ -46,8 +46,8 @@ def test_objective_function(setup):
     assert error == pytest.approx(0.25)
 
 
-@patch("quantfin.calibration.calibrator.print")
-@patch("quantfin.calibration.calibrator.minimize")
+@patch("optpricing.calibration.calibrator.print")
+@patch("optpricing.calibration.calibrator.minimize")
 def test_fit_multivariate(mock_minimize, mock_print, setup):
     """
     Tests that fit correctly calls the multivariate optimizer.
@@ -74,8 +74,8 @@ def test_fit_multivariate(mock_minimize, mock_print, setup):
     assert result["other"] == pytest.approx(0.1)
 
 
-@patch("quantfin.calibration.calibrator.print")
-@patch("quantfin.calibration.calibrator.minimize_scalar")
+@patch("optpricing.calibration.calibrator.print")
+@patch("optpricing.calibration.calibrator.minimize_scalar")
 def test_fit_scalar(mock_minimize_scalar, mock_print, setup):
     """
     Tests that fit correctly calls the scalar optimizer for a single parameter.

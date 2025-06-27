@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytest
 
-from quantfin.dashboard.plots import plot_iv_surface_3d, plot_smiles_by_expiry
+from optpricing.dashboard.plots import plot_iv_surface_3d, plot_smiles_by_expiry
 
 
 @pytest.fixture

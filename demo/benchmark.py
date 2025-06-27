@@ -5,8 +5,8 @@ from typing import Any
 import numpy as np
 from tabulate import tabulate
 
-from quantfin.atoms import Option, OptionType, Rate, Stock, ZeroCouponBond
-from quantfin.models import (
+from optpricing.atoms import Option, OptionType, Rate, Stock, ZeroCouponBond
+from optpricing.models import (
     BatesModel,
     BSMModel,
     CEVModel,
@@ -22,8 +22,8 @@ from quantfin.models import (
     VarianceGammaModel,
     VasicekModel,
 )
-from quantfin.models.base.base_model import BaseModel
-from quantfin.techniques import (
+from optpricing.models.base.base_model import BaseModel
+from optpricing.techniques import (
     ClosedFormTechnique,
     CRRTechnique,
     FFTTechnique,

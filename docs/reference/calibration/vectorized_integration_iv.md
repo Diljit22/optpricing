@@ -1,3 +1,3 @@
 # Vectorized Integration IV Solver
 
-::: src.quantfin.calibration.vectorized_integration_iv.VectorizedIntegrationIVSolver
+::: src.optpricing.calibration.vectorized_integration_iv.VectorizedIntegrationIVSolver

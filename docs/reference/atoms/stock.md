@@ -1,3 +1,3 @@
 # Stock
 
-::: src.quantfin.atoms.stock.Stock
+::: src.optpricing.atoms.stock.Stock

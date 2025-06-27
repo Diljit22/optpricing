@@ -3,7 +3,7 @@ from datetime import date
 import pandas as pd
 import pytest
 
-from quantfin.data import market_data_manager
+from optpricing.data import market_data_manager
 
 
 @pytest.fixture

@@ -1,3 +1,3 @@
 # FFT (Fast Fourier Transform) Technique
 
-::: src.quantfin.techniques.fft.FFTTechnique
+::: src.optpricing.techniques.fft.FFTTechnique

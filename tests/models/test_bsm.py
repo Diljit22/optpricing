@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import BSMModel
+from optpricing.models import BSMModel
 
 # Common parameters for tests
 PARAMS = {"sigma": 0.2}

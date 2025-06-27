@@ -1,3 +1,3 @@
 # Leisen-Reimer Technique
 
-::: src.quantfin.techniques.leisen_reimer.LeisenReimerTechnique
+::: src.optpricing.techniques.leisen_reimer.LeisenReimerTechnique

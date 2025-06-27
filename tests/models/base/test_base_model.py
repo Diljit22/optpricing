@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from quantfin.models.base import BaseModel
+from optpricing.models.base import BaseModel
 
 
 # A concrete implementation of BaseModel for testing purposes

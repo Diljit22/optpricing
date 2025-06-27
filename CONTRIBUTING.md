@@ -1,6 +1,6 @@
-# Contributing to QuantFin
+# Contributing to optpricing
 
-Thank you for your interest in improving QuantFin! Even though this is a small project, contributions are welcome—bug reports, documentation fixes, or new feature suggestions.
+Thank you for your interest in improving optpricing! Even though this is a small project, contributions are welcome—bug reports, documentation fixes, or new feature suggestions.
 
 ## Getting Started
 
@@ -8,8 +8,8 @@ Thank you for your interest in improving QuantFin! Even though this is a small p
 2. **Clone** your fork locally:
 
    ```bash
-   git clone https://github.com/Diljit22/quantFin.git
-   cd quantFin
+   git clone https://github.com/Diljit22/optpricing.git
+   cd optpricing
    ```
 
 3. **Install** development dependencies:

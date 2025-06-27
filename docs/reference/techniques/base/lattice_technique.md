@@ -1,3 +1,3 @@
 # LatticeTechnique
 
-::: src.quantfin.techniques.base.lattice_technique.LatticeTechnique
+::: src.optpricing.techniques.base.lattice_technique.LatticeTechnique

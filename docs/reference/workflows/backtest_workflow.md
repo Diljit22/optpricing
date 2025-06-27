@@ -1,3 +1,3 @@
 # Backtest Workflow
 
-::: src.quantfin.workflows.backtest_workflow.BacktestWorkflow
+::: src.optpricing.workflows.backtest_workflow.BacktestWorkflow
