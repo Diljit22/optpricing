@@ -48,7 +48,7 @@ dev = [
 ]
 
 [project.urls]
-"Homepage" = "https://diljit22.github.io/optpricing/"
+"Homepage" = "https://diljit22.github.io/quantfin/"
 
 [project.scripts]
 optPricing = "optpricing.cli:app"

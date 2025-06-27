@@ -3,7 +3,7 @@ site_author: Diljit Singh
 site_description: "A Python library for quantitative finance."
 site_url: https://github.com/diljit22/
 
-repo_url: https://github.com/diljit22/optpricing
+repo_url: https://github.com/diljit22/quantfin
 repo_name: optpricing
 
 docs_dir: docs

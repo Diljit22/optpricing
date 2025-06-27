@@ -1,6 +1,6 @@
 # optpricing
 
-[![CI/CD](https://github.com/diljit22/optpricing/actions/workflows/ci.yml/badge.svg)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/diljit22/quantfin/actions/workflows/ci.yml/badge.svg)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
 [![PyPI Version](https://badge.fury.io/py/optpricing.svg)](https://pypi.org/project/optPricing/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -41,14 +41,14 @@ optpricing dashboard
 For a detailed tutorial, full API reference, and more examples, please see the official documentation.
 
 - **Getting Started**:  
-  [Installation Guide](https://diljit22.github.io/optpricing/guide/installation/) ·  
-  [Walkthrough](https://diljit22.github.io/optpricing/guide/getting_started/)
+  [Installation Guide](https://diljit22.github.io/quantfin/guide/installation/) ·  
+  [Walkthrough](https://diljit22.github.io/quantfin/guide/getting_started/)
 
 - **Documentation**:  
-  [API Reference](https://diljit22.github.io/optpricing)
+  [API Reference](https://diljit22.github.io/quantfin)
 
 - **Interactive Dashboard**:  
-  [Launch the UI](https://diljit22.github.io/optpricing/guide/dashboard/)
+  [Launch the UI](https://diljit22.github.io/quantfin/guide/dashboard/)
 
 - **About Me**:  
   [LinkedIn](https://www.linkedin.com/in/singhdiljit/)

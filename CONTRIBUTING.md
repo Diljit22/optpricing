@@ -8,7 +8,7 @@ Thank you for your interest in improving optpricing! Even though this is a small
 2. **Clone** your fork locally:
 
    ```bash
-   git clone https://github.com/Diljit22/optpricing.git
+   git clone https://github.com/diljit22/quantfin.git
    cd optpricing
    ```
 

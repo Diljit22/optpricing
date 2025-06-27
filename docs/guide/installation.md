@@ -27,7 +27,7 @@ This is the recommended installation if you plan to use the visual tools.
 If you wish to contribute to the development of optpricing, or if you want to make local modifications to the source code, you should clone the repository and install it in "editable" mode.
 
 ```bash
-git clone https://github.com/diljit22/optpricing.git
+git clone https://github.com/diljit22/quantfin.git
 cd optpricing
 pip install -e .[app,dev]
 ```
