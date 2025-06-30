@@ -168,3 +168,28 @@ def get_available_snapshot_dates(ticker: str) -> list[str]:
 
     except FileNotFoundError:
         return []
+
+
+def get_live_dividend_yield(ticker: str) -> float:
+    """
+    Fetches the live forward dividend yield for a ticker using yfinance.
+
+    Parameters
+    ----------
+    ticker : str
+        The stock ticker to search for, e.g., 'SPY'.
+
+    Returns
+    -------
+    float
+        The associated div or zero.
+    """
+    print(f"Fetching live dividend yield for {ticker}...")
+    try:
+        t = yf.Ticker(ticker)
+        dividend_yield = t.info.get("dividendYield")
+        return float(dividend_yield / 100 or 0.0)
+    except Exception as e:
+        # Handle cases where the ticker is invalid or yfinance fails
+        print(f"  -> FAILED to fetch dividend yield for {ticker}. Error: {e}")
+        return 0.0

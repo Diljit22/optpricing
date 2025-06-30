@@ -11,6 +11,7 @@ from .historical_manager import (
 )
 from .market_data_manager import (
     get_available_snapshot_dates,
+    get_live_dividend_yield,
     get_live_option_chain,
     load_market_snapshot,
     save_market_snapshot,
@@ -18,6 +19,7 @@ from .market_data_manager import (
 
 __all__ = [
     "get_available_snapshot_dates",
+    "get_live_dividend_yield",
     "get_live_option_chain",
     "load_historical_returns",
     "load_market_snapshot",

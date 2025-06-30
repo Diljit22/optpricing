@@ -5,11 +5,12 @@ import logging
 import subprocess
 from importlib import resources
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
-import numpy as np
 import pandas as pd
 import typer
+from rich.console import Console
+from rich.table import Table
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.calibration import fit_rate_and_dividend
@@ -17,6 +18,7 @@ from optpricing.calibration.technique_selector import select_fastest_technique
 from optpricing.config import _config
 from optpricing.data import (
     get_available_snapshot_dates,
+    get_live_dividend_yield,
     get_live_option_chain,
     load_market_snapshot,
     save_historical_returns,
@@ -426,12 +428,15 @@ def price(
         )
         raise typer.Exit(code=1)
 
+    q = get_live_dividend_yield(ticker)  # Fetch the known dividend yield
     spot = live_chain["spot_price"].iloc[0]
     calls = live_chain[live_chain["optionType"] == "call"]
     puts = live_chain[live_chain["optionType"] == "put"]
-    r, q = fit_rate_and_dividend(calls, puts, spot)
+
+    # Call your existing function, but now with q_fixed
+    r, _ = fit_rate_and_dividend(calls, puts, spot, q_fixed=q)
     typer.echo(
-        f"Live Data -> Spot: {spot:.2f}, Implied Rate: {r:.4f}, Implied Div: {q:.4f}"
+        f"Live Data -> Spot: {spot:.2f}, Known Dividend: {q:.4%}, Implied Rate: {r:.4%}"
     )
 
     # 3. Create objects and price
@@ -492,6 +497,8 @@ def get_implied_rate(
         )
         raise typer.Exit(code=1)
 
+    q = get_live_dividend_yield(ticker)
+
     maturity_dt = pd.to_datetime(maturity).date()
     chain_for_expiry = live_chain[live_chain["expiry"].dt.date == maturity_dt]
 
@@ -531,10 +538,60 @@ def get_implied_rate(
             spot=spot_price,
             strike=strike,
             t=maturity_years,
-            q=0,
+            q=q,
         )
         typer.secho(
             f"\nImplied Risk-Free Rate (r): {implied_r:.4%}", fg=typer.colors.GREEN
         )
     except Exception as e:
         typer.secho(f"\nError calculating implied rate: {e}", fg=typer.colors.RED)
+
+
+@data_app.command(name="dividends")
+def get_dividends(
+    tickers: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--ticker",
+            "-t",
+            help="Stock ticker to fetch. Can be used multiple times.",
+        ),
+    ] = None,
+    all_default: Annotated[
+        bool,
+        typer.Option(
+            "--all", help="Fetch for all default tickers specified in config.yaml."
+        ),
+    ] = False,
+):
+    """
+    Fetches and displays the live forward dividend yield for specified tickers.
+    """
+    if all_default:
+        tickers_to_fetch = _config.get("default_tickers", [])
+        if not tickers_to_fetch:
+            typer.secho(
+                "Error: --all flag used, but no 'default_tickers' in config.yaml.",
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(code=1)
+        typer.echo("Fetching dividend yields for all default tickers...")
+    elif tickers:
+        tickers_to_fetch = tickers
+    else:
+        typer.secho(
+            "Error: Please provide at least one --ticker or use the --all flag.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+
+    console = Console()
+    table = Table(title="Live Dividend Yields")
+    table.add_column("Ticker", justify="left", style="cyan", no_wrap=True)
+    table.add_column("Dividend Yield", justify="right", style="magenta")
+
+    for ticker in tickers_to_fetch:
+        yield_val = get_live_dividend_yield(ticker)
+        table.add_row(ticker.upper(), f"{yield_val:.4%}")
+
+    console.print(table)
