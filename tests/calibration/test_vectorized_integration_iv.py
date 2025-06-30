@@ -3,7 +3,9 @@ import pandas as pd
 import pytest
 
 from optpricing.atoms import Rate, Stock
-from optpricing.calibration.vectorized_integration_iv import VectorizedIntegrationIVSolver
+from optpricing.calibration.vectorized_integration_iv import (
+    VectorizedIntegrationIVSolver,
+)
 from optpricing.models import BSMModel
 
 

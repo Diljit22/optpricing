@@ -1,8 +1,5 @@
-# API Keys
-polygon_api_key: "YOUR_POLYGON_API_KEY_HERE"
-
 # Live Data Configuration
-live_data_provider: "yfinance"  # Options: "yfinance", "polygon"
+live_data_provider: "yfinance"  # Options: "yfinance"
 
 # Base Directory Configuration
 data_directory: "data"

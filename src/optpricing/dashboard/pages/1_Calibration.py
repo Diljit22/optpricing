@@ -11,7 +11,10 @@ st.caption(
     "Calibrate models to market data and visualize the resulting volatility smiles."
 )
 AVAILABLE_TICKERS = _config.get("default_tickers", ["SPY", "AAPL"])
-ENABLED_MODELS = ["BSM", "Merton"]
+ENABLED_MODELS = [
+    "BSM",
+    # "Merton",
+]
 
 all_model_names = list(ALL_MODEL_CONFIGS.keys())
 disabled_models = [name for name in all_model_names if name not in ENABLED_MODELS]

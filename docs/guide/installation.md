@@ -7,7 +7,7 @@ The optpricing library is published on the Python Package Index (PyPI) and can b
 For most use cases, including running the command-line interface for calibration and backtesting, you can install the core library with the following command:
 
 ```bash
-pip install optPricing
+pip install optpricing
 ```
 
 This will install the library and all its core dependencies, such as numpy, scipy, and typer.
@@ -17,7 +17,7 @@ This will install the library and all its core dependencies, such as numpy, scip
 The library includes an optional interactive dashboard built with Streamlit, which provides a visual way to interact with the pricing and calibration tools. To install the core library along with the dependencies needed to run the dashboard, use the [app] extra:
 
 ```bash
-pip install optPricing[app]
+pip install optpricing[app]
 ```
 
 This is the recommended installation if you plan to use the visual tools.

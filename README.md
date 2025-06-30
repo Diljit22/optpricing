@@ -1,7 +1,7 @@
 # optpricing
 
 [![CI/CD](https://github.com/diljit22/quantfin/actions/workflows/ci.yml/badge.svg)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
-[![PyPI Version](https://badge.fury.io/py/optpricing.svg)](https://pypi.org/project/optPricing/)
+[![PyPI Version](https://badge.fury.io/py/optpricing.svg)](https://pypi.org/project/optpricing/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
@@ -26,7 +26,7 @@ Get started in minutes using the command-line interface.
 
 ```bash
 # 1. Install the library with all features, including the dashboard
-pip install "optPricing"
+pip install "optpricing"
 
 # 2. Download historical data for a ticker (used by some models)
 optpricing data download --ticker SPY

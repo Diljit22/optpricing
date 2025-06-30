@@ -4,9 +4,8 @@ from datetime import date, datetime
 
 import pandas as pd
 import yfinance as yf
-from polygon import RESTClient
 
-from optpricing.config import MARKET_SNAPSHOT_DIR, POLYGON_API_KEY, _config
+from optpricing.config import MARKET_SNAPSHOT_DIR, _config
 
 
 def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
@@ -55,74 +54,12 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
         return None
 
 
-def _fetch_from_polygon(ticker: str) -> pd.DataFrame | None:
-    """Fetches a live option chain using Polygon.io."""
-    print(f"Fetching live option chain for {ticker} from Polygon.io...")
-    if not POLYGON_API_KEY or "YOUR_KEY" in POLYGON_API_KEY:
-        print("Error: Polygon API key not set in config.yaml or environment variables.")
-        return None
-
-    client = RESTClient(POLYGON_API_KEY)
-    try:
-        # limited implementation for a free account
-        # gets the chain for the next expiration date.
-        expirations = list(
-            client.list_options_contracts(
-                underlying_ticker=ticker, expired=False, limit=1
-            )
-        )
-        if not expirations:
-            return None
-
-        expiry_date = expirations[0].expiration_date
-        contracts = list(
-            client.list_options_contracts(
-                underlying_ticker=ticker, expiration_date=expiry_date, limit=1000
-            )
-        )
-        if not contracts:
-            return None
-
-        # A single snapshot call
-        snapshot = client.get_options_chain(
-            underlying_ticker=ticker, expiration_date=expiry_date
-        )
-
-        data = []
-        for contract_details in snapshot.results:
-            greeks = contract_details.greeks
-            data.append(
-                {
-                    "ticker": contract_details.ticker,
-                    "underlying": ticker,
-                    "strike": contract_details.details.strike_price,
-                    "expiry": pd.to_datetime(contract_details.details.expiration_date),
-                    "optionType": "call"
-                    if contract_details.details.contract_type == "call"
-                    else "put",
-                    "spot_price": greeks.underlying_price,
-                    "last_price": contract_details.last_quote.bid,
-                    "impliedVolatility": greeks.implied_volatility,
-                    "volume": contract_details.day.volume,
-                    "open_interest": contract_details.open_interest,
-                }
-            )
-
-        df = pd.DataFrame(data)
-        df["maturity"] = (df["expiry"] - pd.Timestamp.now()).dt.days / 365.25
-        return df
-
-    except Exception as e:
-        print(f"An error occurred while fetching live Polygon data: {e}")
-        return None
-
-
 def get_live_option_chain(ticker: str) -> pd.DataFrame | None:
     """
     Fetches a live option chain from the configured data provider.
 
     The data provider is determined by the `live_data_provider` key in the
-    `config.yaml` file. Supported providers are "yfinance" and "polygon".
+    `config.yaml` file. Supported providers are "yfinance".
 
     Parameters
     ----------
@@ -136,10 +73,7 @@ def get_live_option_chain(ticker: str) -> pd.DataFrame | None:
         the fetch fails or no data is returned.
     """
     provider = _config.get("live_data_provider", "yfinance").lower()
-    if provider == "polygon":
-        return _fetch_from_polygon(ticker)
-
-    elif provider == "yfinance":
+    if provider == "yfinance":
         return _fetch_from_yfinance(ticker)
 
     else:

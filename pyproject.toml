@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "optPricing"
+name = "optpricing"
 version = "2.0.3"
 authors = [
   { name="Diljit Singh", email="first_last22@google.com" },
@@ -26,7 +26,6 @@ dependencies = [
     "numba~=0.61.2",
     "pyyaml~=6.0.2",
     "click~=8.1",
-    "polygon-api-client~=1.14.6",
     "typer~=0.15.2",
     "streamlit~=1.45.1",
     "matplotlib~=3.10.1",
@@ -51,8 +50,7 @@ dev = [
 "Homepage" = "https://diljit22.github.io/quantfin/"
 
 [project.scripts]
-optPricing = "optpricing.cli:app"
-optpricing   = "optpricing.cli:app"
+optpricing = "optpricing.cli:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

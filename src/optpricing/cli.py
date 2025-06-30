@@ -36,7 +36,7 @@ calibrations, backtests, data management tasks, and launching the dashboard.
 
 # Create the main Typer application
 app = typer.Typer(
-    name="optPricing",
+    name="optpricing",
     help="A quantitative finance library for option pricing and analysis.",
     add_completion=False,
 )
@@ -342,7 +342,7 @@ def save_snapshot(
     """
     Fetches and saves a live market data snapshot for specified tickers.
 
-    The data provider (yfinance or polygon) is determined by your config.yaml file.
+    The data provider (yfinance) is determined by the config.yaml file.
     """
     if all_default:
         tickers_to_download = _config.get("default_tickers", [])

@@ -11,7 +11,6 @@ CONFIG_FILE_PATH = PROJECT_ROOT / "config.yaml"
 if not CONFIG_FILE_PATH.exists():
     print(f"Config file not found. Creating default config.yaml at {CONFIG_FILE_PATH}")
     default_config = {
-        "polygon_api_key": "YOUR_POLYGON_API_KEY_HERE",
         "live_data_provider": "yfinance",
         "data_directory": "data",
         "artifacts_directory": "artifacts",
@@ -26,9 +25,6 @@ if not CONFIG_FILE_PATH.exists():
 
 with open(CONFIG_FILE_PATH) as f:
     _config = yaml.safe_load(f) or {}
-
-# API Key Management
-POLYGON_API_KEY = os.environ.get("POLYGON_API_KEY", _config.get("polygon_api_key"))
 
 # Directory Management
 DATA_DIR = PROJECT_ROOT / _config.get("data_directory", "data")

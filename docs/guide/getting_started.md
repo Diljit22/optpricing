@@ -13,7 +13,7 @@ The quickest way to see optpricing in action is with the included benchmark scri
 **Prerequisite**: install the library if you haven’t already:
 
 ```bash
-pip install optPricing
+pip install optpricing
 ```
 
 Then execute:
@@ -206,7 +206,7 @@ pytest
 Make sure you have the `[app]` extras installed:
 
 ```bash
-pip install optPricing[app]
+pip install optpricing[app]
 ```
 
 Then run:
