@@ -87,17 +87,11 @@ class BacktestWorkflow:
                 params=calib_workflow.results["Calibrated Params"]
             )
 
-            # Evaluate the model on the next day's data
             eval_workflow = DailyWorkflow(
-                market_data=eval_data, model_config=self.model_config
+                market_data=eval_data,
+                model_config=self.model_config,
             )
-            # run the first part of the eval workflow to get the correct r, q, and stock
-            eval_workflow.run()
-            if eval_workflow.results["Status"] != "Success":
-                logger.warning(
-                    "Evaluation setup failed. Skipping evaluation for this period."
-                )
-                continue
+            eval_workflow._prepare_for_evaluation()
 
             rmse = eval_workflow._evaluate_rmse(
                 calibrated_model, eval_workflow.stock, eval_workflow.rate
