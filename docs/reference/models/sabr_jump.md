@@ -1,3 +1,3 @@
 # SABR with Jumps Model
 
-::: src.optpricing.models.sabr_jump.SABRJumpMode
+::: src.optpricing.models.sabr_jump.SABRJumpModel

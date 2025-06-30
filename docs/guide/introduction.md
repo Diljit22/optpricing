@@ -30,6 +30,6 @@ The library was designed with the following principles in mind:
 
 Ready to get started? Head over to:
 
-- [Getting Started](guide/getting_started.md)
-- [API Reference](reference/atoms/index.md)
-- [Interactive Dashboard](guide/dashboard.md)
+- [Getting Started](getting_started.md)
+- [API Reference](../reference/atoms/index.md)
+- [Interactive Dashboard](dashboard.md)
