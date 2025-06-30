@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from quantfin.workflows import BacktestWorkflow
+from optpricing.workflows import BacktestWorkflow
 
 
 @pytest.fixture
@@ -17,9 +17,9 @@ def setup():
     return workflow
 
 
-@patch("quantfin.workflows.backtest_workflow.load_market_snapshot")
-@patch("quantfin.workflows.backtest_workflow.get_available_snapshot_dates")
-@patch("quantfin.workflows.backtest_workflow.DailyWorkflow")
+@patch("optpricing.workflows.backtest_workflow.load_market_snapshot")
+@patch("optpricing.workflows.backtest_workflow.get_available_snapshot_dates")
+@patch("optpricing.workflows.backtest_workflow.DailyWorkflow")
 def test_backtest_workflow_run(
     mock_daily_workflow,
     mock_get_dates,
@@ -57,7 +57,7 @@ def test_backtest_workflow_run(
     assert result["Out-of-Sample RMSE"] == 0.5
 
 
-@patch("quantfin.workflows.backtest_workflow.pd.DataFrame.to_csv")
+@patch("optpricing.workflows.backtest_workflow.pd.DataFrame.to_csv")
 def test_save_results(mock_to_csv, setup):
     """
     Tests that save_results correctly calls the DataFrame's to_csv method.

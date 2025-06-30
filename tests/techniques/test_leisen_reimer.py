@@ -2,9 +2,9 @@ from unittest.mock import patch
 
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.models import BSMModel
-from quantfin.techniques import LeisenReimerTechnique
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.models import BSMModel
+from optpricing.techniques import LeisenReimerTechnique
 
 
 # Common setup for tests
@@ -17,7 +17,7 @@ def setup():
     return option, stock, model, rate
 
 
-@patch("quantfin.techniques.leisen_reimer._lr_pricer")
+@patch("optpricing.techniques.leisen_reimer._lr_pricer")
 def test_lr_calls_kernel(mock_pricer, setup):
     """
     Tests that the LeisenReimerTechnique class correctly calls the _lr_pricer kernel.

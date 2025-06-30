@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.techniques.base import PricingResult
+from optpricing.techniques.base import PricingResult
 
 
 def test_pricing_result_creation():

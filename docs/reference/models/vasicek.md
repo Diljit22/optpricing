@@ -1,3 +1,3 @@
 # Vasicek Model
 
-::: src.quantfin.models.vasicek.VasicekModel
+::: src.optpricing.models.vasicek.VasicekModel

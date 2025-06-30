@@ -1,4 +1,4 @@
-name: QuantFin CI/CD
+name: optpricing CI/CD
 
 on:
   push:

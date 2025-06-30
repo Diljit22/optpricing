@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import HyperbolicModel
+from optpricing.models import HyperbolicModel
 
 # Common parameters for tests
 PARAMS = {"alpha": 15.0, "beta": -5.0, "delta": 0.5, "mu": 0.0}

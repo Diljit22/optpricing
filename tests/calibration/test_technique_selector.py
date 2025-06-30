@@ -2,8 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from quantfin.calibration.technique_selector import select_fastest_technique
-from quantfin.techniques import ClosedFormTechnique, FFTTechnique, MonteCarloTechnique
+from optpricing.calibration.technique_selector import select_fastest_technique
+from optpricing.techniques import ClosedFormTechnique, FFTTechnique, MonteCarloTechnique
 
 
 def test_select_closed_form():

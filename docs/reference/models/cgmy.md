@@ -1,3 +1,3 @@
 # CGMY Model
 
-::: src.quantfin.models.cgmy.CGMYModel
+::: src.optpricing.models.cgmy.CGMYModel

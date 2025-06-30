@@ -8,18 +8,18 @@ interface (CLI).
 
 ## 1. Run the Built-In Demo
 
-The quickest way to see QuantFin in action is with the included benchmark script.
+The quickest way to see optpricing in action is with the included benchmark script.
 
 **Prerequisite**: install the library if you haven’t already:
 
 ```bash
-pip install optPricing
+pip install optpricing
 ```
 
 Then execute:
 
 ```bash
-quantfin demo
+optpricing demo
 ```
 
 This will price a standard option across multiple models and techniques and print a
@@ -32,9 +32,9 @@ formatted comparison table.
 First, import and configure the objects you need:
 
 ```python
-from quantfin.atoms import Option, Stock, Rate, OptionType, ZeroCouponBond
-from quantfin.models import BSMModel, VasicekModel, CIRModel
-from quantfin.techniques import ClosedFormTechnique
+from optpricing.atoms import Option, Stock, Rate, OptionType, ZeroCouponBond
+from optpricing.models import BSMModel, VasicekModel, CIRModel
+from optpricing.techniques import ClosedFormTechnique
 
 # 1. Define an option, underlying and rate
 option = Option(strike=105, maturity=1.0, option_type=OptionType.CALL)
@@ -85,7 +85,7 @@ print(f"Implied volatility for price ${target_price:.2f}: {iv:.4%}")
 
 ## 3. Pricing Interest‐Rate Instruments
 
-QuantFin reuses the same pricing interfaces for interest‐rate models:
+optpricing reuses the same pricing interfaces for interest‐rate models:
 
 ```python
 # Zero‐coupon bond maturing in 1 year
@@ -113,7 +113,7 @@ print(f"CIR ZCB Price:     {p_cir:.4f}")
 ### 4.1 Price an Option
 
 ```bash
-quantfin price \
+optpricing price \
   --ticker SPY \
   --strike 500 \
   --maturity 2025-12-19 \
@@ -131,7 +131,7 @@ quantfin price \
 The tools implied-rate command fetches live prices for a call-put pair and calculates the risk-free rate implied by put-call parity.
 
 ```bash
-quantfin tools implied-rate --ticker SPY --strike 500 --maturity 2025-12-19
+optpricing tools implied-rate --ticker SPY --strike 500 --maturity 2025-12-19
 ```
 
 ---
@@ -141,17 +141,17 @@ quantfin tools implied-rate --ticker SPY --strike 500 --maturity 2025-12-19
 Download historical returns (for initial guesses and jump paramaters):
 
 ```bash
-quantfin data download --ticker SPY
+optpricing data download --ticker SPY
 ```
 
 Download a snapshot of the market-data
 
 ```bash
 # For the 25 benchmark stocks use --all
-quantfin data snapshot --all
+optpricing data snapshot --all
 
 # If just a particular ticker use e.g.
-quantfin data snapshot --ticker SPY --ticker AAPL
+optpricing data snapshot --ticker SPY --ticker AAPL
 ```
 
 A simple calibration for the Merton Jump model. The workflow will find the latest market data
@@ -160,7 +160,7 @@ for SPY and solve for the implied volatility that best fits the front-month opti
 The `--verbose` flag provides detailed logs from the workflow.
 
 ```bash
-quantfin calibrate --ticker SPY --model Merton --verbose
+optpricing calibrate --ticker SPY --model Merton --verbose
 ```
 
 The final calibrated parameters are printed to the console and saved to a JSON file in
@@ -173,19 +173,19 @@ the `artifacts/calibrated_params/` directory.
 * Download specific tickers:
 
   ```bash
-  quantfin data download --ticker AAPL --ticker TSLA
+  optpricing data download --ticker AAPL --ticker TSLA
   ```
 
 * Download all defaults (from `config.yaml`):
 
   ```bash
-  quantfin data download --all
+  optpricing data download --all
   ```
 
 * Snapshot the live option chain:
 
   ```bash
-  quantfin data snapshot --ticker NVDA
+  optpricing data snapshot --ticker NVDA
   ```
 
 ---
@@ -206,13 +206,13 @@ pytest
 Make sure you have the `[app]` extras installed:
 
 ```bash
-pip install optPricing[app]
+pip install optpricing[app]
 ```
 
 Then run:
 
 ```bash
-quantfin dashboard
+optpricing dashboard
 ```
 
 This will open the Streamlit application in your browser for interactive exploration.

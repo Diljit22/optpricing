@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.techniques.base import BaseTechnique, IVMixin, PricingResult
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.techniques.base import BaseTechnique, IVMixin, PricingResult
 
 
 # Create a dummy technique that uses the IVMixin for testing
@@ -56,7 +56,7 @@ def test_implied_volatility_brentq_success(setup):
     assert iv == pytest.approx(target_vol, abs=1e-6)
 
 
-@patch("quantfin.techniques.base.iv_mixin.brentq")
+@patch("optpricing.techniques.base.iv_mixin.brentq")
 def test_implied_volatility_fallback_to_secant(mock_brentq, setup):
     """
     Tests that the secant method is called if brentq fails.
@@ -84,7 +84,7 @@ def test_implied_volatility_total_failure_returns_nan(setup):
     target_price = 10.0
 
     # Make both methods fail
-    with patch("quantfin.techniques.base.iv_mixin.brentq", side_effect=ValueError):
+    with patch("optpricing.techniques.base.iv_mixin.brentq", side_effect=ValueError):
         with patch.object(technique, "_secant_iv", side_effect=RuntimeError):
             iv = technique.implied_volatility(
                 option, stock, model, rate, target_price=target_price

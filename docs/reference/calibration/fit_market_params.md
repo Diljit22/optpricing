@@ -4,8 +4,8 @@ This module provides utilities to fit market-implied parameters from option pric
 
 ### Fit Rate and Dividend
 
-::: src.quantfin.calibration.fit_market_params.fit_rate_and_dividend
+::: src.optpricing.calibration.fit_market_params.fit_rate_and_dividend
 
 ### Find ATM Options
 
-::: src.quantfin.calibration.fit_market_params.find_atm_options
+::: src.optpricing.calibration.fit_market_params.find_atm_options

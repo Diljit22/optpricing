@@ -1,10 +1,10 @@
-site_name: QuantFin
+site_name: optpricing
 site_author: Diljit Singh
 site_description: "A Python library for quantitative finance."
 site_url: https://github.com/diljit22/
 
 repo_url: https://github.com/diljit22/quantfin
-repo_name: quantfin
+repo_name: optpricing
 
 docs_dir: docs
 

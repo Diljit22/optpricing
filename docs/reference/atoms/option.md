@@ -1,11 +1,11 @@
 # Option
 
-::: src.quantfin.atoms.option.Option
+::: src.optpricing.atoms.option.Option
 
 ## OptionType
 
-::: src.quantfin.atoms.option.OptionType
+::: src.optpricing.atoms.option.OptionType
 
 ## ExerciseStyle
 
-::: src.quantfin.atoms.option.ExerciseStyle
+::: src.optpricing.atoms.option.ExerciseStyle

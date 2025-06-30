@@ -1,3 +1,3 @@
 # RandomUtils
 
-::: src.quantfin.techniques.base.random_utils
+::: src.optpricing.techniques.base.random_utils

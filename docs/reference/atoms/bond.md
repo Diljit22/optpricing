@@ -1,3 +1,3 @@
 # ZeroCouponBond
 
-::: src.quantfin.atoms.bond.ZeroCouponBond
+::: src.optpricing.atoms.bond.ZeroCouponBond

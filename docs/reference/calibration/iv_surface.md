@@ -1,3 +1,3 @@
 # Volatility Surface
 
-::: src.quantfin.calibration.iv_surface.VolatilitySurface
+::: src.optpricing.calibration.iv_surface.VolatilitySurface

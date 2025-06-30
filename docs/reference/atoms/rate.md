@@ -1,3 +1,3 @@
 # Rate
 
-::: src.quantfin.atoms.rate.Rate
+::: src.optpricing.atoms.rate.Rate

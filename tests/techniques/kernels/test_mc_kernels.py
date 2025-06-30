@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.techniques.kernels import mc_kernels
+from optpricing.techniques.kernels import mc_kernels
 
 # Common parameters for all kernel tests
 N_PATHS = 10

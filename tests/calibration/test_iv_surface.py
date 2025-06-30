@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quantfin.atoms import Rate, Stock
-from quantfin.calibration import VolatilitySurface
+from optpricing.atoms import Rate, Stock
+from optpricing.calibration import VolatilitySurface
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def test_volatility_surface_initialization(sample_option_data):
         VolatilitySurface(sample_option_data.drop(columns=["strike"]))
 
 
-@patch("quantfin.calibration.iv_surface.VolatilitySurface._calculate_ivs")
+@patch("optpricing.calibration.iv_surface.VolatilitySurface._calculate_ivs")
 def test_calculate_market_iv(mock_calculate, setup):
     """
     Tests that calculate_market_iv calls the IV solver with market prices.
@@ -62,7 +62,7 @@ def test_calculate_market_iv(mock_calculate, setup):
     assert "iv" in surface.surface.columns
 
 
-@patch("quantfin.calibration.iv_surface.VolatilitySurface._calculate_ivs")
+@patch("optpricing.calibration.iv_surface.VolatilitySurface._calculate_ivs")
 def test_calculate_model_iv(mock_calculate, setup):
     """
     Tests that calculate_model_iv calls the technique and then the IV solver.

@@ -14,11 +14,11 @@ help:
 fix:
 	@echo "Ruff format + fix"
 	ruff format .
-	ruff check --fix src/quantfin tests
+	ruff check --fix src/optpricing tests
 
 dev:
 	@echo "Re-install in editable mode (with [dev,app] extras)"
-	-pip uninstall -y optPricing || true
+	-pip uninstall -y optpricing || true
 	pip install -e '.[dev,app]'
 
 docs:
@@ -31,7 +31,7 @@ test:
 
 demo:
 	@echo "Running benchmark demo..."
-	quantfin demo
+	optpricing demo
 
 tree:
 	@echo "Project tree"

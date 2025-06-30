@@ -1,3 +1,3 @@
 # Closed-Form Technique
 
-::: src.quantfin.techniques.closed_form.ClosedFormTechnique
+::: src.optpricing.techniques.closed_form.ClosedFormTechnique

@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.atoms import ZeroCouponBond
+from optpricing.atoms import ZeroCouponBond
 
 
 def test_zerocouponbond_creation():

@@ -1,3 +1,3 @@
 # Bates Model
 
-::: src.quantfin.models.bates.BatesModel
+::: src.optpricing.models.bates.BatesModel

@@ -1,4 +1,4 @@
-from quantfin.atoms import Rate
+from optpricing.atoms import Rate
 
 
 def test_rate_with_float():

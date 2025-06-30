@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models import DupireLocalVolModel
+from optpricing.models import DupireLocalVolModel
 
 
 # A sample volatility surface function for testing

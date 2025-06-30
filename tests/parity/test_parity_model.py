@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from quantfin.parity import ParityModel
+from optpricing.parity import ParityModel
 
 # Test data based on a known BSM model output
 # S=100, K=105, T=1, r=0.05, q=0.01, vol=0.2

@@ -1,6 +1,6 @@
-from quantfin import Option, OptionType, Rate, Stock, ZeroCouponBond
-from quantfin.models import BSMModel, CIRModel, VasicekModel
-from quantfin.techniques import ClosedFormTechnique
+from optpricing import Option, OptionType, Rate, Stock, ZeroCouponBond
+from optpricing.models import BSMModel, CIRModel, VasicekModel
+from optpricing.techniques import ClosedFormTechnique
 
 # 1. Define an option, underlying and rate
 option = Option(strike=105, maturity=1.0, option_type=OptionType.CALL)

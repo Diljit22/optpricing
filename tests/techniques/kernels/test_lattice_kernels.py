@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.techniques.kernels.lattice_kernels import (
+from optpricing.techniques.kernels.lattice_kernels import (
     _crr_pricer,
     _lr_pricer,
     _topm_pricer,

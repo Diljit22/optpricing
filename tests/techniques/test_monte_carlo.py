@@ -2,16 +2,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.models import (
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.models import (
     BSMModel,
     CEVModel,
     HestonModel,
     MertonJumpModel,
     VarianceGammaModel,
 )
-from quantfin.techniques import MonteCarloTechnique
-from quantfin.techniques.kernels import mc_kernels
+from optpricing.techniques import MonteCarloTechnique
+from optpricing.techniques.kernels import mc_kernels
 
 
 # Common setup for tests
@@ -40,7 +40,7 @@ def test_mc_model_support_check(setup):
         technique.price(option, stock, unsupported_model, rate)
 
 
-@patch("quantfin.techniques.monte_carlo.MonteCarloTechnique._simulate_sde_path")
+@patch("optpricing.techniques.monte_carlo.MonteCarloTechnique._simulate_sde_path")
 def test_sde_path_dispatcher(mock_simulate_sde, setup):
     """
     Tests that the dispatcher correctly calls the SDE path simulator.
@@ -53,7 +53,7 @@ def test_sde_path_dispatcher(mock_simulate_sde, setup):
     mock_simulate_sde.assert_called_once()
 
 
-@patch("quantfin.techniques.monte_carlo.MonteCarloTechnique._simulate_levy_terminal")
+@patch("optpricing.techniques.monte_carlo.MonteCarloTechnique._simulate_levy_terminal")
 def test_levy_terminal_dispatcher(mock_simulate_levy, setup):
     """
     Tests that the dispatcher correctly calls the pure Lévy terminal simulator.

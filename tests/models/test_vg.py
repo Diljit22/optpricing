@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import VarianceGammaModel
+from optpricing.models import VarianceGammaModel
 
 # Common parameters for tests
 PARAMS = {"sigma": 0.2, "nu": 0.1, "theta": -0.14}

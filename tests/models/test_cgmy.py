@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import CGMYModel
+from optpricing.models import CGMYModel
 
 # Common parameters for tests
 PARAMS = {"C": 0.02, "G": 5.0, "M": 5.0, "Y": 1.2}

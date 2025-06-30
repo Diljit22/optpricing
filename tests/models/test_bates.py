@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import BatesModel
+from optpricing.models import BatesModel
 
 # Common parameters for tests
 PARAMS = {

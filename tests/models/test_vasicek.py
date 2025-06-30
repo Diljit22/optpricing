@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models import VasicekModel
+from optpricing.models import VasicekModel
 
 # Common parameters for tests
 PARAMS = {"kappa": 0.86, "theta": 0.09, "sigma": 0.02}

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import MertonJumpModel
+from optpricing.models import MertonJumpModel
 
 # Common parameters for tests
 PARAMS = {

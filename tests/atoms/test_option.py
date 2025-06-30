@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.atoms import ExerciseStyle, Option, OptionType
+from optpricing.atoms import ExerciseStyle, Option, OptionType
 
 
 def test_option_creation():

@@ -1,3 +1,3 @@
 # BaseTechnique
 
-::: src.quantfin.techniques.base.base_technique.BaseTechnique
+::: src.optpricing.techniques.base.base_technique.BaseTechnique

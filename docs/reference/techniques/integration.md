@@ -1,3 +1,3 @@
 # Integration Technique
 
-::: src.quantfin.techniques.integration.IntegrationTechnique
+::: src.optpricing.techniques.integration.IntegrationTechnique

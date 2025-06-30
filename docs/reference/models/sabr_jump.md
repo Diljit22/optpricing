@@ -1,3 +1,3 @@
 # SABR with Jumps Model
 
-::: src.quantfin.models.sabr_jump.SABRJumpModel
+::: src.optpricing.models.sabr_jump.SABRJumpMode

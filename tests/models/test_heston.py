@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from quantfin.models import HestonModel
+from optpricing.models import HestonModel
 
 # Common parameters for tests
 PARAMS = {"kappa": 2.0, "theta": 0.04, "rho": -0.7, "vol_of_vol": 0.5}

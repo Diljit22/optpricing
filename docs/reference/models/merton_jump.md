@@ -1,3 +1,3 @@
 # Merton Jump-Diffusion Model
 
-::: src.quantfin.models.merton_jump.MertonJumpModel
+::: src.optpricing.models.merton_jump.MertonJumpModel

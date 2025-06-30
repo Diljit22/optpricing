@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from quantfin.atoms import Rate, Stock
-from quantfin.dashboard.service import DashboardService
+from optpricing.atoms import Rate, Stock
+from optpricing.dashboard.service import DashboardService
 
 
 # Fixtures for creating mock data and service instances
@@ -49,7 +49,7 @@ def test_dashboard_service_initialization(service):
     assert service._rate is None
 
 
-@patch("quantfin.dashboard.service.load_market_snapshot")
+@patch("optpricing.dashboard.service.load_market_snapshot")
 def test_market_data_property_snapshot(mock_load, service, mock_market_data):
     """
     Tests that the market_data property correctly calls the snapshot loader
@@ -63,7 +63,7 @@ def test_market_data_property_snapshot(mock_load, service, mock_market_data):
     mock_load.assert_called_once()
 
 
-@patch("quantfin.dashboard.service.get_live_option_chain")
+@patch("optpricing.dashboard.service.get_live_option_chain")
 def test_market_data_property_live(mock_get_live, mock_model_configs, mock_market_data):
     """
     Tests that the market_data property calls the live fetcher for 'Live Data'.
@@ -75,7 +75,7 @@ def test_market_data_property_live(mock_get_live, mock_model_configs, mock_marke
 
 
 # CORRECTED: Split the single failing test into two focused, passing tests.
-@patch("quantfin.dashboard.service.fit_rate_and_dividend", return_value=(0.05, 0.01))
+@patch("optpricing.dashboard.service.fit_rate_and_dividend", return_value=(0.05, 0.01))
 def test_stock_property_caching(mock_fit, service, mock_market_data):
     """
     Tests the .stock property in isolation to verify its logic and caching.
@@ -94,7 +94,7 @@ def test_stock_property_caching(mock_fit, service, mock_market_data):
     mock_fit.assert_called_once()
 
 
-@patch("quantfin.dashboard.service.fit_rate_and_dividend", return_value=(0.05, 0.01))
+@patch("optpricing.dashboard.service.fit_rate_and_dividend", return_value=(0.05, 0.01))
 def test_rate_property_caching(mock_fit, service, mock_market_data):
     """
     Tests the .rate property in isolation to verify its logic and caching.
@@ -112,7 +112,7 @@ def test_rate_property_caching(mock_fit, service, mock_market_data):
     mock_fit.assert_called_once()
 
 
-@patch("quantfin.dashboard.service.DailyWorkflow")
+@patch("optpricing.dashboard.service.DailyWorkflow")
 def test_run_calibrations(mock_workflow, service, mock_market_data):
     """
     Tests that the run_calibrations method correctly instantiates and runs
@@ -138,10 +138,10 @@ def test_run_calibrations(mock_workflow, service, mock_market_data):
     assert service.summary_df.iloc[0]["Status"] == "Success"
 
 
-@patch("quantfin.dashboard.service.plot_iv_surface_3d")
-@patch("quantfin.dashboard.service.plot_smiles_by_expiry")
-@patch("quantfin.dashboard.service.select_fastest_technique")
-@patch("quantfin.dashboard.service.VolatilitySurface")
+@patch("optpricing.dashboard.service.plot_iv_surface_3d")
+@patch("optpricing.dashboard.service.plot_smiles_by_expiry")
+@patch("optpricing.dashboard.service.select_fastest_technique")
+@patch("optpricing.dashboard.service.VolatilitySurface")
 def test_get_iv_plots(
     mock_vol_surface,
     mock_select,

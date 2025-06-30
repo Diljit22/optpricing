@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quantfin.atoms import Rate, Stock
-from quantfin.calibration.vectorized_bsm_iv import BSMIVSolver
-from quantfin.models import BSMModel
+from optpricing.atoms import Rate, Stock
+from optpricing.calibration.vectorized_bsm_iv import BSMIVSolver
+from optpricing.models import BSMModel
 
 
 @pytest.fixture

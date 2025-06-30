@@ -1,3 +1,3 @@
 # Kou Model
 
-::: src.quantfin.models.kou.KouModel
+::: src.optpricing.models.kou.KouModel

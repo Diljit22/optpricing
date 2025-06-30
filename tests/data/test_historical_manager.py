@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from quantfin.data import historical_manager
+from optpricing.data import historical_manager
 
 
 # A sample DataFrame to be returned by a mocked yfinance
@@ -49,7 +49,7 @@ def test_load_historical_returns_existing(monkeypatch, tmp_path):
     pd.testing.assert_series_equal(returns, dummy_df["log_return"], check_names=False)
 
 
-@patch("quantfin.data.historical_manager.save_historical_returns")
+@patch("optpricing.data.historical_manager.save_historical_returns")
 def test_load_historical_returns_fetches_if_missing(mock_save, tmp_path, monkeypatch):
     """
     Tests that load_historical_returns calls save if the file is missing.

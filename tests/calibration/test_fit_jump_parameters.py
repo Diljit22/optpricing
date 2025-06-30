@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quantfin.calibration.fit_jump_parameters import fit_jump_params_from_history
+from optpricing.calibration.fit_jump_parameters import fit_jump_params_from_history
 
 
 def test_fit_jump_params_with_three_jumps():

@@ -2,9 +2,9 @@ from unittest.mock import patch
 
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.models import BSMModel
-from quantfin.techniques import CRRTechnique
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.models import BSMModel
+from optpricing.techniques import CRRTechnique
 
 
 # Common setup for tests
@@ -17,7 +17,7 @@ def setup():
     return option, stock, model, rate
 
 
-@patch("quantfin.techniques.crr._crr_pricer")
+@patch("optpricing.techniques.crr._crr_pricer")
 def test_crr_calls_kernel(mock_pricer, setup):
     """
     Tests that the CRRTechnique class correctly calls the _crr_pricer kernel.

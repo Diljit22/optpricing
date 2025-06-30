@@ -2,9 +2,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.models import BSMModel
-from quantfin.techniques import ClosedFormTechnique
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.models import BSMModel
+from optpricing.techniques import ClosedFormTechnique
 
 
 # Common setup for tests

@@ -1,3 +1,3 @@
 # ParamValidator
 
-::: src.quantfin.models.base.validators.ParamValidator
+::: src.optpricing.models.base.validators.ParamValidator

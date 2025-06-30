@@ -1,3 +1,3 @@
 # SABR Model
 
-::: src.quantfin.models.sabr.SABRModel
+::: src.optpricing.models.sabr.SABRModel

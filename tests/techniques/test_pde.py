@@ -2,9 +2,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from quantfin.atoms import Option, OptionType, Rate, Stock
-from quantfin.models import BSMModel
-from quantfin.techniques import PDETechnique
+from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.models import BSMModel
+from optpricing.techniques import PDETechnique
 
 
 # Common setup for tests

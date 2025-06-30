@@ -1,3 +1,3 @@
 # Heston Model
 
-::: src.quantfin.models.heston.HestonModel
+::: src.optpricing.models.heston.HestonModel

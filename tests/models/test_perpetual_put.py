@@ -1,6 +1,6 @@
 import pytest
 
-from quantfin.models import PerpetualPutModel
+from optpricing.models import PerpetualPutModel
 
 # Common parameters for tests
 PARAMS = {"sigma": 0.20, "rate": 0.08}
