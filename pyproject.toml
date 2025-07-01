@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "optpricing"
-version = "2.1.0"
+dynamic = ["version"]
 authors = [
   { name="Diljit Singh", email="first_last22@google.com" },
 ]
@@ -57,6 +57,10 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "no-local-version"
 
 [tool.ruff]
 line-length = 88

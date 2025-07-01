@@ -2,7 +2,7 @@ name: Publish Python Package
 
 on:
   push:
-    # Trigger on version tag pushes
+    # Trigger on version tag updates
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -10,6 +10,8 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -18,7 +20,7 @@ jobs:
           fetch-depth: 0  # fetch tags
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -31,11 +33,8 @@ jobs:
         run: |
           python -m build --sdist --wheel
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.7.0
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.9.0
 
       - name: Clean up built artifacts
         run: |
