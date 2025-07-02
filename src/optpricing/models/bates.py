@@ -144,7 +144,7 @@ class BatesModel(BaseModel):
     def get_sde_stepper(self) -> Callable:
         """Returns the SDE stepper function for the Bates model."""
         p = self.params
-        kappa, theta, rho, vol_of_vol = (
+        kappa, theta, _, vol_of_vol = (
             p["kappa"],
             p["theta"],
             p["rho"],

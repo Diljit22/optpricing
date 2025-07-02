@@ -81,8 +81,8 @@ class HyperbolicModel(BaseModel):
         CF
             The characteristic function.
         """
-        p = self.params
-        alpha, beta, delta, mu = p["alpha"], p["beta"], p["delta"], p["mu"]
+        # p = self.params
+        # alpha, beta, delta, mu = p["alpha"], p["beta"], p["delta"], p["mu"]
         compensator = np.log(self.raw_cf(t=1.0)(-1j))  # E[exp(X_1)] = phi_raw(-i)
         drift = r - q - compensator
 

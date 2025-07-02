@@ -34,6 +34,7 @@ def bsm_kernel(
     drift = (r - q - 0.5 * sigma**2) * dt
     for i in range(n_steps):
         log_s += drift + sigma * dw[:, i]
+
     return log_s
 
 
@@ -61,11 +62,24 @@ def heston_kernel(
 ):
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
+    rho_bar = np.sqrt(1 - rho**2)
+
     for i in range(n_steps):
+        z1 = dw1[:, i]
+        z2 = dw2[:, i]
+
+        correlated_z2 = rho * z1 + rho_bar * z2
+
         v_pos = np.maximum(v, 0)
         v_sqrt = np.sqrt(v_pos)
-        log_s += (r - q - 0.5 * v_pos) * dt + v_sqrt * dw1[:, i]
-        v += kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * dw2[:, i]
+
+        # Evolve log-spot with the first independent draw
+        log_s += (r - q - 0.5 * v_pos) * dt + v_sqrt * z1
+
+        # Evolve variance with the correlated draw
+        v += kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * correlated_z2
+        v = np.maximum(v, 0)  # Apply reflection to variance
+
     return log_s
 
 
@@ -104,6 +118,7 @@ def merton_kernel(
                 for _ in range(jumps_this_step[path_idx]):
                     log_s[path_idx] += jump_sizes[jump_idx]
                     jump_idx += 1
+
     return log_s
 
 
@@ -136,14 +151,21 @@ def bates_kernel(
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
     compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
+    rho_bar = np.sqrt(1 - rho**2)
 
     for i in range(n_steps):
+        z1 = dw1[:, i]
+        z2 = dw2[:, i]
+
+        correlated_z2 = rho * z1 + rho_bar * z2
+
         v_pos = np.maximum(v, 0)
         v_sqrt = np.sqrt(v_pos)
 
         # Heston part
-        log_s += (r - q - 0.5 * v_pos - compensator) * dt + v_sqrt * dw1[:, i]
-        v += kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * dw2[:, i]
+        log_s += (r - q - 0.5 * v_pos - compensator) * dt + v_sqrt * z1
+        v += kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * correlated_z2
+        v = np.maximum(v, 0)
 
         # Merton Jump part
         jumps_this_step = jump_counts[:, i]
@@ -155,6 +177,7 @@ def bates_kernel(
                 for _ in range(jumps_this_step[path_idx]):
                     log_s[path_idx] += jump_sizes[jump_idx]
                     jump_idx += 1
+
     return log_s
 
 
@@ -184,13 +207,17 @@ def sabr_kernel(
     rho_bar = np.sqrt(1 - rho**2)
 
     for i in range(n_steps):
+        z1 = dw1[:, i]
+        z2 = dw2[:, i]
+        correlated_z2 = rho * z1 + rho_bar * z2
+
         # Evolve spot price S_t directly
         s_pos = np.maximum(s, 1e-8)  # Avoid negative spot
         v_pos = np.maximum(v, 0)
-        s += (r - q) * s_pos * dt + v_pos * (s_pos**beta) * dw1[:, i]
+        s += (r - q) * s_pos * dt + v_pos * (s_pos**beta) * z1
 
         # Evolve volatility sigma_t (lognormal process)
-        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * dw2[:, i])
+        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
 
     return s
 
@@ -226,16 +253,22 @@ def sabr_jump_kernel(
     compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
 
     for i in range(n_steps):
+        z1 = dw1[:, i]
+        z2 = dw2[:, i]
+
+        correlated_z2 = rho * z1 + rho_bar * z2
+
         s_pos = np.maximum(s, 1e-8)
         v_pos = np.maximum(v, 0)
 
-        s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * dw1[:, i]
-
-        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * dw2[:, i])
+        # SABR diffusion part
+        s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
 
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
             num_jumps = np.sum(jumps_this_step)
+
             # Jumps are multiplicative: S_t+ = S_t * exp(J)
             jump_multipliers = np.exp(np.random.normal(mu_j, sigma_j, num_jumps))
             jump_idx = 0
@@ -243,6 +276,7 @@ def sabr_jump_kernel(
                 for _ in range(jumps_this_step[path_idx]):
                     s[path_idx] *= jump_multipliers[jump_idx]
                     jump_idx += 1
+
     return s
 
 
@@ -297,7 +331,7 @@ def kou_kernel(
                 )
 
             # This part is tricky to vectorize perfectly in Numba, so loop
-            jump_idx = 0
+            # jump_idx = 0
             for path_idx in range(n_paths):
                 if jumps_this_step[path_idx] > 0:  # This path has a jump
                     # For simplicity in Numba, add the average jump size
@@ -334,4 +368,5 @@ def dupire_kernel(
         local_vol = vol_surface_func(t_current, current_spot)
         drift = (r - q - 0.5 * local_vol**2) * dt
         log_s += drift + local_vol * dw[:, i]
+
     return log_s

@@ -85,8 +85,13 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         phi = model.cf(t=T, spot=S, r=r, q=q, **kwargs)
         k_log = np.log(K)
 
-        integrand_p2 = lambda u: (np.exp(-1j * u * k_log) * phi(u)).imag / u
-        integrand_p1 = lambda u: (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
+        def integrand_p2(u):
+            """Calculates the integrand for P2."""
+            return (np.exp(-1j * u * k_log) * phi(u)).imag / u
+
+        def integrand_p1(u):
+            """Calculates the integrand for P1."""
+            return (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
 
         integral_p2, _ = integrate.quad(
             integrand_p2,

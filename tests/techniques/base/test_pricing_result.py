@@ -1,5 +1,3 @@
-import pytest
-
 from optpricing.techniques.base import PricingResult
 
 

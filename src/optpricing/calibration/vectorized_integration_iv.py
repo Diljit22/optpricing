@@ -123,8 +123,13 @@ class VectorizedIntegrationIVSolver:
             phi = bsm_model.cf(t=T, spot=S, r=r, q=q)
             k_log = np.log(K)
 
-            integrand_p2 = lambda u: (np.exp(-1j * u * k_log) * phi(u)).imag / u
-            integrand_p1 = lambda u: (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
+            def integrand_p2(u):
+                """Calculates the integrand for P2."""
+                return (np.exp(-1j * u * k_log) * phi(u)).imag / u
+
+            def integrand_p1(u):
+                """Calculates the integrand for P1."""
+                return (np.exp(-1j * u * k_log) * phi(u - 1j)).imag / u
 
             integral_p2, _ = integrate.quad_vec(integrand_p2, 1e-15, self.upper_bound)
 

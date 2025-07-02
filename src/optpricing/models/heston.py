@@ -169,7 +169,7 @@ class HestonModel(BaseModel):
         future use with non-compiled or more complex simulation loops.
         """
         p = self.params
-        kappa, theta, rho, vol_of_vol = (
+        kappa, theta, _, vol_of_vol = (
             p["kappa"],
             p["theta"],
             p["rho"],
