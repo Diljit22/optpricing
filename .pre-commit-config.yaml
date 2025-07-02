@@ -1,7 +1,8 @@
+exclude: ^artifacts/
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.2.0
-    exclude: ^artifacts/
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
