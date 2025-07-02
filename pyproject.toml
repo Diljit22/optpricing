@@ -51,7 +51,7 @@ dev = [
 "Homepage" = "https://diljit22.github.io/quantfin/"
 
 [project.scripts]
-optpricing = "optpricing.cli:app"
+optpricing = "optpricing.cli.main:app"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
