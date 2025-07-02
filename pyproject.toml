@@ -68,9 +68,10 @@ extend-exclude = ["demo"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "NPY"]
-ignore = ["N803", "N806", "F403", "F405", "N999"]
+ignore = ["N803","N806", "F403", "F405"]
 
 [tool.ruff.lint.per-file-ignores]
+"src/optpricing/dashboard/pages/*.py" = ["N999"]
 "src/optpricing/techniques/kernels/mc_kernels.py" = ["NPY002"]
 "tests/**/*.py" = ["S101"]
 
