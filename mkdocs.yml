@@ -146,4 +146,9 @@ nav:
           - Daily Workflow: reference/workflows/daily_workflow.md
           - Backtest Workflow: reference/workflows/backtest_workflow.md
       - CLI:
-          - CLI Usage: reference/cli.md
+          - Overview: reference/cli/index.md
+          - Calibrate Command: reference/cli/calibrate.md
+          - Backtest Command: reference/cli/backtest.md
+          - Data Commands: reference/cli/data.md
+          - Price Command: reference/cli/price.md
+          - Tools Commands: reference/cli/tools.md

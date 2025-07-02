@@ -8,10 +8,6 @@ This module contains JIT-compiled (`numba`) kernels for simulating the SDE
 paths of different financial models. These functions are designed for performance.
 """
 
-# NOTE: Detailed docstrings are provided for each kernel, but they are placed
-# outside the function body as Numba in `nopython` mode does not support them.
-# The information is still valuable for developers reading the code.
-
 # Docstring for bsm_kernel
 """
 JIT-compiled kernel for BSM SDE simulation.
