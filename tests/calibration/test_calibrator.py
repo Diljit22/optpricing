@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.atoms import Rate, Stock
 from optpricing.calibration import Calibrator
 from optpricing.models import BSMModel
 

@@ -24,7 +24,6 @@ from optpricing.data import (
     save_historical_returns,
     save_market_snapshot,
 )
-from optpricing.models import BaseModel
 from optpricing.parity import ImpliedRateModel
 from optpricing.workflows import BacktestWorkflow, DailyWorkflow
 from optpricing.workflows.configs import ALL_MODEL_CONFIGS

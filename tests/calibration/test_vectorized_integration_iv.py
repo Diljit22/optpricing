@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from optpricing.atoms import Rate, Stock
+from optpricing.atoms import Rate
 from optpricing.calibration.vectorized_integration_iv import (
     VectorizedIntegrationIVSolver,
 )

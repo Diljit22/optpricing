@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from optpricing.techniques.base.random_utils import crn
 
