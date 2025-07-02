@@ -120,7 +120,9 @@ class KouModel(BaseModel):
             p["eta2"],
         )
 
-        compensator = lambda_ * (p_up / (eta1 - 1) - (1 - p_up) / (eta2 + 1))
+        compensator = lambda_ * (
+            (p_up * eta1 / (eta1 - 1)) + ((1 - p_up) * eta2 / (eta2 + 1)) - 1
+        )
         drift = r - q - 0.5 * sigma**2 - compensator
 
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
