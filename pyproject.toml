@@ -38,12 +38,13 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-cov",
-    "ruff",
+    "ruff==0.11.6",
     "mkdocs",
     "mkdocs-material",
     "mkdocstrings[python]",
     "mkdocs-section-index",
     "line_profiler",
+    "pre-commit",
 ]
 
 [project.urls]
