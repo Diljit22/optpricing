@@ -313,7 +313,7 @@ if __name__ == "__main__":
             "techniques": {
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
-                "MC": MonteCarloTechnique(n_paths=50000, seed=42),
+                # "MC": MonteCarloTechnique(n_paths=50000, seed=42),
             },
         },
         {

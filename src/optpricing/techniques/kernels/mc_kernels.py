@@ -8,10 +8,6 @@ This module contains JIT-compiled (`numba`) kernels for simulating the SDE
 paths of different financial models. These functions are designed for performance.
 """
 
-# NOTE: Detailed docstrings are provided for each kernel, but they are placed
-# outside the function body as Numba in `nopython` mode does not support them.
-# The information is still valuable for developers reading the code.
-
 # Docstring for bsm_kernel
 """
 JIT-compiled kernel for BSM SDE simulation.
@@ -312,32 +308,23 @@ def kou_kernel(
         log_s += drift + sigma * dw[:, i]
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
-            num_jumps = np.sum(jumps_this_step)
+            num_total_jumps = np.sum(jumps_this_step)
 
-            # Determine which jumps are up and which are down
-            up_or_down = np.random.random(num_jumps)
-            num_up_jumps = np.sum(up_or_down < p_up)
-            num_down_jumps = num_jumps - num_up_jumps
+            # Generate all jump sizes at once
+            up_or_down = np.random.random(num_total_jumps)
+            up_jumps = np.random.exponential(1.0 / eta1, num_total_jumps)
+            down_jumps = -np.random.exponential(1.0 / eta2, num_total_jumps)
+            all_jumps = np.where(up_or_down < p_up, up_jumps, down_jumps)
 
-            # Generate jump sizes from exponential distributions
-            total_jump_size = 0.0
-            if num_up_jumps > 0:
-                total_jump_size += np.sum(
-                    np.random.exponential(1.0 / eta1, num_up_jumps)
-                )
-            if num_down_jumps > 0:
-                total_jump_size -= np.sum(
-                    np.random.exponential(1.0 / eta2, num_down_jumps)
-                )
-
-            # This part is tricky to vectorize perfectly in Numba, so loop
-            # jump_idx = 0
+            # Apply jumps to the correct paths
+            jump_idx = 0
             for path_idx in range(n_paths):
-                if jumps_this_step[path_idx] > 0:  # This path has a jump
-                    # For simplicity in Numba, add the average jump size
-                    log_s[path_idx] += (
-                        total_jump_size / num_jumps * jumps_this_step[path_idx]
+                num_jumps_on_path = jumps_this_step[path_idx]
+                if num_jumps_on_path > 0:
+                    log_s[path_idx] += np.sum(
+                        all_jumps[jump_idx : jump_idx + num_jumps_on_path]
                     )
+                    jump_idx += num_jumps_on_path
 
     return log_s
 

@@ -1,0 +1,8 @@
+{
+    "model": "BSM",
+    "ticker": "SPY",
+    "date": "2023-01-01",
+    "params": {
+        "sigma": 0.2
+    }
+}
