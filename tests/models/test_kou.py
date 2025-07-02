@@ -21,7 +21,6 @@ def test_parameter_validation():
         KouModel(params={**PARAMS, "p_up": 1.1})
 
 
-@pytest.mark.skip(reason="Temporarily skipping until numerical precision is addressed")
 def test_characteristic_function(model):
     """
     Tests the characteristic function at u=0, where it should be 1.

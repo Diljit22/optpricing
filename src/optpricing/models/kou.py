@@ -129,11 +129,10 @@ class KouModel(BaseModel):
             # BSM component
             bsm_part = 1j * u * (np.log(spot) + drift * t) - 0.5 * u**2 * sigma**2 * t
             # Jump component formulation
-            jump_part = (
-                lambda_
-                * t
-                * (p_up / (eta1 - 1j * u) + (1 - p_up) / (eta2 + 1j * u) - 1)
+            phi_jump = (p_up * eta1 / (eta1 - 1j * u)) + (
+                (1 - p_up) * eta2 / (eta2 + 1j * u)
             )
+            jump_part = lambda_ * t * (phi_jump - 1)
 
             return np.exp(bsm_part + jump_part)
 
