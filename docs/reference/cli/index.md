@@ -7,3 +7,11 @@ The main entry point is the `optpricing` command. You can see all available comm
 ```bash
 optpricing --help
 ```
+
+## Main Application
+
+The main `app` object serves as the entry point for all commands.
+
+::: optpricing.cli.main.app
+    :prog: optpricing
+    :show_        help: true
