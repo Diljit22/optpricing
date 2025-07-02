@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import subprocess
+import sys
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -10,17 +13,41 @@ CLI command for running benchmark demos.
 
 
 def demo(
-    model_name: Annotated[
+    model: Annotated[
         str | None,
-        typer.Argument(help="Run a demo for a specific model name."),
+        typer.Option(
+            "--model",
+            "-m",
+            help="Run benchmark for a specific model name (e.g., 'BSM').",
+            case_sensitive=False,
+        ),
+    ] = None,
+    technique: Annotated[
+        str | None,
+        typer.Option(
+            "--technique",
+            "-t",
+            help="Run benchmark for a specific technique (e.g., 'MC').",
+            case_sensitive=False,
+        ),
     ] = None,
 ):
     """
-    Runs a benchmark demo to showcase model and technique performance.
+    Runs pricing and performance benchmarks for the library's models.
     """
-    typer.secho(
-        "The 'demo' command for developers and requires the full source repository.",
-        fg=typer.colors.YELLOW,
-    )
-    typer.echo("Please run 'make demo' from the project's root directory instead.")
-    raise typer.Exit()
+    demo_script = Path("demo.py")
+    if not demo_script.exists():
+        typer.secho(
+            f"Error: '{demo_script}' not found in the current directory.",
+            fg=typer.colors.RED,
+        )
+        typer.echo("Please run this command from the project's root directory.")
+        raise typer.Exit(1)
+
+    command = [sys.executable, str(demo_script)]
+    if model:
+        command.extend(["--model", model])
+    if technique:
+        command.extend(["--technique", technique])
+
+    subprocess.run(command)

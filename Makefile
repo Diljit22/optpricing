@@ -1,38 +1,40 @@
 .PHONY: help fix dev docs test clean demo tree
 
-# This 'help' target is a common pattern to make the Makefile self-documenting.
+.DEFAULT_GOAL := help
+
 help:
-	@echo "Available commands:"
-	@echo "  make fix       : Auto-format and lint the code with Ruff."
-	@echo "  make dev       : Re-install the library in editable mode with all dependencies."
-	@echo "  make docs      : Serve the documentation site locally for live preview."
-	@echo "  make test      : Run the full pytest test suite."
-	@echo "  make clean     : Remove all Python cache files."
-	@echo "  make demo      : Run the benchmark/demo script."
-	@echo "  make tree      : Display the clean project directory tree."
+	@echo "Available developer commands:"
+	@echo ""
+	@echo "  make fix   : Auto-format and lint the code with Ruff."
+	@echo "  make test  : Run the full pytest test suite."
+	@echo "  make docs  : Serve the documentation site locally for live preview."
+	@echo "  make demo  : Run the benchmark demo via the main CLI."
+	@echo "  make dev   : Re-install library in editable mode with all dependencies."
+	@echo "  make tree  : Display the clean project directory tree."
+	@echo ""
 
 fix:
-	@echo "Ruff format + fix"
+	@echo "--- Formatting and linting with Ruff ---"
 	ruff format .
-	ruff check --fix src/optpricing tests
+	ruff check --fix .
 
 dev:
-	@echo "Re-install in editable mode (with [dev,app] extras)"
-	-pip uninstall -y optpricing || true
-	pip install -e '.[dev,app]'
+	@echo "--- Re-installing in editable mode with [dev] extras ---"
+	pip uninstall -y optpricing || true
+	pip install -e '.[dev]'
 
 docs:
-	@echo "MkDocs live server"
+	@echo "--- Starting MkDocs live server ---"
 	mkdocs serve
 
 test:
-	@echo "Test suite"
+	@echo "--- Running pytest test suite ---"
 	pytest
 
-demo:
-	@echo "Running benchmark demo..."
-	optpricing demo
-
 tree:
-	@echo "Project tree"
+	@echo "--- Generating project tree ---"
 	python devtools/project_tree.py
+
+demo:
+	@echo "--- Running demo via the 'optpricing' CLI ---"
+	optpricing demo
