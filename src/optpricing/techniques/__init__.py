@@ -5,6 +5,7 @@ The `techniques` package provides the various numerical and analytical
 methods for pricing options.
 """
 
+from .american_monte_carlo import AmericanMonteCarloTechnique
 from .base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 from .closed_form import ClosedFormTechnique
 from .crr import CRRTechnique
@@ -28,4 +29,5 @@ __all__ = [
     "TOPMTechnique",
     "PDETechnique",
     "MonteCarloTechnique",
+    "AmericanMonteCarloTechnique",
 ]

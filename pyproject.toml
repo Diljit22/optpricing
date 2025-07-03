@@ -72,8 +72,15 @@ select = ["E", "W", "F", "I", "N", "UP", "NPY"]
 ignore = ["N803", "N806"]
 
 [tool.ruff.lint.per-file-ignores]
+# streamlit ignores
 "src/optpricing/dashboard/pages/*.py" = ["N999"]
+
+# numba ignores
 "src/optpricing/techniques/kernels/mc_kernels.py" = ["NPY002"]
+"src/optpricing/techniques/kernels/american_mc_kernels.py" = ["NPY002", "E722"]
+"src/optpricing/techniques/kernels/path_kernels.py" = ["NPY002"]
+
+# tests
 "tests/**/*.py" = ["S101"]
 
 [tool.ruff.format]

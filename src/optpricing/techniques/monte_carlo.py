@@ -63,7 +63,12 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         self.rng = np.random.default_rng(seed)
 
     def price(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        **kwargs: Any,
     ) -> PricingResult:
         """
         Prices an option using the appropriate Monte Carlo simulation method.
@@ -111,7 +116,12 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         return PricingResult(price=price)
 
     def _get_sde_kernel_and_params(
-        self, model: BaseModel, r: float, q: float, dt: float, **kwargs
+        self,
+        model: BaseModel,
+        r: float,
+        q: float,
+        dt: float,
+        **kwargs: Any,
     ) -> tuple[Callable, dict[str, Any]]:
         """Selects the appropriate JIT-compiled kernel and prepares its parameters."""
         p = model.params
@@ -187,7 +197,13 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             return bsm_kernel, kernel_params
 
     def _simulate_sde_path(
-        self, model: BaseModel, S0: float, r: float, q: float, T: float, **kwargs
+        self,
+        model: BaseModel,
+        S0: float,
+        r: float,
+        q: float,
+        T: float,
+        **kwargs: Any,
     ) -> np.ndarray:
         """Prepares random numbers and executes the dispatched SDE kernel."""
         dt = T / self.n_steps
@@ -241,7 +257,12 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         return ST if getattr(model, "is_sabr", False) else np.exp(ST)
 
     def _simulate_levy_terminal(
-        self, model: BaseModel, S0: float, r: float, q: float, T: float
+        self,
+        model: BaseModel,
+        S0: float,
+        r: float,
+        q: float,
+        T: float,
     ) -> np.ndarray:
         """Handles pure Lévy models by direct sampling of the terminal distribution."""
         if not hasattr(model, "sample_terminal_log_return") or not hasattr(
