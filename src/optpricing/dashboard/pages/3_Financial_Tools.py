@@ -13,9 +13,11 @@ from optpricing.models import (
     CGMYModel,
     CIRModel,
     HestonModel,
+    HyperbolicModel,
     KouModel,
     MertonJumpModel,
     NIGModel,
+    SABRJumpModel,
     SABRModel,
     VarianceGammaModel,
     VasicekModel,
@@ -48,17 +50,20 @@ st.caption("Price an option using live market data and your chosen model paramet
 # Model and Technique Selection
 pricer_cols = st.columns(2)
 MODEL_MAP = {
-    "BSM": BSMModel,
-    "Merton": MertonJumpModel,
-    "Heston": HestonModel,
     "Bates": BatesModel,
-    "Kou": KouModel,
-    "NIG": NIGModel,
-    "VG": VarianceGammaModel,
-    "CGMY": CGMYModel,
+    "Black-Scholes-Merton (BSM)": BSMModel,
+    "Constant Elasticity of Variance (CEV)": CEVModel,
+    "Carr-Geman-Madan-Yor (CGMY)": CGMYModel,
+    "Heston": HestonModel,
+    "Hyperbolic": HyperbolicModel,
+    "Kou Double-Exponential": KouModel,
+    "Merton Jump-Diffusion": MertonJumpModel,
+    "Normal Inverse Gaussian (NIG)": NIGModel,
     "SABR": SABRModel,
-    "CEV": CEVModel,
+    "SABR Jump": SABRJumpModel,
+    "Variance Gamma (VG)": VarianceGammaModel,
 }
+
 TECHNIQUE_MAP = {
     "Analytic/Closed-Form": ClosedFormTechnique,
     "Integration": IntegrationTechnique,
@@ -77,23 +82,32 @@ model_name_pricer = pricer_cols[0].selectbox(
 )
 
 model_class = MODEL_MAP[model_name_pricer]
-dummy_model_instance = (
-    model_class() if hasattr(model_class, "default_params") else model_class
-)
+
+try:
+    dummy_model_instance = model_class()
+except TypeError:
+    dummy_model_instance = model_class.__new__(model_class)
+
 supported_techs = []
 if dummy_model_instance.has_closed_form:
     supported_techs.append("Analytic/Closed-Form")
 if dummy_model_instance.supports_cf:
     supported_techs.extend(["Integration", "FFT"])
-if (
+
+mc_supported = (
     dummy_model_instance.supports_sde
     or getattr(dummy_model_instance, "is_pure_levy", False)
     or getattr(dummy_model_instance, "has_exact_sampler", False)
-):
-    supported_techs.append("Monte Carlo")
-technique_name = pricer_cols[1].selectbox(
-    "Select Technique", supported_techs, key="pricer_tech"
 )
+if mc_supported and model_name_pricer != "Hyperbolic":
+    supported_techs.append("Monte Carlo")
+
+if not supported_techs:
+    technique_name = None
+else:
+    technique_name = pricer_cols[1].selectbox(
+        "Select Technique", supported_techs, key="pricer_tech"
+    )
 
 # Dynamic Model Parameter Inputs
 st.subheader(f"{model_name_pricer} Model Parameters")

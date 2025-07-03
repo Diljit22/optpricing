@@ -8,9 +8,11 @@ from optpricing.models import (
     CEVModel,
     CGMYModel,
     HestonModel,
+    HyperbolicModel,
     KouModel,
     MertonJumpModel,
     NIGModel,
+    SABRJumpModel,
     SABRModel,
     VarianceGammaModel,
 )
@@ -34,17 +36,20 @@ st.caption(
 
 # Model and Technique Selection
 MODEL_MAP = {
-    "BSM": BSMModel,
-    "Merton": MertonJumpModel,
-    "Heston": HestonModel,
     "Bates": BatesModel,
-    "Kou": KouModel,
-    "NIG": NIGModel,
-    "VG": VarianceGammaModel,
-    "CGMY": CGMYModel,
+    "Black-Scholes-Merton (BSM)": BSMModel,
+    "Constant Elasticity of Variance (CEV)": CEVModel,
+    "Carr-Geman-Madan-Yor (CGMY)": CGMYModel,
+    "Heston": HestonModel,
+    "Hyperbolic": HyperbolicModel,
+    "Kou Double-Exponential": KouModel,
+    "Merton Jump-Diffusion": MertonJumpModel,
+    "Normal Inverse Gaussian (NIG)": NIGModel,
     "SABR": SABRModel,
-    "CEV": CEVModel,
+    "SABR Jump": SABRJumpModel,
+    "Variance Gamma (VG)": VarianceGammaModel,
 }
+
 TECHNIQUE_MAP = {
     "Analytic/Closed-Form": ClosedFormTechnique,
     "Integration": IntegrationTechnique,
@@ -62,11 +67,10 @@ with col1:
 
 # Get the selected model class and create a dummy instance to check its properties
 model_class = MODEL_MAP[model_name]
-if hasattr(model_class, "default_params"):
-    dummy_model_instance = model_class()  # Uses default params
-else:
-    st.error(f"Model {model_name} is missing 'default_params' attribute.")
-    st.stop()
+try:
+    dummy_model_instance = model_class()
+except TypeError:
+    dummy_model_instance = model_class.__new__(model_class)
 
 # Dynamic Technique Selector
 supported_techs = []
@@ -74,12 +78,16 @@ if dummy_model_instance.has_closed_form:
     supported_techs.append("Analytic/Closed-Form")
 if dummy_model_instance.supports_cf:
     supported_techs.extend(["Integration", "FFT"])
-if (
+
+mc_supported = (
     dummy_model_instance.supports_sde
     or getattr(dummy_model_instance, "is_pure_levy", False)
     or getattr(dummy_model_instance, "has_exact_sampler", False)
-):
+)
+
+if mc_supported and model_name != "Hyperbolic":
     supported_techs.append("Monte Carlo")
+
 if dummy_model_instance.supports_pde:
     supported_techs.append("PDE")
 if model_name == "BSM":
@@ -88,11 +96,19 @@ if model_name == "BSM":
 with col2:
     # Ensure a default is available if the list of techniques changes
     selected_index = 0
-    if st.session_state.get("technique_name") in supported_techs:
+    if supported_techs and st.session_state.get("technique_name") in supported_techs:
         selected_index = supported_techs.index(st.session_state.technique_name)
-    technique_name = st.selectbox(
-        "Select Technique", supported_techs, index=selected_index, key="technique_name"
-    )
+
+    if not supported_techs:
+        st.warning(f"No pricing techniques available for {model_name}.")
+        technique_name = None
+    else:
+        technique_name = st.selectbox(
+            "Select Technique",
+            supported_techs,
+            index=selected_index,
+            key="technique_name",
+        )
 
 # Parameter Inputs
 st.subheader("Market Parameters")
@@ -160,23 +176,59 @@ if st.button("Calculate Price & Greeks"):
                 option, stock, model, rate, **pricing_kwargs
             ).price
 
-            results_data["Delta"] = technique.delta(
-                option, stock, model, rate, **pricing_kwargs
-            )
-            results_data["Gamma"] = technique.gamma(
-                option, stock, model, rate, **pricing_kwargs
-            )
-            results_data["Vega"] = technique.vega(
-                option, stock, model, rate, **pricing_kwargs
-            )
-            results_data["Theta"] = technique.theta(
-                option, stock, model, rate, **pricing_kwargs
-            )
-            results_data["Rho"] = technique.rho(
-                option, stock, model, rate, **pricing_kwargs
+            skip_mc_greeks = model.has_jumps and isinstance(
+                technique, MonteCarloTechnique
             )
 
+            if skip_mc_greeks:
+                st.info(
+                    "Note: Greeks for jump-diffusion models under Monte Carlo are unstable and not displayed."
+                )
+                results_data["Delta"] = "N/A"
+                results_data["Gamma"] = "N/A"
+                results_data["Vega"] = "N/A"
+                results_data["Theta"] = "N/A"
+                results_data["Rho"] = "N/A"
+
+            else:
+                results_data["Delta"] = technique.delta(
+                    option,
+                    stock,
+                    model,
+                    rate,
+                    **pricing_kwargs,
+                )
+                results_data["Gamma"] = technique.gamma(
+                    option,
+                    stock,
+                    model,
+                    rate,
+                    **pricing_kwargs,
+                )
+                results_data["Vega"] = technique.vega(
+                    option,
+                    stock,
+                    model,
+                    rate,
+                    **pricing_kwargs,
+                )
+                results_data["Theta"] = technique.theta(
+                    option,
+                    stock,
+                    model,
+                    rate,
+                    **pricing_kwargs,
+                )
+                results_data["Rho"] = technique.rho(
+                    option,
+                    stock,
+                    model,
+                    rate,
+                    **pricing_kwargs,
+                )
+
             st.dataframe(pd.DataFrame([results_data]))
+
         except Exception as e:
             st.error(f"Calculation failed: {e}")
             st.exception(e)
