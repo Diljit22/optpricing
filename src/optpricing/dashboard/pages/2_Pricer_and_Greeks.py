@@ -90,11 +90,10 @@ if mc_supported and model_name != "Hyperbolic":
 
 if dummy_model_instance.supports_pde:
     supported_techs.append("PDE")
-if model_name == "BSM":
+if model_name == "Black-Scholes-Merton (BSM)":
     supported_techs.extend(["Leisen-Reimer", "CRR", "TOPM"])
 
 with col2:
-    # Ensure a default is available if the list of techniques changes
     selected_index = 0
     if supported_techs and st.session_state.get("technique_name") in supported_techs:
         selected_index = supported_techs.index(st.session_state.technique_name)
@@ -108,6 +107,18 @@ with col2:
             supported_techs,
             index=selected_index,
             key="technique_name",
+        )
+
+    exercise_style = "European"
+
+    american_supported_techs = ["Leisen-Reimer", "CRR", "TOPM"]  # "Monte Carlo"
+
+    if technique_name in american_supported_techs:
+        exercise_style = st.radio(
+            "Exercise Style",
+            ["European", "American"],
+            horizontal=True,
+            key="exercise_style",
         )
 
 # Parameter Inputs
@@ -162,7 +173,8 @@ if st.button("Calculate Price & Greeks"):
     full_params.update(params)
 
     model = model_class(params=full_params)
-    technique = TECHNIQUE_MAP[technique_name]()
+    is_american_flag = exercise_style == "American"
+    technique = TECHNIQUE_MAP[technique_name](is_american=is_american_flag)
 
     # Prepare kwargs for techniques that need extra info (e.g., Heston's v0)
     pricing_kwargs = full_params.copy()
