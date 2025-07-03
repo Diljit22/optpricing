@@ -17,6 +17,7 @@ from optpricing.models import (
     VarianceGammaModel,
 )
 from optpricing.techniques import (
+    AmericanMonteCarloTechnique,
     ClosedFormTechnique,
     CRRTechnique,
     FFTTechnique,
@@ -111,7 +112,12 @@ with col2:
 
     exercise_style = "European"
 
-    american_supported_techs = ["Leisen-Reimer", "CRR", "TOPM"]  # "Monte Carlo"
+    american_supported_techs = [
+        "Leisen-Reimer",
+        "CRR",
+        "TOPM",
+        "Monte Carlo",
+    ]
 
     if technique_name in american_supported_techs:
         exercise_style = st.radio(
@@ -174,7 +180,15 @@ if st.button("Calculate Price & Greeks"):
 
     model = model_class(params=full_params)
     is_american_flag = exercise_style == "American"
-    technique = TECHNIQUE_MAP[technique_name](is_american=is_american_flag)
+
+    if technique_name == "Monte Carlo" and is_american_flag:
+        technique = AmericanMonteCarloTechnique()
+        st.info("Using Longstaff-Schwartz for American Monte Carlo.")
+    else:
+        try:
+            technique = TECHNIQUE_MAP[technique_name](is_american=is_american_flag)
+        except TypeError:
+            technique = TECHNIQUE_MAP[technique_name]()
 
     # Prepare kwargs for techniques that need extra info (e.g., Heston's v0)
     pricing_kwargs = full_params.copy()

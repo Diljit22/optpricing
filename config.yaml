@@ -1,5 +1,5 @@
 # Live Data Configuration
-live_data_provider: "yfinance"  # Options: "yfinance"
+live_data_provider: "yfinance"
 
 # Base Directory Configuration
 data_directory: "data"

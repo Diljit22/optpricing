@@ -133,12 +133,14 @@ nav:
               - reference/techniques/kernels/index.md
               - Lattice Kernels: reference/techniques/kernels/lattice_kernels.md
               - MC Kernels: reference/techniques/kernels/mc_kernels.md
+              - American MC Kernels: reference/techniques/kernels/american_mc_kernels.md
           - Closed Form: reference/techniques/closed_form.md
           - CRR (Cox-Ross-Rubinstein): reference/techniques/crr.md
           - FFT (Fast Fourier Transform): reference/techniques/fft.md
           - Integration: reference/techniques/integration.md
           - Leisen-Reimer: reference/techniques/leisen_reimer.md
-          - Monte Carlo: reference/techniques/monte_carlo.md
+          - Monte Carlo (European): reference/techniques/monte_carlo.md
+          - Monte Carlo (American): reference/techniques/american_monte_carlo.md
           - PDE (Finite Difference): reference/techniques/pde.md
           - TOPM (Trinomial Option Pricing Model): reference/techniques/topm.md
       - Workflows:
