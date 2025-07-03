@@ -9,6 +9,8 @@ from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.calibration import fit_rate_and_dividend
 from optpricing.calibration.technique_selector import select_fastest_technique
 from optpricing.data import get_live_dividend_yield, get_live_option_chain
+from optpricing.models import BSMModel
+from optpricing.techniques import LeisenReimerTechnique
 from optpricing.workflows.configs import ALL_MODEL_CONFIGS
 
 __doc__ = """
@@ -30,6 +32,14 @@ def price(
     option_type: Annotated[
         str, typer.Option("--type", help="Option type: 'call' or 'put'.")
     ] = "call",
+    style: Annotated[
+        str,
+        typer.Option(
+            "--style",
+            help="Option exercise style: 'american' or 'european'.",
+            case_sensitive=False,
+        ),
+    ] = "european",
     model: Annotated[
         str, typer.Option("--model", "-m", help="The model to use for pricing.")
     ] = "BSM",
@@ -91,16 +101,62 @@ def price(
 
     model_class = ALL_MODEL_CONFIGS[model]["model_class"]
     model_instance = model_class(params=model_params)
-    technique = select_fastest_technique(model_instance)
+
+    is_american_flag = style.lower() == "american"
+
+    if is_american_flag:
+        # Check if the selected model is BSM, which is the only one
+        # that currently supports lattice methods.
+        if isinstance(model_instance, BSMModel):
+            # Force the use of a lattice technique for American pricing
+            technique = LeisenReimerTechnique(is_american=True)
+            typer.echo("American style requested. Using Leisen-Reimer lattice.")
+        else:
+            # User wants American, but the model doesn't support it.
+            # Warn and fall back to the fastest European method.
+            technique = select_fastest_technique(model_instance)
+            typer.secho(
+                f"Warning: {model_instance.name} does not support American pricing.",
+                fg=typer.colors.YELLOW,
+            )
+            typer.secho(
+                f"         Pricing as European using {technique.__class__.__name__}.",
+                fg=typer.colors.YELLOW,
+            )
+    else:
+        # Default European case
+        technique = select_fastest_technique(model_instance)
 
     pricing_kwargs = model_params.copy()
 
     price_result = technique.price(
-        option, stock, model_instance, rate, **pricing_kwargs
+        option,
+        stock,
+        model_instance,
+        rate,
+        **pricing_kwargs,
     )
-    delta = technique.delta(option, stock, model_instance, rate, **pricing_kwargs)
-    gamma = technique.gamma(option, stock, model_instance, rate, **pricing_kwargs)
-    vega = technique.vega(option, stock, model_instance, rate, **pricing_kwargs)
+    delta = technique.delta(
+        option,
+        stock,
+        model_instance,
+        rate,
+        **pricing_kwargs,
+    )
+    gamma = technique.gamma(
+        option,
+        stock,
+        model_instance,
+        rate,
+        **pricing_kwargs,
+    )
+    vega = technique.vega(
+        option,
+        stock,
+        model_instance,
+        rate,
+        **pricing_kwargs,
+    )
 
     typer.secho("\n--- Pricing Results ---", fg=typer.colors.CYAN)
     typer.echo(f"Price: {price_result.price:.4f}")
