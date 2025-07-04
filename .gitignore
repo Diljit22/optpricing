@@ -14,6 +14,7 @@ venv/
 .idea/
 .DS_Store
 *.nbconvert.ipynb
+.ruff_cache
 
 # Test artifacts
 .pytest_cache/
