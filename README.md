@@ -1,9 +1,11 @@
 # optpricing
 
-[![CI/CD](https://github.com/diljit22/quantfin/actions/workflows/ci.yml/badge.svg)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
-[![PyPI Version](https://badge.fury.io/py/optpricing.svg)](https://pypi.org/project/optpricing/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=tests)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
+[![Ruff](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=ruff)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=docs)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/optpricing.svg)](https://pypi.org/project/optpricing/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **A Python library for pricing and calibrating financial options.**
 
@@ -40,17 +42,17 @@ optpricing dashboard
 
 For a detailed tutorial, full API reference, and more examples, please see the official documentation.
 
-- **Getting Started**:  
-  [Installation Guide](https://diljit22.github.io/quantfin/guide/installation/) ·  
+- **Getting Started**:
+  [Installation Guide](https://diljit22.github.io/quantfin/guide/installation/) ·
   [Walkthrough](https://diljit22.github.io/quantfin/guide/getting_started/)
 
-- **Documentation**:  
+- **Documentation**:
   [API Reference](https://diljit22.github.io/quantfin)
 
-- **Interactive Dashboard**:  
+- **Interactive Dashboard**:
   [Launch the UI](https://diljit22.github.io/quantfin/guide/dashboard/)
 
-- **About Me**:  
+- **About Me**:
   [LinkedIn](https://www.linkedin.com/in/singhdiljit/)
 
 ## Contributing & License
