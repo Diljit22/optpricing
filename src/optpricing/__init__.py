@@ -5,6 +5,10 @@ This library provides a comprehensive suite of tools for pricing financial
 derivatives, calibrating models, and analyzing market data.
 """
 
+from importlib.metadata import version as _v
+
+__version__ = _v(__name__)
+
 # Core Data Structures (Atoms)
 from .atoms import (
     ExerciseStyle,
