@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 import pandas as pd
 import typer
@@ -10,7 +10,12 @@ from optpricing.calibration import fit_rate_and_dividend
 from optpricing.calibration.technique_selector import select_fastest_technique
 from optpricing.data import get_live_dividend_yield, get_live_option_chain
 from optpricing.models import BSMModel
-from optpricing.techniques import LeisenReimerTechnique
+from optpricing.techniques import (
+    AmericanMonteCarloTechnique,
+    CRRTechnique,
+    LeisenReimerTechnique,
+    MonteCarloTechnique,
+)
 from optpricing.workflows.configs import ALL_MODEL_CONFIGS
 
 __doc__ = """
@@ -18,148 +23,209 @@ CLI command for on-demand option pricing.
 """
 
 
+def _err(msg: str) -> None:
+    """Helper to print a formatted error message and exit."""
+    typer.secho(msg, fg=typer.colors.RED, err=True)
+    raise typer.Exit(code=1)
+
+
 def price(
     ticker: Annotated[
-        str, typer.Option("--ticker", "-t", help="Stock ticker for the option.")
+        str,
+        typer.Option(
+            "--ticker",
+            "-t",
+            help="Stock ticker.",
+        ),
     ],
     strike: Annotated[
-        float, typer.Option("--strike", "-k", help="Strike price of the option.")
+        float,
+        typer.Option(
+            "--strike",
+            "-k",
+            help="Strike price.",
+        ),
     ],
     maturity: Annotated[
         str,
-        typer.Option("--maturity", "-T", help="Maturity date in YYYY-MM-DD format."),
+        typer.Option(
+            "--maturity",
+            "-T",
+            help="Maturity YYYY-MM-DD.",
+        ),
     ],
     option_type: Annotated[
-        str, typer.Option("--type", help="Option type: 'call' or 'put'.")
+        str,
+        typer.Option(
+            "--type",
+            help="call|put",
+            case_sensitive=False,
+        ),
     ] = "call",
     style: Annotated[
         str,
         typer.Option(
             "--style",
-            help="Option exercise style: 'american' or 'european'.",
+            help="european|american",
             case_sensitive=False,
         ),
     ] = "european",
     model: Annotated[
-        str, typer.Option("--model", "-m", help="The model to use for pricing.")
+        str,
+        typer.Option(
+            "--model",
+            "-m",
+            help="Model key.",
+        ),
     ] = "BSM",
+    technique: Annotated[
+        str | None,
+        typer.Option(
+            "--technique",
+            "-x",
+            help="Force technique key (e.g., mc, crr).",
+            case_sensitive=False,
+        ),
+    ] = None,
     param: Annotated[
         list[str] | None,
         typer.Option(
             "--param",
-            help="Set a model parameter (e.g., 'sigma=0.2'). Can use multiple times.",
+            help="Repeat: key=value (e.g. sigma=0.2)",
+            show_default=False,
         ),
     ] = None,
 ):
-    """Prices a single option using live market data and user model parameters."""
-    msg = (
-        f"Pricing {ticker} {strike} {option_type.upper()} expiring {maturity} "
-        f"using {model} model..."
-    )
-    typer.echo(msg)
+    """
+    Prices a single option using live market data and specified parameters.
+    """
 
-    model_params = {}
-    if param:
-        for p in param:
+    # --- Helper Functions defined inside command scope ---
+    def _parse_params(param_list: list[str] | None) -> dict[str, float]:
+        params: dict[str, float] = {}
+        if not param_list:
+            return params
+        for raw in param_list:
+            if "=" not in raw:
+                _err(f"Invalid --param '{raw}'. Expected format key=value.")
+            key, value = (tok.strip() for tok in raw.split("=", 1))
             try:
-                key, value = p.split("=")
-                model_params[key.strip()] = float(value)
+                params[key] = float(value)
             except ValueError:
-                typer.secho(
-                    f"Invalid format for parameter: '{p}'. Use 'key=value'.",
-                    fg=typer.colors.RED,
-                )
-                raise typer.Exit(code=1)
+                _err(f"Could not parse float from '{value}' (param '{key}').")
+        return params
 
-    typer.echo("Fetching live market data...")
+    def _select_technique() -> Any:
+        technique_map = {
+            "MC": MonteCarloTechnique,
+            "AMERICAN_MC": AmericanMonteCarloTechnique,
+            "CRR": CRRTechnique,
+            "LR": LeisenReimerTechnique,
+        }
+        if technique:
+            key = technique.upper()
+            if key not in technique_map:
+                _err(
+                    f"Technique '{technique}' not recognised. "
+                    f"Choices: {', '.join(technique_map)}"
+                )
+            try:
+                return technique_map[key](is_american=is_american)
+            except TypeError:
+                return technique_map[key]()
+
+        if is_american:
+            if isinstance(model_instance, BSMModel):
+                typer.echo("American style detected. Using Leisen-Reimer lattice.")
+                return LeisenReimerTechnique(is_american=True)
+            typer.echo("American style detected. Falling back to LSMC (American MC).")
+            return AmericanMonteCarloTechnique()
+
+        fastest = select_fastest_technique(model_instance)
+        _tech = fastest.__class__.__name__
+        typer.echo(f"European style. Auto-selected fastest technique: {_tech}.")
+        return fastest
+
+    # --- 1. Parse & Validate Inputs ---
+    typer.echo(
+        f"Pricing a {style} {ticker} {option_type.upper()} "
+        f"(K={strike}) exp {maturity} using {model}..."
+    )
+    model_params = _parse_params(param)
+    is_american = style.lower() == "american"
+
+    # --- 2. Live-Data Fetch ---
+    typer.echo("Fetching live option chain...")
     live_chain = get_live_option_chain(ticker)
     if live_chain is None or live_chain.empty:
-        typer.secho(
-            f"Error: Could not fetch live option chain for {ticker}.",
-            fg=typer.colors.RED,
-        )
-        raise typer.Exit(code=1)
+        _err(f"No live option chain found for {ticker}.")
 
-    q = get_live_dividend_yield(ticker)
+    q_div = get_live_dividend_yield(ticker)
     spot = live_chain["spot_price"].iloc[0]
     calls = live_chain[live_chain["optionType"] == "call"]
     puts = live_chain[live_chain["optionType"] == "put"]
-
-    r, _ = fit_rate_and_dividend(calls, puts, spot, q_fixed=q)
+    r_rate, _ = fit_rate_and_dividend(calls, puts, spot, q_fixed=q_div)
     typer.echo(
-        f"Live Data -> Spot: {spot:.2f}, Known Dividend: {q:.4%}, Implied Rate: {r:.4%}"
+        f"Live Data: Spot {spot:.2f} | Dividend {q_div:.4%} | Implied r {r_rate:.4%}"
     )
 
-    stock = Stock(spot=spot, dividend=q)
-    rate = Rate(rate=r)
-    maturity_years = (pd.to_datetime(maturity) - pd.Timestamp.now()).days / 365.25
+    # --- 3. Build Atoms & Model ---
+    stock = Stock(spot=spot, dividend=q_div)
+    rate = Rate(rate=r_rate)
+    maturity_years = (
+        pd.to_datetime(maturity) - pd.Timestamp.utcnow().tz_localize(None)
+    ).days / 365.25
+    if maturity_years <= 0:
+        _err("Maturity date must be in the future.")
+
     option = Option(
         strike=strike,
         maturity=maturity_years,
         option_type=OptionType[option_type.upper()],
     )
 
-    model_class = ALL_MODEL_CONFIGS[model]["model_class"]
-    model_instance = model_class(params=model_params)
+    try:
+        model_cls = ALL_MODEL_CONFIGS[model]["model_class"]
+    except KeyError:
+        _err(f"Model '{model}' not recognised in ALL_MODEL_CONFIGS.")
 
-    is_american_flag = style.lower() == "american"
+    # Merge default params with user-provided params
+    full_params = (
+        model_cls.default_params.copy() if hasattr(model_cls, "default_params") else {}
+    )
+    full_params.update(model_params)
+    model_instance = model_cls(params=full_params)
 
-    if is_american_flag:
-        # Check if the selected model is BSM, which is the only one
-        # that currently supports lattice methods.
-        if isinstance(model_instance, BSMModel):
-            # Force the use of a lattice technique for American pricing
-            technique = LeisenReimerTechnique(is_american=True)
-            typer.echo("American style requested. Using Leisen-Reimer lattice.")
-        else:
-            # User wants American, but the model doesn't support it.
-            # Warn and fall back to the fastest European method.
-            technique = select_fastest_technique(model_instance)
-            typer.secho(
-                f"Warning: {model_instance.name} does not support American pricing.",
-                fg=typer.colors.YELLOW,
-            )
-            typer.secho(
-                f"         Pricing as European using {technique.__class__.__name__}.",
-                fg=typer.colors.YELLOW,
-            )
-    else:
-        # Default European case
-        technique = select_fastest_technique(model_instance)
+    # --- 4. Technique Selection & Pricing ---
+    technique_instance = _select_technique()
 
-    pricing_kwargs = model_params.copy()
-
-    price_result = technique.price(
+    price_result = technique_instance.price(
         option,
         stock,
         model_instance,
         rate,
-        **pricing_kwargs,
-    )
-    delta = technique.delta(
-        option,
-        stock,
-        model_instance,
-        rate,
-        **pricing_kwargs,
-    )
-    gamma = technique.gamma(
-        option,
-        stock,
-        model_instance,
-        rate,
-        **pricing_kwargs,
-    )
-    vega = technique.vega(
-        option,
-        stock,
-        model_instance,
-        rate,
-        **pricing_kwargs,
+        **full_params,
     )
 
-    typer.secho("\n--- Pricing Results ---", fg=typer.colors.CYAN)
+    typer.secho("\n── Pricing Results " + "─" * 38, fg=typer.colors.CYAN)
     typer.echo(f"Price: {price_result.price:.4f}")
-    typer.echo(f"Delta: {delta:.4f}")
-    typer.echo(f"Gamma: {gamma:.4f}")
-    typer.echo(f"Vega:  {vega:.4f}")
+
+    # --- 5. Greeks (if implemented) ---
+    for greek_name in ["Delta", "Gamma", "Vega"]:
+        greek_func = getattr(
+            technique_instance,
+            greek_name.lower(),
+            None,
+        )
+        if callable(greek_func):
+            try:
+                value = greek_func(
+                    option,
+                    stock,
+                    model_instance,
+                    rate,
+                    **full_params,
+                )
+                typer.echo(f"{greek_name}: {value:.4f}")
+            except NotImplementedError:
+                continue

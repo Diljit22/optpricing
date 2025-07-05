@@ -53,4 +53,4 @@ def test_price_command(mock_get_div, mock_get_chain, mock_fit_rate, mock_select_
     assert "Price: 10.5000" in result.stdout
     assert "Delta: 0.5500" in result.stdout
     assert "Gamma: 0.0200" in result.stdout
-    assert "Vega:  0.2500" in result.stdout
+    assert "Vega: 0.2500" in result.stdout
