@@ -49,6 +49,7 @@ dev = [
     "mkdocs-section-index",
     "line_profiler",
     "pre-commit",
+    "codecov",
 ]
 
 [project.urls]

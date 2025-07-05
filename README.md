@@ -1,6 +1,7 @@
 # optpricing
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=tests)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/diljit22/quantfin/branch/main/graph/badge.svg)](https://codecov.io/gh/diljit22/quantfin)
 [![Ruff](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=ruff)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=docs)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/optpricing.svg)](https://pypi.org/project/optpricing/)
