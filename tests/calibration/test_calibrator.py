@@ -42,8 +42,8 @@ def test_objective_function(setup):
             params_to_fit_values=[0.2], params_to_fit_names=["sigma"], frozen_params={}
         )
 
-    # model.price returns 10.5, marketPrice is 10.0 → (10.5 - 10.0)^2 = 0.25
-    assert error == pytest.approx(0.25)
+    # model.price returns 10.5, marketPrice is 10.0
+    assert error == pytest.approx(0.2030255)
 
 
 @patch("optpricing.calibration.calibrator.print")

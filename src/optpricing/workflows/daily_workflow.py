@@ -6,13 +6,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.atoms import Rate, Stock
 from optpricing.calibration import (
     Calibrator,
     fit_jump_params_from_history,
     fit_rate_and_dividend,
 )
-from optpricing.calibration.technique_selector import select_fastest_technique
+from optpricing.calibration.vectorized_pricer import price_options_vectorized
 from optpricing.data import get_live_dividend_yield, load_historical_returns
 from optpricing.models import BaseModel
 
@@ -112,24 +112,35 @@ class DailyWorkflow:
             original_count = len(self.market_data)
             min_moneyness, max_moneyness = 0.85, 1.15
 
-            calibration_data = self.market_data[
-                (self.market_data["strike"] / spot >= min_moneyness)
-                & (self.market_data["strike"] / spot <= max_moneyness)
-            ].copy()
+            calibration_data = (
+                self.market_data[
+                    (self.market_data["strike"] / spot >= min_moneyness)
+                    & (self.market_data["strike"] / spot <= max_moneyness)
+                ]
+                .copy()
+                .reset_index(drop=True)
+            )
             _data_msg = f"{len(calibration_data)} of {original_count} options"
             logger.info(f"  -> Using {_data_msg} for calibration.")
 
             logger.info("[Step 3] Preparing dynamic initial guesses...")
-            model_instance = self.model_config["model_class"]()
+            model_class = self.model_config["model_class"]
+            if not hasattr(model_class, "default_params"):
+                logger.error(f"Model {model_class.name} is missing default_params..")
+            model_instance = model_class(params=model_class.default_params)
 
-            # Dynamically build from the model's own definitions
-            bounds = {
-                k: (p["min"], p["max"]) for k, p in model_instance.param_defs.items()
-            }
-            initial_guess = {
-                k: p["default"] for k, p in model_instance.param_defs.items()
-            }
-
+            if hasattr(model_instance, "param_defs"):
+                bounds = {
+                    k: (p["min"], p["max"])
+                    for k, p in model_instance.param_defs.items()
+                }
+                initial_guess = {
+                    k: p["default"] for k, p in model_instance.param_defs.items()
+                }
+            else:
+                # Fallback if param_defs is not defined
+                bounds = self.model_config.get("bounds", {})
+                initial_guess = model_instance.params.copy()
             # For any model with 'sigma', use average IV as a smart guess
             if (
                 "sigma" in initial_guess
@@ -141,6 +152,7 @@ class DailyWorkflow:
                     logger.info(f"  -> Dynamic initial guess for sigma: {avg_iv:.4f}")
 
             # For Merton, use historical estimates as FROZEN params
+            frozen_params_dict = {}
             if model_name == "Merton" and self.model_config.get(
                 "use_historical_strategy"
             ):
@@ -149,11 +161,14 @@ class DailyWorkflow:
                 )
                 hist_returns = load_historical_returns(ticker)
                 jump_params = fit_jump_params_from_history(hist_returns)
-                initial_guess.update(jump_params)  # Update guess with historical values
-                logger.info(f"  -> Historical estimates: {jump_params}")
+                frozen_params_dict.update(jump_params)
+                initial_guess.update(jump_params)
+                logger.info(f"  -> Historical estimates frozen: {jump_params}")
 
-            frozen_params_list = self.model_config.get("frozen", [])
-            frozen_params_dict = {k: initial_guess[k] for k in frozen_params_list}
+            # Handle any other frozen parameters defined in the config
+            frozen_from_config = self.model_config.get("frozen", {})
+            if frozen_from_config:
+                frozen_params_dict.update(frozen_from_config)
 
             # Calibrate the model
             logger.info("[Step 4] Calibrating %s...", model_name)
@@ -183,20 +198,21 @@ class DailyWorkflow:
             )
             self.results.update({"RMSE": np.nan, "Status": "Failed", "Error": str(e)})
 
-    def _evaluate_rmse(self, model: BaseModel, stock: Stock, rate: Rate) -> float:
+    def _evaluate_rmse(
+        self,
+        model: BaseModel,
+        stock: Stock,
+        rate: Rate,
+    ) -> float:
         """Calculates the RMSE of a given model against the full market data."""
-        technique = select_fastest_technique(model)
-        errors = []
-        for _, row in self.market_data.iterrows():
-            option = Option(
-                strike=row["strike"],
-                maturity=row["maturity"],
-                option_type=OptionType.CALL
-                if row["optionType"] == "call"
-                else OptionType.PUT,
-            )
-            model_price = technique.price(
-                option, stock, model, rate, **model.params
-            ).price
-            errors.append(model_price - row["marketPrice"])
-        return np.sqrt(np.mean(np.square(errors)))
+        eval_data = self.market_data.reset_index(drop=True)
+
+        model_prices = price_options_vectorized(
+            options_df=eval_data,
+            stock=stock,
+            model=model,
+            rate=rate,
+        )
+
+        errors = model_prices - eval_data["marketPrice"].to_numpy()
+        return float(np.sqrt(np.mean(errors**2)))
