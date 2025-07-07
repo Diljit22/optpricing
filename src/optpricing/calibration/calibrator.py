@@ -4,10 +4,11 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import minimize, minimize_scalar
 
-from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.atoms import Rate, Stock
 from optpricing.models import BaseModel
 
 from .technique_selector import select_fastest_technique
+from .vectorized_pricer import price_options_vectorized
 
 __doc__ = """
 Defines the main Calibrator class used to fit financial models to market data.
@@ -73,24 +74,16 @@ class Calibrator:
             print(f" -> Invalid params ({e}), returning large error.")
             return 1e12
 
-        # Vectorized pricing for speed
-        # assumes the technique supports vectorized pricing.
-        # For now, fall back to iterating, but this is where future optimization lies.
-        total_error = 0.0
-        for _, row in self.market_data.iterrows():
-            option = Option(
-                strike=row["strike"],
-                maturity=row["maturity"],
-                option_type=OptionType.CALL
-                if row["optionType"] == "call"
-                else OptionType.PUT,
-            )
-            model_price = self.technique.price(
-                option, self.stock, temp_model, self.rate, **current_params
-            ).price
-            total_error += (model_price - row["marketPrice"]) ** 2
+        model_prices = price_options_vectorized(
+            self.market_data, self.stock, temp_model, self.rate
+        )
 
-        print(f"  --> Total Error: {total_error:.4f}")
+        # Calculate error against market prices
+        total_error = np.sum(
+            (model_prices - self.market_data["marketPrice"].values) ** 2
+        )
+
+        print(f"  --> RMSE: {np.sqrt(total_error / len(self.market_data)):.6f}")
         return total_error
 
     def fit(

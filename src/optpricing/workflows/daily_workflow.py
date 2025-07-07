@@ -6,13 +6,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.atoms import Rate, Stock
 from optpricing.calibration import (
     Calibrator,
     fit_jump_params_from_history,
     fit_rate_and_dividend,
 )
-from optpricing.calibration.technique_selector import select_fastest_technique
+from optpricing.calibration.vectorized_pricer import price_options_vectorized
 from optpricing.data import get_live_dividend_yield, load_historical_returns
 from optpricing.models import BaseModel
 
@@ -112,10 +112,14 @@ class DailyWorkflow:
             original_count = len(self.market_data)
             min_moneyness, max_moneyness = 0.85, 1.15
 
-            calibration_data = self.market_data[
-                (self.market_data["strike"] / spot >= min_moneyness)
-                & (self.market_data["strike"] / spot <= max_moneyness)
-            ].copy()
+            calibration_data = (
+                self.market_data[
+                    (self.market_data["strike"] / spot >= min_moneyness)
+                    & (self.market_data["strike"] / spot <= max_moneyness)
+                ]
+                .copy()
+                .reset_index(drop=True)
+            )
             _data_msg = f"{len(calibration_data)} of {original_count} options"
             logger.info(f"  -> Using {_data_msg} for calibration.")
 
@@ -183,20 +187,20 @@ class DailyWorkflow:
             )
             self.results.update({"RMSE": np.nan, "Status": "Failed", "Error": str(e)})
 
-    def _evaluate_rmse(self, model: BaseModel, stock: Stock, rate: Rate) -> float:
+    def _evaluate_rmse(
+        self,
+        model: BaseModel,
+        stock: Stock,
+        rate: Rate,
+    ) -> float:
         """Calculates the RMSE of a given model against the full market data."""
-        technique = select_fastest_technique(model)
-        errors = []
-        for _, row in self.market_data.iterrows():
-            option = Option(
-                strike=row["strike"],
-                maturity=row["maturity"],
-                option_type=OptionType.CALL
-                if row["optionType"] == "call"
-                else OptionType.PUT,
-            )
-            model_price = technique.price(
-                option, stock, model, rate, **model.params
-            ).price
-            errors.append(model_price - row["marketPrice"])
+        model_prices = price_options_vectorized(
+            options_df=self.market_data,
+            stock=stock,
+            model=model,
+            rate=rate,
+        )
+
+        # Calculate the Root Mean Squared Error
+        errors = model_prices - self.market_data["marketPrice"].values
         return np.sqrt(np.mean(np.square(errors)))
