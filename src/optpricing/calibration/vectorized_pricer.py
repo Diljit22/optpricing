@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from scipy import integrate
@@ -11,6 +11,10 @@ if TYPE_CHECKING:
     from optpricing.atoms import Rate, Stock
     from optpricing.models import BaseModel
 
+__doc__ = """
+Defines a high-performance, vectorized pricer for models with CF.
+"""
+
 
 def price_options_vectorized(
     options_df: pd.DataFrame,
@@ -19,6 +23,7 @@ def price_options_vectorized(
     rate: Rate,
     *,
     upper_bound: float = 200.0,
+    **kwargs: Any,
 ) -> np.ndarray:
     """
     Vectorised integral pricer (Carr-Madan representation).
@@ -56,7 +61,7 @@ def price_options_vectorized(
         is_call = grp["optionType"].to_numpy() == "call"
 
         r = rate.get_rate(T)
-        phi = model.cf(t=T, spot=S, r=r, q=q)
+        phi = model.cf(t=T, spot=S, r=r, q=q, **kwargs)
         lnK = np.log(K)
 
         def _integrand_p2(u: float) -> np.ndarray:

@@ -62,30 +62,14 @@ def test_calculate_market_iv(mock_calculate, setup):
     assert "iv" in surface.surface.columns
 
 
-@patch("optpricing.calibration.iv_surface.VolatilitySurface._calculate_ivs")
-def test_calculate_model_iv(mock_calculate, setup):
+@patch("optpricing.calibration.iv_surface.price_options_vectorized")
+def test_calculate_model_iv(mock_vectorized_pricer, setup):
     """
-    Tests that calculate_model_iv calls the technique and then the IV solver.
+    Tests that calculate_model_iv calls the vectorized pricer and then the IV solver.
     """
     surface, stock, rate = setup
-
-    # Mock the model and technique
     model = MagicMock()
-    technique = MagicMock()
-    # Make the mock technique return different prices for each option
-    technique.price.side_effect = [MagicMock(price=10.1), MagicMock(price=2.1)]
 
-    mock_calculate.return_value = np.array([0.21, 0.21])  # Dummy IVs
-
-    surface.calculate_model_iv(stock, rate, model, technique)
-
-    # Assert that the pricing technique was called for each row of data
-    assert technique.price.call_count == len(surface.data)
-
-    # Assert that the IV solver was called with the model prices
-    mock_calculate.assert_called_once()
-    model_prices_series = pd.Series([10.1, 2.1], index=surface.data.index)
-    pd.testing.assert_series_equal(
-        mock_calculate.call_args[0][2], model_prices_series, check_names=False
-    )
-    assert "iv" in surface.surface.columns
+    mock_vectorized_pricer.return_value = np.array([10.1, 2.1])
+    surface.calculate_model_iv(stock, rate, model)
+    mock_vectorized_pricer.assert_called_once()

@@ -25,6 +25,4 @@ htmlcov/
 site/
 
 # Ignore my local notes file
-tmp.txt
-TODO.txt
-notes.txt
+todo/

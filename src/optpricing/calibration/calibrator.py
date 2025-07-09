@@ -60,9 +60,10 @@ class Calibrator:
         frozen_params: dict[str, float],
     ) -> float:
         """The objective function to be minimized, calculating total squared error."""
+        native_params = np.asarray(params_to_fit_values, dtype=float)
         current_params = {
             **frozen_params,
-            **dict(zip(params_to_fit_names, params_to_fit_values)),
+            **dict(zip(params_to_fit_names, native_params)),
         }
         print(
             f"  Trying params: { {k: f'{v:.4f}' for k, v in current_params.items()} }",

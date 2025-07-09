@@ -215,4 +215,4 @@ class DailyWorkflow:
         )
 
         errors = model_prices - eval_data["marketPrice"].to_numpy()
-        return float(np.sqrt(np.mean(errors**2)))
+        return np.sqrt(np.mean(np.square(errors)))
