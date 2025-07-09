@@ -3,7 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from optpricing.atoms import Option, OptionType, Rate, Stock
+from optpricing.atoms import Rate, Stock
+from optpricing.calibration.vectorized_pricer import price_options_vectorized
 from optpricing.models import BaseModel
 from optpricing.techniques.base import BaseTechnique
 
@@ -58,7 +59,12 @@ class VolatilitySurface:
         prices_to_invert: pd.Series,
     ) -> np.ndarray:
         """Calculates IVs using the fast, vectorized BSM solver."""
-        ivs = self.iv_solver.solve(prices_to_invert.values, self.data, stock, rate)
+        ivs = self.iv_solver.solve(
+            prices_to_invert.values,
+            self.data,
+            stock,
+            rate,
+        )
         return ivs
 
     def calculate_market_iv(
@@ -100,7 +106,7 @@ class VolatilitySurface:
         stock: Stock,
         rate: Rate,
         model: BaseModel,
-        technique: BaseTechnique,
+        technique: BaseTechnique = None,
     ) -> VolatilitySurface:
         """
         Calculates a model's implied volatility surface.
@@ -127,23 +133,12 @@ class VolatilitySurface:
         """
         print(f"Calculating {model.name} implied volatility surface...")
 
-        model_prices = np.array(
-            [
-                technique.price(
-                    Option(
-                        strike=row.strike,
-                        maturity=row.maturity,
-                        option_type=OptionType.CALL
-                        if row.optionType == "call"
-                        else OptionType.PUT,
-                    ),
-                    stock,
-                    model,
-                    rate,
-                    **model.params,
-                ).price
-                for _, row in self.data.iterrows()
-            ]
+        model_prices = price_options_vectorized(
+            options_df=self.data,
+            stock=stock,
+            model=model,
+            rate=rate,
+            **model.params,
         )
 
         model_ivs = self._calculate_ivs(

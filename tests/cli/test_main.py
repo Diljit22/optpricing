@@ -16,4 +16,4 @@ def test_dashboard_command(mock_subprocess_run):
     assert result.exit_code == 0
     mock_subprocess_run.assert_called_once()
     assert "streamlit" in mock_subprocess_run.call_args.args[0]
-    assert "app.py" in str(mock_subprocess_run.call_args.args[0][-1])
+    assert "Home.py" in str(mock_subprocess_run.call_args.args[0][-1])

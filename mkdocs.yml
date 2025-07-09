@@ -1,10 +1,10 @@
 site_name: optpricing
 site_author: Diljit Singh
-site_description: "A Python library for quantitative finance."
-site_url: https://github.com/diljit22/
+site_description: "A Python library for quantitative finance and option pricing."
+site_url: https://diljit22.github.io/quantfin/
 
 repo_url: https://github.com/diljit22/quantfin
-repo_name: optpricing
+repo_name: diljit22/quantfin
 
 docs_dir: docs
 
@@ -39,6 +39,8 @@ plugins:
           options:
             docstring_style: numpy
             show_signature_annotations: true
+            merge_init_into_class: true
+            separate_signature: true
   - section-index
 
 
@@ -57,7 +59,7 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.mark
   - toc:
-      permalink: "#"
+      permalink: true
 
 
 nav:
@@ -83,11 +85,21 @@ nav:
           - Technique Selector: reference/calibration/technique_selector.md
           - Vectorized BSM IV: reference/calibration/vectorized_bsm_iv.md
           - Vectorized Integration IV: reference/calibration/vectorized_integration_iv.md
+          - Vectorized Pricer: reference/calibration/vectorized_pricer.md
+      - CLI:
+          - reference/cli/index.md
+          - Backtest: reference/cli/backtest.md
+          - Calibrate: reference/cli/calibrate.md
+          - Dashboard: reference/cli/dashboard.md
+          - Data: reference/cli/data.md
+          - Demo: reference/cli/demo.md
+          - Price: reference/cli/price.md
+          - Tools: reference/cli/tools.md
       - Dashboard:
           - reference/dashboard/index.md
-          - Plots: reference/dashboard/plots.md
-          - Service: reference/dashboard/service.md
-          - Widgets: reference/dashboard/widgets.md
+          - Plotting Functions: reference/dashboard/plots.md
+          - Backend Service: reference/dashboard/service.md
+          - UI Widgets: reference/dashboard/widgets.md
       - Data:
           - reference/data/index.md
           - Historical Manager: reference/data/historical_manager.md
@@ -131,9 +143,10 @@ nav:
               - RandomUtils: reference/techniques/base/random_utils.md
           - Kernels:
               - reference/techniques/kernels/index.md
+              - Longstaff-Schwartz: reference/techniques/kernels/american_mc_kernels.md
               - Lattice Kernels: reference/techniques/kernels/lattice_kernels.md
               - MC Kernels: reference/techniques/kernels/mc_kernels.md
-              - American MC Kernels: reference/techniques/kernels/american_mc_kernels.md
+              - Path Kernels: reference/techniques/kernels/path_kernels.md
           - Closed Form: reference/techniques/closed_form.md
           - CRR (Cox-Ross-Rubinstein): reference/techniques/crr.md
           - FFT (Fast Fourier Transform): reference/techniques/fft.md
@@ -147,10 +160,3 @@ nav:
           - reference/workflows/index.md
           - Daily Workflow: reference/workflows/daily_workflow.md
           - Backtest Workflow: reference/workflows/backtest_workflow.md
-      - CLI:
-          - Overview: reference/cli/index.md
-          - Calibrate Command: reference/cli/calibrate.md
-          - Backtest Command: reference/cli/backtest.md
-          - Data Commands: reference/cli/data.md
-          - Price Command: reference/cli/price.md
-          - Tools Commands: reference/cli/tools.md
