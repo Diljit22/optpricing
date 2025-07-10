@@ -47,6 +47,7 @@ from .parity import ImpliedRateModel, ParityModel
 
 # Techniques
 from .techniques import (
+    AmericanMonteCarloTechnique,
     ClosedFormTechnique,
     CRRTechnique,
     FFTTechnique,
@@ -69,7 +70,7 @@ __all__ = [
     "Rate",
     "Stock",
     "ZeroCouponBond",
-    # Models (alphabetically sorted)
+    # Models
     "BatesModel",
     "BlacksApproxModel",
     "BSMModel",
@@ -89,7 +90,8 @@ __all__ = [
     "SABRModel",
     "VarianceGammaModel",
     "VasicekModel",
-    # Techniques (alphabetically sorted)
+    # Techniques
+    "AmericanMonteCarloTechnique",
     "ClosedFormTechnique",
     "CRRTechnique",
     "FFTTechnique",
