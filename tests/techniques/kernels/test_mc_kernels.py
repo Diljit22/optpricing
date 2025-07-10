@@ -1,3 +1,4 @@
+import numba
 import numpy as np
 import pytest
 from scipy import stats
@@ -387,3 +388,97 @@ def test_sabr_kernel_volatility_process():
 
     msg = f"SABR mean spot price test failed: p-value {p_value:.4f} is too low."
     assert p_value > 0.01, msg
+
+
+def test_sabr_jump_kernel_jumps_are_applied():
+    """
+    Tests that the SABR jump kernel correctly applies jumps by comparing a
+    simulation with jumps to one without.
+    """
+    s0, v0 = 100.0, 0.5
+    alpha, beta, rho = 0.5, 0.8, -0.6
+    lambda_, mu_j, sigma_j = 5.0, -0.1, 0.15  # High jump intensity
+
+    rng = np.random.default_rng(0)
+    dw1 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
+    dw2 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
+
+    # Simulate with jumps
+    jump_counts = rng.poisson(lambda_ * DT, (N_PATHS_STOCHASTIC, N_STEPS))
+    sT_with_jumps = mc_kernels.sabr_jump_kernel(
+        N_PATHS_STOCHASTIC,
+        N_STEPS,
+        s0,
+        v0,
+        R,
+        Q,
+        alpha,
+        beta,
+        rho,
+        lambda_,
+        mu_j,
+        sigma_j,
+        DT,
+        dw1,
+        dw2,
+        jump_counts,
+    )
+
+    # Simulate without jumps
+    no_jump_counts = np.zeros((N_PATHS_STOCHASTIC, N_STEPS), dtype=np.int64)
+    sT_no_jumps = mc_kernels.sabr_jump_kernel(
+        N_PATHS_STOCHASTIC,
+        N_STEPS,
+        s0,
+        v0,
+        R,
+        Q,
+        alpha,
+        beta,
+        rho,
+        lambda_,
+        mu_j,
+        sigma_j,
+        DT,
+        dw1,
+        dw2,
+        no_jump_counts,
+    )
+
+    # The means should be different
+    t_stat, p_value = stats.ttest_ind(sT_with_jumps, sT_no_jumps, equal_var=False)
+    assert p_value < 0.01, "SABR jump distributions should be different, but were not."
+
+
+def test_dupire_kernel_with_constant_vol():
+    """
+    Tests that the Dupire kernel with a constant volatility surface behaves
+    identically to the BSM kernel.
+    """
+    log_s0 = np.log(100)
+    constant_sigma = 0.2
+
+    rng = np.random.default_rng(0)
+    dw = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
+
+    # Define a constant volatility function for Dupire
+    @numba.jit(nopython=True)
+    def constant_vol_surface(t, s):
+        return constant_sigma
+
+    # Run Dupire kernel
+    log_sT_dupire = mc_kernels.dupire_kernel(
+        N_PATHS_STOCHASTIC, N_STEPS, log_s0, R, Q, DT, dw, constant_vol_surface
+    )
+
+    # Run BSM kernel with the same parameters
+    log_sT_bsm = mc_kernels.bsm_kernel(
+        N_PATHS_STOCHASTIC, N_STEPS, log_s0, R, Q, constant_sigma, DT, dw
+    )
+
+    np.testing.assert_allclose(
+        log_sT_dupire,
+        log_sT_bsm,
+        rtol=1e-9,
+        err_msg="Dupire with constant vol should match BSM",
+    )

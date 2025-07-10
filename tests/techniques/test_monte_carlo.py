@@ -11,7 +11,7 @@ from optpricing.models import (
     MertonJumpModel,
     VarianceGammaModel,
 )
-from optpricing.techniques import MonteCarloTechnique
+from optpricing.techniques import ClosedFormTechnique, MonteCarloTechnique
 from optpricing.techniques.kernels import mc_kernels
 
 
@@ -106,3 +106,21 @@ def test_get_sde_kernel_selector(model_instance, expected_kernel):
         model=model_instance, r=0.05, q=0.01, dt=0.01
     )
     assert kernel_func is expected_kernel
+
+
+def test_mc_price_correctness_for_bsm(setup):
+    """
+    Tests that the Monte Carlo price for a BSM model is statistically close
+    to the analytical closed-form price.
+    """
+    option, stock, rate = setup
+    model = BSMModel(params={"sigma": 0.2})
+
+    # Calculate the analytical price to use as a benchmark
+    analytic_technique = ClosedFormTechnique()
+    expected_price = analytic_technique.price(option, stock, model, rate).price
+
+    mc_technique = MonteCarloTechnique(n_paths=20000, n_steps=10, seed=0)
+    mc_price = mc_technique.price(option, stock, model, rate).price
+
+    assert mc_price == pytest.approx(expected_price, abs=1e-2)
