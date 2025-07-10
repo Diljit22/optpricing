@@ -15,6 +15,12 @@ __doc__ = """
 CLI command for model calibration.
 """
 
+AVAILABLE_MODELS_FOR_CALIBRATION = {
+    name: config
+    for name, config in ALL_MODEL_CONFIGS.items()
+    if name in ["BSM", "Merton"]
+}
+
 
 def calibrate(
     ticker: Annotated[
@@ -94,14 +100,16 @@ def calibrate(
                 raise typer.Exit(code=1)
 
     for model_name in model:
-        if model_name not in ALL_MODEL_CONFIGS:
+        if model_name not in AVAILABLE_MODELS_FOR_CALIBRATION:
             typer.secho(
-                f"Warning: Model '{model_name}' not found. Skipping.",
+                f"Warning: Model '{model_name}' is not supported for calibration. "
+                f"Available: {list(AVAILABLE_MODELS_FOR_CALIBRATION.keys())}. "
+                f"Skipping.",
                 fg=typer.colors.YELLOW,
             )
             continue
 
-        config = ALL_MODEL_CONFIGS[model_name].copy()
+        config = AVAILABLE_MODELS_FOR_CALIBRATION[model_name].copy()
         config["ticker"] = ticker
         config["frozen"] = {**config.get("frozen", {}), **frozen_params}
 
