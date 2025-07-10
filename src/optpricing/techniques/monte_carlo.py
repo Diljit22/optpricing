@@ -74,7 +74,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         Prices an option using the appropriate Monte Carlo simulation method.
 
         This method acts as a dispatcher, selecting the correct simulation
-        strategy (SDE path, pure Lévy, or exact sampler) based on the
+        strategy (SDE path, pure Levy, or exact sampler) based on the
         capabilities of the provided model.
 
         Parameters
@@ -264,12 +264,12 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         q: float,
         T: float,
     ) -> np.ndarray:
-        """Handles pure Lévy models by direct sampling of the terminal distribution."""
+        """Handles pure Levy models by direct sampling of the terminal distribution."""
         if not hasattr(model, "sample_terminal_log_return") or not hasattr(
             model, "raw_cf"
         ):
             raise NotImplementedError(
-                f"Lévy model '{model.name}' is missing required methods."
+                f"Levy model '{model.name}' is missing required methods."
             )
 
         log_returns_raw = model.sample_terminal_log_return(T, self.n_paths, self.rng)

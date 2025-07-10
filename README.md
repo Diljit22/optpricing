@@ -17,7 +17,7 @@ Welcome to **optpricing**, a comprehensive Python toolkit for pricing and calibr
 optpricing is structured around four core pillars:
 
 - **Atoms**: Fundamental data types (`Option`, `Stock`, `Rate`) that ensure consistency and clarity of inputs across the library.
-- **Models**: A broad library ranging from classical Black-Scholes-Merton to advanced stochastic volatility (Heston, SABR) and jump/Lévy processes.
+- **Models**: A broad library ranging from classical Black-Scholes-Merton to advanced stochastic volatility (Heston, SABR) and jump/Levy processes.
 - **Techniques**: Multiple pricing engines—closed-form formulas, FFT, numerical integration, PDE solvers, lattice methods, and Monte Carlo (`numba`-accelerated with variance reduction methods baked in).
 - **Workflows**: High-level orchestrators that automate end-to-end tasks like daily calibration and out-of-sample backtesting, all accessible via a CLI or an interactive dashboard.
 

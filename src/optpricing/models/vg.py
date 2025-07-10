@@ -8,12 +8,12 @@ import numpy as np
 from optpricing.models.base import CF, BaseModel, ParamValidator
 
 __doc__ = """
-Defines the Variance Gamma (VG) model, a pure-jump Lévy process.
+Defines the Variance Gamma (VG) model, a pure-jump Levy process.
 """
 
 
 class VarianceGammaModel(BaseModel):
-    """Variance Gamma (VG) model, a pure-jump Lévy process."""
+    """Variance Gamma (VG) model, a pure-jump Levy process."""
 
     name: str = "Variance Gamma"
     supports_cf: bool = True

@@ -8,12 +8,12 @@ import numpy as np
 from optpricing.models.base import CF, BaseModel, ParamValidator
 
 __doc__ = """
-Defines the Normal Inverse Gaussian (NIG) model, a pure-jump Lévy process.
+Defines the Normal Inverse Gaussian (NIG) model, a pure-jump Levy process.
 """
 
 
 class NIGModel(BaseModel):
-    """Normal Inverse Gaussian (NIG) model, a pure-jump Lévy process."""
+    """Normal Inverse Gaussian (NIG) model, a pure-jump Levy process."""
 
     name: str = "Normal Inverse Gaussian"
     supports_cf: bool = True
@@ -171,7 +171,7 @@ class NIGModel(BaseModel):
 
     #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any:
-        raise NotImplementedError("NIG is a pure Lévy process, use terminal sampling.")
+        raise NotImplementedError("NIG is a pure Levy process, use terminal sampling.")
 
     def _pde_impl(self, **kwargs: Any) -> Any:
         raise NotImplementedError

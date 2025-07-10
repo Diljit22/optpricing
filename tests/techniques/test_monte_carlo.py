@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
@@ -45,6 +46,8 @@ def test_sde_path_dispatcher(mock_simulate_sde, setup):
     """
     Tests that the dispatcher correctly calls the SDE path simulator.
     """
+    mock_simulate_sde.return_value = np.array([100.0])
+
     option, stock, rate = setup
     model = BSMModel()  # A standard SDE model
     technique = MonteCarloTechnique()
@@ -56,10 +59,12 @@ def test_sde_path_dispatcher(mock_simulate_sde, setup):
 @patch("optpricing.techniques.monte_carlo.MonteCarloTechnique._simulate_levy_terminal")
 def test_levy_terminal_dispatcher(mock_simulate_levy, setup):
     """
-    Tests that the dispatcher correctly calls the pure Lévy terminal simulator.
+    Tests that the dispatcher correctly calls the pure Levy terminal simulator.
     """
+    mock_simulate_levy.return_value = np.array([100.0])
+
     option, stock, rate = setup
-    model = VarianceGammaModel()  # A pure Lévy model
+    model = VarianceGammaModel()  # A pure Levy model
     technique = MonteCarloTechnique()
 
     technique.price(option, stock, model, rate)
@@ -74,8 +79,9 @@ def test_exact_sampler_dispatcher(setup):
     model = CEVModel()  # A model with an exact sampler
     technique = MonteCarloTechnique()
 
-    # Spy on the model's method
-    with patch.object(model, "sample_terminal_spot") as mock_exact_sampler:
+    with patch.object(
+        model, "sample_terminal_spot", return_value=np.array([100.0])
+    ) as mock_exact_sampler:
         technique.price(option, stock, model, rate)
         mock_exact_sampler.assert_called_once()
 

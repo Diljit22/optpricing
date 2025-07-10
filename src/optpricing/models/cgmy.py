@@ -9,13 +9,13 @@ from scipy.special import gamma as gamma_func
 from optpricing.models.base import CF, BaseModel, ParamValidator
 
 __doc__ = """
-Defines the CGMY (Carr, Geman, Madan, Yor, 2002) pure-jump Lévy model.
+Defines the CGMY (Carr, Geman, Madan, Yor, 2002) pure-jump Levy model.
 """
 
 
 class CGMYModel(BaseModel):
     """
-    CGMY (Carr, Geman, Madan, Yor, 2002) pure-jump Lévy model.
+    CGMY (Carr, Geman, Madan, Yor, 2002) pure-jump Levy model.
 
     This is a flexible four-parameter model that can capture skewness and kurtosis.
     It has a known characteristic function for all valid parameters. Monte Carlo
@@ -180,7 +180,7 @@ class CGMYModel(BaseModel):
 
     #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any:
-        raise NotImplementedError("CGMY is a pure Lévy process, use terminal sampling.")
+        raise NotImplementedError("CGMY is a pure Levy process, use terminal sampling.")
 
     def _pde_impl(self, **kwargs: Any) -> Any:
         raise NotImplementedError

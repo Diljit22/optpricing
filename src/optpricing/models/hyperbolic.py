@@ -10,12 +10,12 @@ from scipy.stats import genhyperbolic
 from optpricing.models.base import CF, BaseModel, ParamValidator
 
 __doc__ = """
-Defines the Hyperbolic pure-jump Lévy model.
+Defines the Hyperbolic pure-jump Levy model.
 """
 
 
 class HyperbolicModel(BaseModel):
-    """Hyperbolic pure-jump Lévy model."""
+    """Hyperbolic pure-jump Levy model."""
 
     name: str = "Hyperbolic"
     supports_cf: bool = True
