@@ -6,7 +6,6 @@ from optpricing.techniques.kernels.lattice_kernels import (
     _topm_pricer,
 )
 
-# Common parameters for a standard European option test
 EURO_PARAMS = {
     "S0": 100,
     "K": 105,

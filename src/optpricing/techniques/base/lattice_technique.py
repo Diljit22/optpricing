@@ -11,6 +11,10 @@ from .greek_mixin import GreekMixin
 from .iv_mixin import IVMixin
 from .pricing_result import PricingResult
 
+__doc__ = """
+Provides a base class for lattice-based pricing techniques.
+"""
+
 
 class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
     """

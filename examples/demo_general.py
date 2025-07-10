@@ -1,13 +1,15 @@
+from __future__ import annotations
+
 from optpricing import Option, OptionType, Rate, Stock, ZeroCouponBond
 from optpricing.models import BSMModel, CIRModel, VasicekModel
 from optpricing.techniques import ClosedFormTechnique
 
-# 1. Define an option, underlying and rate
+# Define an option, underlying and rate
 option = Option(strike=105, maturity=1.0, option_type=OptionType.CALL)
 stock = Stock(spot=100, dividend=0.01)
 rate = Rate(rate=0.05)
 
-# 2. Choose a model and technique
+# Choose a model and technique
 bsm_model = BSMModel(params={"sigma": 0.20})
 cf_technique = ClosedFormTechnique()
 
@@ -30,7 +32,7 @@ iv = cf_technique.implied_volatility(
 print(f"Implied volatility for price ${target_price:.2f}: {iv:.4%}")
 
 
-# 3. Zero Coupon Bond
+# Zero Coupon Bond
 bond = ZeroCouponBond(maturity=1.0)
 r0_stock = Stock(spot=0.05)  # initial short rate
 dummy_rate = Rate(rate=0.0)  # ignored by rate models

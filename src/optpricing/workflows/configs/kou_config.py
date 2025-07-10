@@ -1,5 +1,9 @@
 from optpricing.models.kou import KouModel
 
+__doc__ = """
+Calibration recipe for the Kou model.
+"""
+
 KOU_WORKFLOW_CONFIG = {
     "name": "Kou",
     "model_class": KouModel,

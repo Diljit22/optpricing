@@ -124,6 +124,7 @@ class BlacksApproxModel(BaseModel):
         max_early_price = max(prices_early_exercise) if prices_early_exercise else 0.0
         return max(price_hold_to_maturity, max_early_price)
 
+    #  Abstract Method Implementations
     def _cf_impl(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
 

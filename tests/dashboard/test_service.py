@@ -1,5 +1,3 @@
-# tests/dashboard/test_service.py
-
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -52,10 +50,9 @@ def test_run_calibrations(mock_workflow_class, service, mock_market_data):
     """Tests that run_calibrations correctly calls the workflow and stores results."""
     service._market_data = mock_market_data
 
-    # FIX: The mock results must include the 'Model' key for the set_index call.
     mock_workflow_instance = MagicMock()
     mock_workflow_instance.results = {
-        "Model": "BSM",  # This was the missing key
+        "Model": "BSM",
         "Status": "Success",
         "Calibrated Params": {"sigma": 0.25},
     }

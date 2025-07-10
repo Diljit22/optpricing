@@ -128,7 +128,7 @@ class KouModel(BaseModel):
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
             # BSM component
             bsm_part = 1j * u * (np.log(spot) + drift * t) - 0.5 * u**2 * sigma**2 * t
-            # Jump component formulation
+            # Jump component
             phi_jump = (p_up * eta1 / (eta1 - 1j * u)) + (
                 (1 - p_up) * eta2 / (eta2 + 1j * u)
             )

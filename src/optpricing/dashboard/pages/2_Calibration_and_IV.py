@@ -10,6 +10,13 @@ from optpricing.dashboard.service import DashboardService
 from optpricing.dashboard.widgets import build_sidebar
 from optpricing.workflows.configs import ALL_MODEL_CONFIGS
 
+__doc__ = """
+Handles model calibration against historical data snapshots. This page allows
+users to select a model and date, run the calibration, and visualize the
+resulting implied volatility surfaces and calibration errors via heatmaps and
+3D plots.
+"""
+
 st.set_page_config(layout="wide", page_title="Calibration & IV")
 st.title("Model Calibration & IV Surface Analysis")
 st.caption(

@@ -10,7 +10,7 @@ def test_fit_jump_params_with_three_jumps():
     Tests jump parameter estimation when there are three out of threshold returns.
     """
 
-    # 250 diffusion days at ±1%
+    # 250 diffusion days at +-1%
     diffusion = np.array([-0.01, 0.01] * 125)
     jumps = np.array([0.05, -0.06, 0.07])
     log_returns = pd.Series(np.concatenate([diffusion, jumps]))

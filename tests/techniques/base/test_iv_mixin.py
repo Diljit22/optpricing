@@ -7,7 +7,6 @@ from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.techniques.base import BaseTechnique, IVMixin, PricingResult
 
 
-# Create a dummy technique that uses the IVMixin for testing
 class DummyIVTechnique(BaseTechnique, IVMixin):
     def __init__(self):
         # This mock will stand in for a real pricing engine like BSM's closed form
@@ -25,7 +24,6 @@ def setup():
     technique = DummyIVTechnique()
     option = Option(strike=100, maturity=1.0, option_type=OptionType.CALL)
     stock = Stock(spot=100)
-    # This model is just a placeholder, the mixin creates its own BSMModel
     model = MagicMock()
     rate = Rate(rate=0.05)
     return technique, option, stock, model, rate
@@ -39,7 +37,6 @@ def test_implied_volatility_brentq_success(setup):
     target_vol = 0.25
     target_price = 10.0
 
-    # Set up the mock pricer to return the target price only at the target vol
     def mock_price_func(sigma):
         if abs(sigma - target_vol) < 1e-7:
             return PricingResult(price=target_price)

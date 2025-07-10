@@ -7,6 +7,12 @@ from optpricing.dashboard.widgets import build_sidebar
 from optpricing.models import CIRModel, VasicekModel
 from optpricing.techniques import ClosedFormTechnique
 
+__doc__ = """
+A page for pricing and visualizing interest rate term structures. It allows
+users to price Zero-Coupon Bonds and generate yield curves using short-rate
+models like Vasicek and Cox-Ingersoll-Ross (CIR).
+"""
+
 st.set_page_config(layout="wide", page_title="Term Structure")
 st.title("Term Structure Models")
 st.caption(

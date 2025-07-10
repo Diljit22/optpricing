@@ -23,7 +23,7 @@ class ImpliedRateModel(BaseModel):
     name: str = "Implied Rate"
     has_closed_form: bool = True
 
-    # Define inputs for the closed-form solver.
+    # Define inputs for the closed-form solver
     cf_kwargs = ("call_price", "put_price")
 
     def _validate_params(self) -> None:
@@ -79,7 +79,7 @@ class ImpliedRateModel(BaseModel):
             return discounted_spot - strike * math.exp(-r * t) - price_difference
 
         # Attempt to find a bracket for the root
-        low, high = -0.5, 0.5  # reasonable range for interest rates
+        low, high = -0.5, 0.5
         f_low, f_high = objective_func(low), objective_func(high)
 
         for _ in range(10):  # Try up to 10 times to expand the bracket
@@ -95,7 +95,7 @@ class ImpliedRateModel(BaseModel):
 
         return brentq(objective_func, low, high, xtol=1e-9, maxiter=100)
 
-    #  Abstract Method Implementations
+    # Abstract Method Implementations
     def _cf_impl(
         self,
         *args: Any,

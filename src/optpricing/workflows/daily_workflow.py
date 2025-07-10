@@ -151,7 +151,6 @@ class DailyWorkflow:
                     initial_guess["sigma"] = avg_iv
                     logger.info(f"  -> Dynamic initial guess for sigma: {avg_iv:.4f}")
 
-            # For Merton, use historical estimates as FROZEN params
             frozen_params_dict = {}
             if model_name == "Merton" and self.model_config.get(
                 "use_historical_strategy"

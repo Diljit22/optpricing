@@ -20,8 +20,8 @@ class Rate:
     rate : float | Callable[[float], float]
         - If a float, represents a constant risk-free rate for all maturities.
         - If a callable, it should be a function that takes a maturity (t)
-          and returns the continuously compounded zero rate for that maturity.
-          Example: `lambda t: 0.02 + 0.01 * t`
+            and returns the continuously compounded zero rate for that maturity.
+            Example: `lambda t: 0.02 + 0.01 * t`
     """
 
     rate: float | Callable[[float], float]

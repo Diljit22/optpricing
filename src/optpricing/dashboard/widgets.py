@@ -32,7 +32,8 @@ def build_sidebar() -> tuple[str, str, str]:
         )
 
         available_tickers = _config.get(
-            "default_tickers", ["SPY", "AAPL", "TSLA", "NVDA"]
+            "default_tickers",
+            ["SPY", "AAPL", "TSLA", "NVDA"],
         )
         ticker_index = (
             available_tickers.index(default_ticker)
@@ -40,7 +41,10 @@ def build_sidebar() -> tuple[str, str, str]:
             else 0
         )
         ticker = st.selectbox(
-            "Ticker", available_tickers, index=ticker_index, key="ticker_selector"
+            "Ticker",
+            available_tickers,
+            index=ticker_index,
+            key="ticker_selector",
         )
 
         try:
@@ -56,7 +60,10 @@ def build_sidebar() -> tuple[str, str, str]:
             else 0
         )
         snapshot_date = st.selectbox(
-            "Snapshot Date", data_source_options, index=date_index, key="date_selector"
+            "Snapshot Date",
+            data_source_options,
+            index=date_index,
+            key="date_selector",
         )
 
         available_models = list(ALL_MODEL_CONFIGS.keys())
@@ -67,7 +74,10 @@ def build_sidebar() -> tuple[str, str, str]:
             else 0
         )
         model_name = st.selectbox(
-            "Model", available_models, index=model_index, key="model_selector"
+            "Model",
+            available_models,
+            index=model_index,
+            key="model_selector",
         )
 
         st.query_params["ticker"] = ticker

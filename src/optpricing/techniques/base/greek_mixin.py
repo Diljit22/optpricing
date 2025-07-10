@@ -204,7 +204,7 @@ class GreekMixin:
         """
         T0 = option.maturity
         opt_up = replace(option, maturity=T0 + h)
-        opt_dn = replace(option, maturity=max(T0 - h, 1e-12))  # Avoid maturity of 0
+        opt_dn = replace(option, maturity=max(T0 - h, 1e-12))  # Avoid maturity
 
         rng = getattr(self, "rng", None)
         if isinstance(rng, np.random.Generator):

@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "optpricing"
 dynamic = ["version"]
 authors = [
-  { name="Diljit Singh", email="first_last22@google.com" },
+    { name="Diljit Singh", email="first_last22@google.com" },
 ]
 description = "A financial options pricing and analysis library."
 readme = "README.md"

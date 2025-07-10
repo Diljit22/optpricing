@@ -68,7 +68,6 @@ def main():
     stock = Stock(spot=100.0, dividend=0.01)
     rate = Rate(rate=0.05)
 
-    # Define the American MC technique we want to test
     american_mc = AmericanMonteCarloTechnique(n_paths=20000, n_steps=100, seed=42)
 
     benchmark_configs = [

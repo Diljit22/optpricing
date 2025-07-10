@@ -6,6 +6,10 @@ import yfinance as yf
 
 from optpricing.config import HISTORICAL_DIR
 
+__doc__ = """
+Provides utility functions to download and locally load historical returns.
+"""
+
 
 def save_historical_returns(
     tickers: list[str],

@@ -35,7 +35,6 @@ def test_volatility_surface_initialization(sample_option_data):
     """
     Tests that the class initializes correctly and validates columns.
     """
-    # Should succeed
     VolatilitySurface(sample_option_data)
 
     # Should fail if a column is missing

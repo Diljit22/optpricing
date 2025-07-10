@@ -4,6 +4,10 @@ from typing import Any
 
 from optpricing.models.base import BaseModel
 
+__doc__ = """
+Defines the Dupire Local Volatility model.
+"""
+
 
 class DupireLocalVolModel(BaseModel):
     """Dupire Local Volatility model."""
@@ -45,7 +49,7 @@ class DupireLocalVolModel(BaseModel):
 
     def __repr__(self) -> str:
         """Custom representation to handle the vol_surface function."""
-        # Get the name of the function if possible, otherwise show its type
+        # Get the name of the function or show its type
         vol_surface_repr = getattr(
             self.params["vol_surface"],
             "__name__",

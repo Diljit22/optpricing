@@ -66,7 +66,6 @@ def test_fit_rate_and_dividend():
     atm_pairs["marketPrice_call"] = parity_rhs
     atm_pairs["marketPrice_put"] = 0.0
 
-    # The function expects separate call/put dataframes
     calls = atm_pairs[["strike", "maturity", "marketPrice_call"]].rename(
         columns={"marketPrice_call": "marketPrice"}
     )

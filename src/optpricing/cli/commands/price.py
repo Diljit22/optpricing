@@ -100,7 +100,6 @@ def price(
     Prices a single option using live market data and specified parameters.
     """
 
-    # --- Helper Functions defined inside command scope ---
     def _parse_params(param_list: list[str] | None) -> dict[str, float]:
         params: dict[str, float] = {}
         if not param_list:
@@ -146,7 +145,7 @@ def price(
         typer.echo(f"European style. Auto-selected fastest technique: {_tech}.")
         return fastest
 
-    # --- 1. Parse & Validate Inputs ---
+    # Parse & Validate Inputs
     typer.echo(
         f"Pricing a {style} {ticker} {option_type.upper()} "
         f"(K={strike}) exp {maturity} using {model}..."
@@ -154,7 +153,7 @@ def price(
     model_params = _parse_params(param)
     is_american = style.lower() == "american"
 
-    # --- 2. Live-Data Fetch ---
+    # Live-Data Fetch
     typer.echo("Fetching live option chain...")
     live_chain = get_live_option_chain(ticker)
     if live_chain is None or live_chain.empty:
@@ -169,7 +168,7 @@ def price(
         f"Live Data: Spot {spot:.2f} | Dividend {q_div:.4%} | Implied r {r_rate:.4%}"
     )
 
-    # --- 3. Build Atoms & Model ---
+    # Build Atoms & Model
     stock = Stock(spot=spot, dividend=q_div)
     rate = Rate(rate=r_rate)
     maturity_years = (
@@ -196,7 +195,7 @@ def price(
     full_params.update(model_params)
     model_instance = model_cls(params=full_params)
 
-    # --- 4. Technique Selection & Pricing ---
+    # Technique Selection & Pricing
     technique_instance = _select_technique()
 
     price_result = technique_instance.price(
@@ -210,7 +209,7 @@ def price(
     typer.secho("\n── Pricing Results " + "─" * 38, fg=typer.colors.CYAN)
     typer.echo(f"Price: {price_result.price:.4f}")
 
-    # --- 5. Greeks (if implemented) ---
+    # Greeks
     for greek_name in ["Delta", "Gamma", "Vega"]:
         greek_func = getattr(
             technique_instance,

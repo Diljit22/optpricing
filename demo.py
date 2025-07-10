@@ -38,7 +38,6 @@ from optpricing.techniques import (
     TOPMTechnique,
 )
 
-# --- Setup ---
 app = typer.Typer(
     name="demo",
     help="Runs benchmark demos for optpricing models and techniques.",

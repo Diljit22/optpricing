@@ -5,7 +5,7 @@ live_data_provider: "yfinance"
 data_directory: "data"
 artifacts_directory: "artifacts"
 
-# Used by 'optpricing data download --all'
+# Used by --all in CLI commands
 default_tickers:
   - SPY
   - QQQ

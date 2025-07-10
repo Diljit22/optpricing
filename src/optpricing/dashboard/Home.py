@@ -1,5 +1,12 @@
 import streamlit as st
 
+__doc__ = """
+Streamlit home page for the optpricing dashboard.
+
+Shows navigation instructions, available tools and a quick overview
+of each page in the app.
+"""
+
 st.set_page_config(
     page_title="optpricing | Home",
     layout="wide",

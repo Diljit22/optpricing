@@ -22,7 +22,7 @@ class ParityModel(BaseModel):
     name: str = "Put-Call Parity"
     has_closed_form: bool = True
 
-    # Define inputs for the closed-form solver.
+    # Define inputs for the closed-form solver
     cf_kwargs = ("option_price",)
 
     def _validate_params(self) -> None:

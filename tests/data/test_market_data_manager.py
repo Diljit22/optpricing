@@ -24,10 +24,8 @@ def test_save_market_snapshot(monkeypatch, tmp_path, mock_option_chain_df):
     # Mock the config directory
     monkeypatch.setattr(market_data_manager, "MARKET_SNAPSHOT_DIR", tmp_path)
 
-    # Run the function
     market_data_manager.save_market_snapshot(["TEST"])
 
-    # Assertions
     today_str = date.today().strftime("%Y-%m-%d")
     expected_file = tmp_path / f"TEST_{today_str}.parquet"
     assert expected_file.exists()
@@ -41,7 +39,6 @@ def test_load_market_snapshot_existing(monkeypatch, tmp_path, mock_option_chain_
     mock_option_chain_df.to_parquet(file_path)
     monkeypatch.setattr(market_data_manager, "MARKET_SNAPSHOT_DIR", tmp_path)
 
-    # Run and assert
     df = market_data_manager.load_market_snapshot("TEST", "2023-01-01")
     pd.testing.assert_frame_equal(df, mock_option_chain_df)
 

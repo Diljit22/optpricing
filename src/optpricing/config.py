@@ -4,6 +4,11 @@ from pathlib import Path
 
 import yaml
 
+__doc__ = """
+Load or create the project's config.yaml and ensure all data/artifact directories exist.
+"""
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_FILE_PATH = PROJECT_ROOT / "config.yaml"
 

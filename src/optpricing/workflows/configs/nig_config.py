@@ -1,5 +1,9 @@
 from optpricing.models.nig import NIGModel
 
+__doc__ = """
+Calibration recipe for the NIG model.
+"""
+
 NIG_WORKFLOW_CONFIG = {
     "name": "NIG",
     "model_class": NIGModel,

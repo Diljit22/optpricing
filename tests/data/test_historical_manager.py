@@ -37,14 +37,12 @@ def test_load_historical_returns_existing(monkeypatch, tmp_path):
     """
     Tests loading returns when the file already exists.
     """
-    # Create a dummy parquet file
     dummy_df = pd.DataFrame({"log_return": [0.01, -0.005]})
     file_path = tmp_path / "TEST_10y_returns.parquet"
     dummy_df.to_parquet(file_path)
 
     monkeypatch.setattr(historical_manager, "HISTORICAL_DIR", tmp_path)
 
-    # Run and assert
     returns = historical_manager.load_historical_returns("TEST", period="10y")
     pd.testing.assert_series_equal(returns, dummy_df["log_return"], check_names=False)
 

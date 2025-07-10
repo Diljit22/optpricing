@@ -127,9 +127,6 @@ JIT-compiled kernel for Bates SDE that returns the full path matrix.
 """
 
 
-merton_path_kernel
-
-
 @numba.jit(nopython=True, fastmath=True, cache=True)
 def bates_path_kernel(
     n_paths: int,

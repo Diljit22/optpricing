@@ -29,6 +29,11 @@ from optpricing.techniques import (
     TOPMTechnique,
 )
 
+__doc__ = """
+Provides an on-demand pricing tool where all model and market parameters can be
+set manually. Ideal for sensitivity analysis and understanding model behavior.
+"""
+
 st.set_page_config(layout="wide", page_title="Pricer & Greeks")
 st.title("On-Demand Pricer & Greek Analysis")
 st.caption(

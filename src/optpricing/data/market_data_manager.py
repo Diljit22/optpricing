@@ -7,6 +7,11 @@ import yfinance as yf
 
 from optpricing.config import MARKET_SNAPSHOT_DIR, _config
 
+__doc__ = """
+Utility functions to download and load market snapshots, live option chains,
+and forward dividend yields.
+"""
+
 
 def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
     """Fetches a live option chain using yfinance."""

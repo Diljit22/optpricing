@@ -7,6 +7,12 @@ from optpricing.calibration import fit_jump_params_from_history
 from optpricing.dashboard.widgets import build_sidebar
 from optpricing.data import load_historical_returns
 
+__doc__ = """
+A quantitative research page for analyzing historical return distributions.
+It includes a QQ-Plot to assess normality and a tool to fit jump-diffusion
+parameters from historical data using the method of moments.
+"""
+
 st.set_page_config(layout="wide", page_title="Quant Research")
 st.title("Quantitative Research")
 st.caption(

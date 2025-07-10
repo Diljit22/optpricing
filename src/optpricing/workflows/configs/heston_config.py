@@ -1,5 +1,9 @@
 from optpricing.models.heston import HestonModel
 
+__doc__ = """
+Calibration recipe for the Heston model.
+"""
+
 HESTON_WORKFLOW_CONFIG = {
     "name": "Heston",
     "model_class": HestonModel,

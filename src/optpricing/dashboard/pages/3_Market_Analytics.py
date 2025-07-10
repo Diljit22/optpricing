@@ -5,6 +5,12 @@ import streamlit as st
 from optpricing.dashboard.widgets import build_sidebar
 from optpricing.data import get_live_option_chain, load_market_snapshot
 
+__doc__ = """
+An exploratory tool to view and analyze live or historical option chain data.
+It provides visual summaries of volume, open interest, and implied volatility
+distributions for a selected expiry date.
+"""
+
 st.set_page_config(layout="wide", page_title="Market Analytics")
 st.title("Market Analytics")
 st.caption("Explore live or historical option chain data with visual summaries.")
