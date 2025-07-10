@@ -23,7 +23,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that Bates rejects invalid parameters."""
+    """
+    Tests that Bates rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="parameters must be positive: vol_of_vol"):
         BatesModel(params={**PARAMS, "vol_of_vol": -0.1})
     with pytest.raises(ValueError, match="parameter 'rho' must be in"):

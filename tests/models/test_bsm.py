@@ -15,7 +15,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that BSM rejects invalid parameters."""
+    """
+    Tests that BSM rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="parameters must be positive: sigma"):
         BSMModel(params={"sigma": -0.1})
 

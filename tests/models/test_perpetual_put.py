@@ -14,7 +14,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that the model validates its parameters correctly."""
+    """
+    Tests that the model validates its parameters correctly.
+    """
     with pytest.raises(ValueError, match="missing required parameters: rate"):
         PerpetualPutModel(params={"sigma": 0.2})
     with pytest.raises(ValueError, match="parameters must be positive: sigma"):

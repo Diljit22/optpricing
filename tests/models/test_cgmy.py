@@ -16,7 +16,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that CGMY rejects invalid parameters."""
+    """
+    Tests that CGMY rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="parameters must be positive: C"):
         CGMYModel(params={"C": -0.02, "G": 5.0, "M": 5.0, "Y": 1.2})
     with pytest.raises(ValueError, match="Y must be less than 2"):

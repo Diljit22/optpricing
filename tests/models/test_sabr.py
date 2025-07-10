@@ -13,7 +13,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that SABR rejects invalid parameters."""
+    """
+    Tests that SABR rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="missing required parameters: beta"):
         SABRModel(params={"alpha": 0.5, "rho": -0.6})
     with pytest.raises(ValueError, match="parameters must be positive: alpha"):

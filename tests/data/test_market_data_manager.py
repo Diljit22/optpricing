@@ -8,6 +8,7 @@ from optpricing.data import market_data_manager
 
 @pytest.fixture
 def mock_option_chain_df():
+    """Mock option chain dataframe."""
     return pd.DataFrame({"strike": [100, 105], "last_price": [5.0, 2.5]})
 
 

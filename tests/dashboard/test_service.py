@@ -10,6 +10,7 @@ from optpricing.models import BSMModel
 
 @pytest.fixture
 def mock_model_configs():
+    """Sample model configs."""
     mock_bsm_class = BSMModel
     mock_bsm_class.default_params = {"sigma": 0.2}
     return {"BSM": {"model_class": mock_bsm_class, "ticker": "TEST"}}
@@ -17,6 +18,7 @@ def mock_model_configs():
 
 @pytest.fixture
 def service(mock_model_configs):
+    """Provides a standard setup for service tests."""
     return DashboardService(
         ticker="TEST", snapshot_date="2023-01-01", model_configs=mock_model_configs
     )
@@ -24,6 +26,7 @@ def service(mock_model_configs):
 
 @pytest.fixture
 def mock_market_data():
+    """A sample DataFrame for market data."""
     return pd.DataFrame(
         {
             "spot_price": [100.0] * 4,
@@ -37,7 +40,9 @@ def mock_market_data():
 
 
 def test_dashboard_service_initialization(service):
-    """Tests that the service is initialized with the correct attributes."""
+    """
+    Tests that the service is initialized with the correct attributes.
+    """
     assert service.ticker == "TEST"
     assert service.snapshot_date == "2023-01-01"
     assert service.model_configs is not None
@@ -47,7 +52,9 @@ def test_dashboard_service_initialization(service):
 
 @patch("optpricing.dashboard.service.DailyWorkflow")
 def test_run_calibrations(mock_workflow_class, service, mock_market_data):
-    """Tests that run_calibrations correctly calls the workflow and stores results."""
+    """
+    Tests that run_calibrations correctly calls the workflow and stores results.
+    """
     service._market_data = mock_market_data
 
     mock_workflow_instance = MagicMock()
@@ -69,7 +76,6 @@ def test_run_calibrations(mock_workflow_class, service, mock_market_data):
 
     service.run_calibrations()
 
-    # Assertions
     mock_workflow_class.assert_called_once()
     config_sent = mock_workflow_class.call_args.kwargs["model_config"]
     assert config_sent["ticker"] == "TEST"
@@ -83,7 +89,9 @@ def test_run_calibrations(mock_workflow_class, service, mock_market_data):
 
 @patch("optpricing.dashboard.service.VolatilitySurface")
 def test_calculate_iv_surfaces(mock_vol_surface_class, service, mock_market_data):
-    """Tests that IV surfaces are calculated correctly after a successful run."""
+    """
+    Tests that IV surfaces are calculated correctly after a successful run.
+    """
     # Setup a state as if run_calibrations has already succeeded
     service._market_data = mock_market_data
     service.final_rate = Rate(0.05)

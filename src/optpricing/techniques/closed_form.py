@@ -142,7 +142,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
     ) -> float:
         """Overrides GreekMixin to use analytic delta if available.
 
-         Parameters
+        Parameters
         ----------
         option : Option | ZeroCouponBond
             The instrument to be priced.

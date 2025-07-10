@@ -21,7 +21,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that Merton rejects invalid parameters."""
+    """
+    Tests that Merton rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="missing required parameters"):
         MertonJumpModel(params={})
     with pytest.raises(ValueError, match="parameters must be positive: lambda"):

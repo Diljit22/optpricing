@@ -16,7 +16,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that NIG rejects invalid parameters."""
+    """
+    Tests that NIG rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="missing required parameters: delta"):
         NIGModel(params={"alpha": 15.0, "beta": -5.0})
     with pytest.raises(ValueError, match="parameters must be positive: alpha"):

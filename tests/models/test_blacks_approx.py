@@ -15,7 +15,9 @@ def model():
 
 
 def test_parameter_validation(model):
-    """Tests that the model validates the presence and sign of sigma."""
+    """
+    Tests that the model validates the presence and sign of sigma.
+    """
     with pytest.raises(ValueError, match="missing required parameters: sigma"):
         BlacksApproxModel(params={})
     with pytest.raises(ValueError, match="parameters must be positive: sigma"):
@@ -23,7 +25,9 @@ def test_parameter_validation(model):
 
 
 def test_value_error_for_no_dividends(model):
-    """Tests that the model raises an error if no dividends are provided."""
+    """
+    Tests that the model raises an error if no dividends are provided.
+    """
     with pytest.raises(ValueError, match="requires non-empty 'discrete_dividends'"):
         model.price_closed_form(
             **PRICING_KWARGS, discrete_dividends=np.array([]), ex_div_times=np.array([])
@@ -31,7 +35,9 @@ def test_value_error_for_no_dividends(model):
 
 
 def test_not_implemented_for_puts(model):
-    """Tests that the model raises an error for put options."""
+    """
+    Tests that the model raises an error for put options.
+    """
     with pytest.raises(NotImplementedError, match="for American calls only"):
         model.price_closed_form(
             **PRICING_KWARGS,

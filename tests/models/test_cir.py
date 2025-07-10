@@ -14,7 +14,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that CIR rejects invalid parameters."""
+    """
+    Tests that CIR rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="missing required parameters: sigma"):
         CIRModel(params={"kappa": 0.86, "theta": 0.09})
     with pytest.raises(ValueError, match="parameters must be positive: theta"):

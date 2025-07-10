@@ -15,7 +15,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that Heston rejects invalid parameters."""
+    """
+    Tests that Heston rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="parameters must be positive: kappa"):
         HestonModel(params={**PARAMS, "kappa": -1})
     with pytest.raises(ValueError, match="parameter 'rho' must be in"):

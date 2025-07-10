@@ -14,7 +14,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that Kou rejects invalid parameters."""
+    """
+    Tests that Kou rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="parameters must be positive: eta1"):
         KouModel(params={**PARAMS, "eta1": -1.0})
     with pytest.raises(ValueError, match="parameter 'p_up' must be in"):

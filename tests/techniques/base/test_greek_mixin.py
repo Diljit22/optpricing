@@ -109,7 +109,9 @@ def setup(request):
 
 
 def test_delta_correctness(setup):
-    """Tests that the numerical delta matches the analytical delta."""
+    """
+    Tests that the numerical delta matches the analytical delta.
+    """
     technique, option, stock, model, rate = setup
     numerical_delta = technique.delta(option, stock, model, rate)
     analytical_delta = technique.analytical_delta(model)
@@ -117,7 +119,9 @@ def test_delta_correctness(setup):
 
 
 def test_gamma_correctness(setup):
-    """Tests that the numerical gamma matches the analytical gamma."""
+    """
+    Tests that the numerical gamma matches the analytical gamma.
+    """
     technique, option, stock, model, rate = setup
     numerical_gamma = technique.gamma(option, stock, model, rate)
     analytical_gamma = technique.analytical_gamma()
@@ -125,7 +129,9 @@ def test_gamma_correctness(setup):
 
 
 def test_vega_correctness(setup):
-    """Tests that the numerical vega matches the analytical vega."""
+    """
+    Tests that the numerical vega matches the analytical vega.
+    """
     technique, option, stock, model, rate = setup
     numerical_vega = technique.vega(option, stock, model, rate)
     analytical_vega = technique.analytical_vega(stock)
@@ -133,7 +139,9 @@ def test_vega_correctness(setup):
 
 
 def test_rho_correctness(setup):
-    """Tests that the numerical rho matches the analytical rho."""
+    """
+    Tests that the numerical rho matches the analytical rho.
+    """
     technique, option, stock, model, rate = setup
     numerical_rho = technique.rho(option, stock, model, rate)
     analytical_rho = technique.analytical_rho(option, rate)
@@ -141,7 +149,9 @@ def test_rho_correctness(setup):
 
 
 def test_vega_no_sigma_returns_nan(setup):
-    """Tests that vega returns nan if the model has no 'sigma' parameter."""
+    """
+    Tests that vega returns nan if the model has no 'sigma' parameter.
+    """
     technique, option, stock, _, rate = setup
     no_sigma_model = AnalyticTestModel(params={"other_param": 0.1})
     vega = technique.vega(option, stock, no_sigma_model, rate)

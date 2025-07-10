@@ -15,7 +15,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that CEV rejects invalid parameters."""
+    """
+    Tests that CEV rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="parameters must be positive: sigma"):
         CEVModel(params={"sigma": -0.8, "gamma": 0.7})
 

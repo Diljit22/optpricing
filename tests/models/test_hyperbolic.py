@@ -16,7 +16,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that Hyperbolic rejects invalid parameters."""
+    """
+    Tests that Hyperbolic rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="missing required parameters: mu"):
         HyperbolicModel(params={"alpha": 15.0, "beta": -5.0, "delta": 0.5})
     with pytest.raises(ValueError, match="parameters must be positive: alpha"):

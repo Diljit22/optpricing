@@ -1,6 +1,7 @@
 """
 optpricing - A Python Quantitative Finance Library
 =================================================
+
 This library provides a comprehensive suite of tools for pricing financial
 derivatives, calibrating models, and analyzing market data.
 """

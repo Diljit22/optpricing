@@ -14,7 +14,9 @@ def model():
 
 
 def test_parameter_validation():
-    """Tests that Vasicek rejects invalid parameters."""
+    """
+    Tests that Vasicek rejects invalid parameters.
+    """
     with pytest.raises(ValueError, match="missing required parameters: theta"):
         VasicekModel(params={"kappa": 0.86, "sigma": 0.02})
     with pytest.raises(ValueError, match="parameters must be positive: kappa"):

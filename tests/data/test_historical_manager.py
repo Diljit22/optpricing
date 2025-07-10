@@ -6,9 +6,9 @@ import pytest
 from optpricing.data import historical_manager
 
 
-# A sample DataFrame to be returned by a mocked yfinance
 @pytest.fixture
 def mock_yfinance_data():
+    """Sample DataFrame to be returned by a mocked yfinance."""
     return pd.DataFrame({"Close": [100, 101, 100.5]})
 
 
@@ -21,13 +21,10 @@ def test_save_historical_returns(monkeypatch, tmp_path, mock_yfinance_data):
     mock_ticker.history.return_value = mock_yfinance_data
     monkeypatch.setattr("yfinance.Ticker", lambda x: mock_ticker)
 
-    # Mock the config directory to use a temporary directory
     monkeypatch.setattr(historical_manager, "HISTORICAL_DIR", tmp_path)
 
-    # Run the function
     historical_manager.save_historical_returns(["TEST"], period="1mo")
 
-    # Assertions
     mock_ticker.history.assert_called_once_with(period="1mo")
     expected_file = tmp_path / "TEST_1mo_returns.parquet"
     assert expected_file.exists()
@@ -58,5 +55,4 @@ def test_load_historical_returns_fetches_if_missing(mock_save, tmp_path, monkeyp
     with pytest.raises(FileNotFoundError):
         historical_manager.load_historical_returns("TEST", period="10y")
 
-    # Assert that the save function was called
     mock_save.assert_called_once_with(["TEST"], "10y")
