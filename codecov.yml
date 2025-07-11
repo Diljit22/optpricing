@@ -3,3 +3,5 @@ coverage:
   status:
     project:
       enabled: false
+ignore:
+  - "src/optpricing/dashboard/pages/*"

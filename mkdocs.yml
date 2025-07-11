@@ -36,6 +36,8 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
+          paths:
+            - src
           options:
             docstring_style: numpy
             show_signature_annotations: true
@@ -69,101 +71,14 @@ nav:
       - Installation: guide/installation.md
       - Getting Started: guide/getting_started.md
       - Dashboard: guide/dashboard.md
+      - Examples: guide/examples.md
   - API Reference:
-      - Atoms:
-          - reference/atoms/index.md
-          - Bond: reference/atoms/bond.md
-          - Option: reference/atoms/option.md
-          - Rate: reference/atoms/rate.md
-          - Stock: reference/atoms/stock.md
-      - Calibration:
-          - reference/calibration/index.md
-          - Calibrator: reference/calibration/calibrator.md
-          - Jump Parameter Fitting: reference/calibration/fit_jump_parameters.md
-          - Market Parameter Fitting: reference/calibration/fit_market_params.md
-          - IV Surface: reference/calibration/iv_surface.md
-          - Technique Selector: reference/calibration/technique_selector.md
-          - Vectorized BSM IV: reference/calibration/vectorized_bsm_iv.md
-          - Vectorized Integration IV: reference/calibration/vectorized_integration_iv.md
-          - Vectorized Pricer: reference/calibration/vectorized_pricer.md
-      - CLI:
-          - reference/cli/index.md
-          - Backtest: reference/cli/backtest.md
-          - Calibrate: reference/cli/calibrate.md
-          - Dashboard: reference/cli/dashboard.md
-          - Data: reference/cli/data.md
-          - Demo: reference/cli/demo.md
-          - Price: reference/cli/price.md
-          - Tools: reference/cli/tools.md
-      - Dashboard:
-          - reference/dashboard/index.md
-          - Main App (Home.py): reference/dashboard/Home.md
-          - Plotting Functions: reference/dashboard/plots.md
-          - Backend Service: reference/dashboard/service.md
-          - UI Widgets: reference/dashboard/widgets.md
-          - Pages:
-            - Pricer & Greeks: reference/dashboard/pages/1_Pricer_and_Greeks.md
-            - Calibration & IV: reference/dashboard/pages/2_Calibration_and_IV.md
-            - Market Analytics: reference/dashboard/pages/3_Market_Analytics.md
-            - Historical: reference/dashboard/pages/4_Model_Fitting.md
-            - Term Structure: reference/dashboard/pages/5_Term_Structure.md
-      - Data:
-          - reference/data/index.md
-          - Historical Manager: reference/data/historical_manager.md
-          - Market Data Manager: reference/data/market_data_manager.md
-      - Models:
-          - reference/models/index.md
-          - Base Classes:
-              - reference/models/base/index.md
-              - BaseModel: reference/models/base/base_model.md
-              - ParamValidator: reference/models/base/validators.md
-          - Bates: reference/models/bates.md
-          - Black's Approximation: reference/models/blacks_approx.md
-          - Black-Scholes-Merton: reference/models/bsm.md
-          - CEV (Constant Elasticity of Variance): reference/models/cev.md
-          - CGMY: reference/models/cgmy.md
-          - CIR (Cox-Ingersoll-Ross): reference/models/cir.md
-          - Dupire Local: reference/models/dupire_local.md
-          - Heston: reference/models/heston.md
-          - Hyperbolic: reference/models/hyperbolic.md
-          - Kou: reference/models/kou.md
-          - Merton Jump Diffusion: reference/models/merton_jump.md
-          - NIG (Normal Inverse Gaussian): reference/models/nig.md
-          - Perpetual Put: reference/models/perpetual_put.md
-          - SABR: reference/models/sabr.md
-          - SABR Jump: reference/models/sabr_jump.md
-          - Vasicek: reference/models/vasicek.md
-          - VG (Variance Gamma): reference/models/vg.md
-      - Parity:
-          - reference/parity/index.md
-          - Implied Rate: reference/parity/implied_rate.md
-          - Parity Model: reference/parity/parity_model.md
-      - Techniques:
-          - reference/techniques/index.md
-          - Base Technique:
-              - reference/techniques/base/index.md
-              - Base Technique: reference/techniques/base/base_technique.md
-              - GreekMixin: reference/techniques/base/greek_mixin.md
-              - IVMixin: reference/techniques/base/iv_mixin.md
-              - Lattice Technique: reference/techniques/base/lattice_technique.md
-              - PricingResult: reference/techniques/base/pricing_result.md
-              - RandomUtils: reference/techniques/base/random_utils.md
-          - Kernels:
-              - reference/techniques/kernels/index.md
-              - Longstaff-Schwartz: reference/techniques/kernels/american_mc_kernels.md
-              - Lattice Kernels: reference/techniques/kernels/lattice_kernels.md
-              - MC Kernels: reference/techniques/kernels/mc_kernels.md
-              - Path Kernels: reference/techniques/kernels/path_kernels.md
-          - Closed Form: reference/techniques/closed_form.md
-          - CRR (Cox-Ross-Rubinstein): reference/techniques/crr.md
-          - FFT (Fast Fourier Transform): reference/techniques/fft.md
-          - Integration: reference/techniques/integration.md
-          - Leisen-Reimer: reference/techniques/leisen_reimer.md
-          - Monte Carlo (European): reference/techniques/monte_carlo.md
-          - Monte Carlo (American): reference/techniques/american_monte_carlo.md
-          - PDE (Finite Difference): reference/techniques/pde.md
-          - TOPM (Trinomial Option Pricing Model): reference/techniques/topm.md
-      - Workflows:
-          - reference/workflows/index.md
-          - Daily Workflow: reference/workflows/daily_workflow.md
-          - Backtest Workflow: reference/workflows/backtest_workflow.md
+      - Atoms: reference/atoms/index.md
+      - Calibration: reference/calibration/index.md
+      - CLI: reference/cli/index.md
+      - Dashboard: reference/dashboard/index.md
+      - Data: reference/data/index.md
+      - Models: reference/models/index.md
+      - Parity: reference/parity/index.md
+      - Techniques: reference/techniques/index.md
+      - Workflows: reference/workflows/index.md
