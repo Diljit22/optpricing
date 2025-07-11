@@ -70,7 +70,6 @@ local_scheme = "no-local-version"
 
 [tool.ruff]
 line-length = 88
-extend-exclude = ["demo"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "NPY"]

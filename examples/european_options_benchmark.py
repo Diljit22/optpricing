@@ -8,13 +8,12 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from optpricing.atoms import Option, OptionType, Rate, Stock, ZeroCouponBond
+from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.models import (
     BatesModel,
     BSMModel,
     CEVModel,
     CGMYModel,
-    CIRModel,
     HestonModel,
     HyperbolicModel,
     KouModel,
@@ -23,7 +22,6 @@ from optpricing.models import (
     SABRJumpModel,
     SABRModel,
     VarianceGammaModel,
-    VasicekModel,
 )
 from optpricing.models.base.base_model import BaseModel
 from optpricing.parity.parity_model import ParityModel
@@ -38,9 +36,14 @@ from optpricing.techniques import (
     TOPMTechnique,
 )
 
+__doc__ = """
+A comprehensive benchmark for pricing European options across various models
+and numerical techniques. This script compares prices, Greeks, and performance.
+"""
+
 app = typer.Typer(
-    name="demo",
-    help="Runs benchmark demos for optpricing models and techniques.",
+    name="european-benchmark",
+    help="Runs benchmark demos for European options.",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -444,41 +447,6 @@ def main(
     for config in configs_to_run:
         if config["techniques"]:
             run_benchmark(config)
-
-    if not model and not technique:
-        console.rule("[bold cyan]INTEREST RATE MODELS[/bold cyan]", style="cyan")
-        bond = ZeroCouponBond(maturity=1.0, face_value=1.0)
-        r0_stock = Stock(spot=0.05)
-        dummy_rate = Rate(rate=0.0)
-        cf_technique = ClosedFormTechnique()
-        vasicek_model = VasicekModel(
-            params={
-                "kappa": 0.86,
-                "theta": 0.09,
-                "sigma": 0.02,
-            }
-        )
-        vasicek_price = cf_technique.price(
-            bond, r0_stock, vasicek_model, dummy_rate
-        ).price
-
-        vas_rule = (
-            f"Vasicek ZCB Price (r0=0.05, T=1.0): "
-            f"[bold green]{vasicek_price:.6f}[/bold green]"
-        )
-        console.print(vas_rule)
-
-        cir_model = CIRModel(
-            params={
-                "kappa": 0.86,
-                "theta": 0.09,
-                "sigma": 0.02,
-            }
-        )
-        cir_price = cf_technique.price(bond, r0_stock, cir_model, dummy_rate).price
-        console.print(
-            f"CIR ZCB Price (r0=0.05, T=1.0): [bold green]{cir_price:.6f}[/bold green]"
-        )
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -16,26 +17,43 @@ from optpricing.models import (
     SABRJumpModel,
     SABRModel,
 )
-from optpricing.techniques import CRRTechnique, LeisenReimerTechnique, TOPMTechnique
-from optpricing.techniques.american_monte_carlo import AmericanMonteCarloTechnique
+from optpricing.techniques import (
+    AmericanMonteCarloTechnique,
+    CRRTechnique,
+    LeisenReimerTechnique,
+    TOPMTechnique,
+)
 
+__doc__ = """
+A benchmark for pricing American options, comparing various tree-based methods
+and the Longstaff-Schwartz Monte Carlo algorithm.
+"""
+
+app = typer.Typer(
+    name="american-benchmark",
+    help="Runs benchmark demos for American options.",
+    add_completion=False,
+    no_args_is_help=True,
+)
 console = Console()
-app = typer.Typer(no_args_is_help=True)
 
 
-def run_american_benchmark(config: dict):
+def run_american_benchmark(config: dict[str, Any]):
     """Runs and prints a formatted benchmark for a given model configuration."""
-    model = config["model_instance"]
-    stock = config["stock"]
-    rate = config["rate"]
-    techniques = config["techniques"]
-    kwargs = config.get("kwargs", {})
-
+    model, stock, rate, techniques, kwargs = (
+        config["model_instance"],
+        config["stock"],
+        config["rate"],
+        config["techniques"],
+        config.get("kwargs", {}),
+    )
     console.rule(f"[bold cyan]{config['model_name']}[/bold cyan]", style="cyan")
     console.print(f"[bold]Model:[/] {model}")
 
     option = Option(strike=110.0, maturity=1.0, option_type=OptionType.PUT)
-    console.print("[bold]Option:[/] American Put, K=110, T=1.0")
+    console.print(
+        f"[bold]Option:[/] American Put, K={option.strike}, T={option.maturity}"
+    )
 
     table = Table(show_header=True, header_style="bold magenta")
     table.add_column("Technique", style="dim", width=25)
@@ -48,7 +66,6 @@ def run_american_benchmark(config: dict):
             price = tech_instance.price(option, stock, model, rate, **kwargs).price
         except (NotImplementedError, TypeError, ValueError) as e:
             price = f"[bold red]Error: {e}[/bold red]"
-
         end = time.perf_counter()
         timing_s = end - start
 
@@ -56,21 +73,16 @@ def run_american_benchmark(config: dict):
             table.add_row(name, f"{price:.4f}", f"{timing_s:.4f}")
         else:
             table.add_row(name, price, f"{timing_s:.4f}")
-
     console.print(table)
 
 
-@app.command()
-def main():
-    """
-    Runs a comparison of American option pricing techniques for various models.
-    """
+def get_benchmark_configs() -> list[dict[str, Any]]:
+    """Returns a list of all benchmark configurations for American options."""
     stock = Stock(spot=100.0, dividend=0.01)
     rate = Rate(rate=0.05)
-
     american_mc = AmericanMonteCarloTechnique(n_paths=20000, n_steps=100, seed=42)
 
-    benchmark_configs = [
+    return [
         {
             "model_name": "BLACK-SCHOLES-MERTON",
             "model_instance": BSMModel(params={"sigma": 0.2}),
@@ -183,7 +195,12 @@ def main():
         },
     ]
 
-    for config in benchmark_configs:
+
+@app.command()
+def main():
+    """Runs a comparison of American option pricing techniques for various models."""
+    configs = get_benchmark_configs()
+    for config in configs:
         run_american_benchmark(config)
 
 

@@ -210,7 +210,13 @@ def price(
     typer.echo(f"Price: {price_result.price:.4f}")
 
     # Greeks
-    for greek_name in ["Delta", "Gamma", "Vega"]:
+    for greek_name in [
+        "Delta",
+        "Gamma",
+        "Vega",
+        "Theta",
+        "Rho",
+    ]:
         greek_func = getattr(
             technique_instance,
             greek_name.lower(),
@@ -225,6 +231,7 @@ def price(
                     rate,
                     **full_params,
                 )
-                typer.echo(f"{greek_name}: {value:.4f}")
+                if isinstance(value, int | float):
+                    typer.echo(f"{greek_name}: {value:.4f}")
             except NotImplementedError:
                 continue
