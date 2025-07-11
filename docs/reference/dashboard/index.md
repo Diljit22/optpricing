@@ -1,7 +1,14 @@
-# Dashboard Package
+# Dashboard
 
-The `dashboard` package provides all the necessary components to build and run the Streamlit user interface. It is organized into three main parts:
+- [Main App](Home.md)
+- [Plotting Functions](plots.md)
+- [Backend Service](service.md)
+- [UI Widgets](widgets.md)
 
--   **Service**: The core logic and state management for the application.
--   **Plots**: Functions dedicated to creating visualizations.
--   **Widgets**: Reusable UI components for displaying specific analyses.
+## Pages
+
+- [Pricer & Greeks](pages/1_Pricer_and_Greeks.md)
+- [Calibration & IV](pages/2_Calibration_and_IV.md)
+- [Market Analytics](pages/3_Market_Analytics.md)
+- [Historical](pages/4_Model_Fitting.md)
+- [Term Structure](pages/5_Term_Structure.md)

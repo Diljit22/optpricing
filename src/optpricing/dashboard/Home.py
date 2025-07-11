@@ -45,11 +45,13 @@ st.markdown(
     -   **3_Market_Analytics:** An option chain explorer. Analyze volume, open interest,
         and implied volatility distributions for live market data.
 
-    -   **4_Model_Fitting:** A quantitative research notebook. Fit model parameters
-        from historical data and price interest rate derivatives.
+    -   **4_Model_Fitting:** A page for analyzing historical return distributions.
+        It includes a QQ-Plot to assess normality and a tool to fit jump-diffusion
+        parameters from historical data using the method of moments.
 
-    -   **4_Model_Fitting:** A quantitative research notebook. Fit model parameters
-        from historical data and price interest rate derivatives.
+    -   **5_Term_Structure:** A page for pricing and visualizing interest rate term
+        structures. It allows users to price Zero-Coupon Bonds and generate yield
+        curves using short-rate models like Vasicek and Cox-Ingersoll-Ross (CIR).
 
     This entire application is built on a robust library with a focus
     on speed, accuracy, and extensibility.

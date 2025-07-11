@@ -97,9 +97,16 @@ nav:
           - Tools: reference/cli/tools.md
       - Dashboard:
           - reference/dashboard/index.md
+          - Main App (Home.py): reference/dashboard/Home.md
           - Plotting Functions: reference/dashboard/plots.md
           - Backend Service: reference/dashboard/service.md
           - UI Widgets: reference/dashboard/widgets.md
+          - Pages:
+            - Pricer & Greeks: reference/dashboard/pages/1_Pricer_and_Greeks.md
+            - Calibration & IV: reference/dashboard/pages/2_Calibration_and_IV.md
+            - Market Analytics: reference/dashboard/pages/3_Market_Analytics.md
+            - Historical: reference/dashboard/pages/4_Model_Fitting.md
+            - Term Structure: reference/dashboard/pages/5_Term_Structure.md
       - Data:
           - reference/data/index.md
           - Historical Manager: reference/data/historical_manager.md
