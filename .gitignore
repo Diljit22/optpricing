@@ -25,6 +25,7 @@ htmlcov/
 site/
 
 # Ignore my local notes file
-todo.txt
 todo/
 notes/
+text_drafts/
+todo.txt

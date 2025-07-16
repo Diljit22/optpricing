@@ -93,5 +93,5 @@ skip-magic-trailing-comma = false
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q --cov=src/optpricing --cov-report=term-missing"
+addopts = "-ra -q --cov=src/optpricing --cov-report=term-missing --cov-config=.coveragerc"
 testpaths = ["tests"]

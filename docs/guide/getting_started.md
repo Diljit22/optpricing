@@ -1,218 +1,133 @@
 # Getting Started: A Walkthrough
 
-This guide is a hands-on tutorial that will walk you through the library's core features,
-from pricing a single option to running a full model calibration, using the command-line
-interface (CLI).
+This guide walks you through a typical use case, from pricing a single option with the Python API to running a full calibration workflow with the command-line interface (CLI).
 
 ---
 
-## 1. Run the Built-In Demo
+## 1. Pricing a European Option with the Python API
 
-The quickest way to see optpricing in action is with the included benchmark script.
+The core components of `optpricing` are designed to be intuitive and composable. Let’s price a standard European call option and calculate its Greeks.
 
-**Prerequisite**: install the library if you haven’t already:
-
-```bash
-pip install optpricing
-```
-
-Then execute:
-
-```bash
-optpricing demo
-```
-
-This will price a standard option across multiple models and techniques and print a
-formatted comparison table.
-
----
-
-## 2. Pricing an Option Programmatically
-
-First, import and configure the objects you need:
+First, define the core **Atoms**: the option contract, the underlying stock, and the risk-free rate.
 
 ```python
-from optpricing.atoms import Option, Stock, Rate, OptionType, ZeroCouponBond
-from optpricing.models import BSMModel, VasicekModel, CIRModel
+from optpricing import Option, OptionType, Rate, Stock
+
+# Define the core components
+option = Option(strike=105, maturity=1.0, option_type=OptionType.CALL)
+stock = Stock(spot=100.0, dividend=0.01)
+rate = Rate(rate=0.05)
+```
+
+Next, select a **Model** and a pricing **Technique**. Here, we’ll use the Black-Scholes-Merton model and its analytic closed-form solution.
+
+```python
+from optpricing.models import BSMModel
 from optpricing.techniques import ClosedFormTechnique
 
-# 1. Define an option, underlying and rate
-option = Option(strike=105, maturity=1.0, option_type=OptionType.CALL)
-stock  = Stock(spot=100, dividend=0.01)
-rate   = Rate(rate=0.05)
+# Choose a model and technique
+bsm_model = BSMModel(params={"sigma": 0.20})
+cf_technique = ClosedFormTechnique()
 
-# 2. Choose a model and technique
-bsm_model     = BSMModel(params={"sigma": 0.20})
-cf_technique  = ClosedFormTechnique()
-```
-
-### 2.1 Compute the Price
-
-```python
+# Calculate the price
 result = cf_technique.price(option, stock, bsm_model, rate)
 print(f"The option price is: {result.price:.4f}")
->>> The option price is: 7.4917
-```
 
-### 2.2 Compute the Greeks
-
-```python
+# Calculate Greeks
 delta = cf_technique.delta(option, stock, bsm_model, rate)
 gamma = cf_technique.gamma(option, stock, bsm_model, rate)
-vega  = cf_technique.vega(option, stock, bsm_model, rate)
+vega = cf_technique.vega(option, stock, bsm_model, rate)
 
 print(f"Delta: {delta:.4f}")
 print(f"Gamma: {gamma:.4f}")
 print(f"Vega:  {vega:.4f}")
-
->>> Delta: 0.5172
->>> Gamma: 0.0197
->>> Vega:  39.4353
 ```
 
-### 2.3 Find Implied Volatility
+---
+
+## 2. Pricing an American Option with the Python API
+
+The API supports American options using models like Heston with Monte Carlo techniques, optimized with `numba` for performance.
 
 ```python
-target_price = 7.50
-iv = cf_technique.implied_volatility(
-    option, stock, bsm_model, rate, target_price=target_price
-)
-print(f"Implied volatility for price ${target_price:.2f}: {iv:.4%}")
->>> Implied volatility for price $7.50: 20.0211%
+from optpricing.models import HestonModel
+from optpricing.techniques import AmericanMonteCarloTechnique
+
+# Define components
+option = Option(strike=105, maturity=1.0, option_type=OptionType.CALL, style="american")
+stock = Stock(spot=100.0, dividend=0.01)
+rate = Rate(rate=0.05)
+
+# Choose a model and technique
+heston_model = HestonModel(params={"v0": 0.04, "kappa": 2.0, "theta": 0.05, "rho": -0.7, "vol_of_vol": 0.5})
+mc_technique = AmericanMonteCarloTechnique()
+
+# Calculate the price
+result = mc_technique.price(option, stock, heston_model, rate)
+print(f"The American option price is: {result.price:.4f}")
 ```
 
 ---
 
-## 3. Pricing Interest‐Rate Instruments
+## 3. Using the Command-Line Interface (CLI)
 
-optpricing reuses the same pricing interfaces for interest‐rate models:
+The CLI provides a powerful way to access the library’s features without writing Python code.
 
-```python
-# Zero‐coupon bond maturing in 1 year
-bond      = ZeroCouponBond(maturity=1.0)
-r0_stock  = Stock(spot=0.05)    # initial short rate
-dummy_rate = Rate(rate=0.0)     # ignored by rate models
+### Pricing an Option
 
-vasicek = VasicekModel(params={"kappa":0.86, "theta":0.09, "sigma":0.02})
-cir     = CIRModel(params={"kappa":0.86, "theta":0.09, "sigma":0.02})
+Price a European or American option directly from the terminal. The command below fetches the live option chain for AAPL, retrieves the current dividend rate, calculates the implied risk-free rate from at-the-money contracts, and prices the contract with Heston’s model using its default technique (FFT):
 
-p_vasi = cf_technique.price(bond, r0_stock, vasicek, dummy_rate).price
-p_cir  = cf_technique.price(bond, r0_stock, cir,     dummy_rate).price
+```bash
+optpricing price --ticker AAPL --strike 210 --maturity 2025-12-19 --type call --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
+```
 
-print(f"Vasicek ZCB Price: {p_vasi:.4f}")
-print(f"CIR ZCB Price:     {p_cir:.4f}")
+For an American option:
 
->>> Vasicek ZCB Price: 0.9388
->>> CIR ZCB Price:     0.9388
+```bash
+optpricing price --ticker AAPL --strike 210 --maturity 2025-12-19 --type call --style american --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
+```
+
+### Downloading Data
+
+Download historical returns or a live option chain snapshot for calibration or backtesting:
+
+```bash
+# Download historical log-returns
+optpricing data download --ticker SPY --period 10y
+
+# Save a snapshot of the live option chain
+optpricing data snapshot --ticker SPY
+```
+
+Data is saved to the `data/` directory for use in other workflows.
+
+### Calibrating a Model
+
+Calibrate a model to fit observed market prices using a saved market snapshot:
+
+```bash
+# Calibrate the Heston model to the latest snapshot for SPY
+optpricing calibrate --ticker SPY --model Heston --verbose
+```
+
+This command runs the calibration workflow, prints the results, and saves optimized parameters to a `.json` file in the `artifacts/` directory.
+
+---
+
+## 4. Launching the Dashboard
+
+Visualize option chains and model outputs with an interactive Streamlit dashboard supporting 15 models and 10 techniques:
+
+```bash
+optpricing optpricing/dashboard/Home.py
 ```
 
 ---
 
-## 4. Live Pricing and Analysis via CLI
+## What’s Next?
 
-### 4.1 Price an Option
+Explore the full capabilities of `optpricing` with these guides:
 
-```bash
-optpricing price \
-  --ticker SPY \
-  --strike 500 \
-  --maturity 2025-12-19 \
-  --type call \
-  --model Heston \
-  --param "v0=0.04" \
-  --param "kappa=2.0" \
-  --param "theta=0.05" \
-  --param "rho=-0.7" \
-  --param "vol_of_vol=0.5"
-```
-
-### 4.2 Implied Rate from Put-Call Parity
-
-The tools implied-rate command fetches live prices for a call-put pair and calculates the risk-free rate implied by put-call parity.
-
-```bash
-optpricing tools implied-rate --ticker SPY --strike 500 --maturity 2025-12-19
-```
-
----
-
-## 5. Model Calibration with the CLI
-
-Download historical returns (for initial guesses and jump paramaters):
-
-```bash
-optpricing data download --ticker SPY
-```
-
-Download a snapshot of the market-data
-
-```bash
-# For the 25 benchmark stocks use --all
-optpricing data snapshot --all
-
-# If just a particular ticker use e.g.
-optpricing data snapshot --ticker SPY --ticker AAPL
-```
-
-A simple calibration for the Merton Jump model. The workflow will find the latest market data
-for SPY and solve for the implied volatility that best fits the front-month options.
-
-The `--verbose` flag provides detailed logs from the workflow.
-
-```bash
-optpricing calibrate --ticker SPY --model Merton --verbose
-```
-
-The final calibrated parameters are printed to the console and saved to a JSON file in
-the `artifacts/calibrated_params/` directory.
-
----
-
-## 6. Managing Data
-
-* Download specific tickers:
-
-  ```bash
-  optpricing data download --ticker AAPL --ticker TSLA
-  ```
-
-* Download all defaults (from `config.yaml`):
-
-  ```bash
-  optpricing data download --all
-  ```
-
-* Snapshot the live option chain:
-
-  ```bash
-  optpricing data snapshot --ticker NVDA
-  ```
-
----
-
-## 7. Running Tests
-
-If you have installed dev dependencies:
-
-```bash
-pip install -e .[dev]
-pytest
-```
-
----
-
-## 8. Launching the Dashboard
-
-Make sure you have the `[app]` extras installed:
-
-```bash
-pip install optpricing[app]
-```
-
-Then run:
-
-```bash
-optpricing dashboard
-```
-
-This will open the Streamlit application in your browser for interactive exploration.
+* [Dashboard Guide](https://diljit22.github.io/quantfin/guide/dashboard.md): A visual tour of the interactive UI.
+* [Examples Guide](https://diljit22.github.io/quantfin/guide/examples.md): Advanced benchmarks and use cases.
+* [API Guide](https://diljit22.github.io/quantfin/guide/API.md): Detailed API documentation for custom workflows.
