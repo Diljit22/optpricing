@@ -10,15 +10,7 @@ The library is organized around four core concepts; understanding these will hel
 
 2. **Models**: An extensible module of financial models, including classical option pricing models, advanced stochastic volatility models, jump-diffusion processes, and interest rate models. In addition to pricing options, some models support valuation of implied rates, volatility-focused analysis, and put-call parity. Each model is a self-contained representation of a specific financial theory.
 
-3. **Techniques**: These are the numerical algorithms used for pricing models, with bespoke Greek calculations or fallback to numerical differentiation. The separation of model (the "what") from technique (the "how") is a core design feature. The library includes:
-
-   * Analytic closed-form solutions where available
-   * Pricing via the Fourier transform of the characteristic function (FFT)
-   * Numerical integration
-   * Finite difference solvers for the model’s partial differential equation (PDE)
-   * Binomial and trinomial lattice methods for European and American options
-   * A high-performance Monte Carlo engine for European and American options, accelerated with `numba` and featuring variance reduction techniques (e.g., antithetic variates, control variates, importance sampling)
-   * Vectorized calibration for batch pricing of option chains
+3. **Techniques**: These are the numerical algorithms used for pricing models, with bespoke Greek calculations or fallback to numerical differentiation. The separation of model (the "what") from technique (the "how") is a core design feature. The library includes a wide arrange of techniques.
 
 4. **Workflows & Tooling**: High-level orchestrators that combine data, models, and techniques to perform complex, real-world tasks like daily model calibration or historical backtesting. These power the command-line interface and the Streamlit dashboard.
 

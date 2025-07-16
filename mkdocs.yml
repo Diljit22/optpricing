@@ -75,6 +75,7 @@ nav:
       - Dashboard: guide/dashboard.md
       - Examples: guide/examples.md
   - API Reference:
+      - reference/index.md
       - Atoms: reference/atoms/index.md
       - Calibration: reference/calibration/index.md
       - CLI: reference/cli/index.md

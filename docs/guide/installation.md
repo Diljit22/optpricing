@@ -28,7 +28,7 @@ optpricing --help  # View CLI commands
 optpricing/dashboard  # Launch the dashboard
 ```
 
-For more details, visit the [Getting Started guide](guide/getting_started.md)
+For more details, visit the [Getting Started guide](getting_started.md)
 
 ## Developer Installation
 
