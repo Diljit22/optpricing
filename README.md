@@ -58,7 +58,7 @@ Some models require historical data (e.g., for calibration). Download data for a
 optpricing data download --ticker SPY
 ```
 
-For more details, see the [Getting Started Guide]((guide/getting_started.md)).
+For more details, see the [Getting Started Guide](https://diljit22.github.io/quantFin/guide/getting_started/).
 
 ### 3. Use the CLI
 
@@ -74,7 +74,7 @@ To price the same contract as an American Option use:
 optpricing price -t AAPL -k 210 -T 2025-12-19 --style american --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
 ```
 
-For more details, see the [CLI Guide]((guide/CLI.md)).
+For more details, see the [CLI Guide](https://diljit22.github.io/quantFin/guide/CLI/).
 
 ### 4. Launch the Dashboard
 
@@ -84,7 +84,7 @@ Visualize option chains and model outputs, interact with a pricing calculator fe
 optpricing dashboard
 ```
 
-For more details, see the [Dashboard Guide]((guide/dashboard.md)).
+For more details, see the [Dashboard Guide](https://diljit22.github.io/quantFin/guide/dashboard/).
 
 ### 5. Use the Programmatic API
 
@@ -138,7 +138,7 @@ print(f"Vasicek ZCB Price: {p_vasi:.4f}")
 print(f"CIR ZCB Price:     {p_cir:.4f}")
 ```
 
-For more details, see the [API Guide]((guide/API.md)).
+For more details, see the [API Guide](https://diljit22.github.io/quantFin/guide/API/).
 
 ---
 
@@ -146,18 +146,18 @@ For more details, see the [API Guide]((guide/API.md)).
 
 The full documentation includes installation instructions, user guides, examples, and a complete API reference.
 
-* **[View the Official Documentation](https://diljit22.github.io/quantfin/)**
+* **[View the Official Documentation](https://diljit22.github.io/quantFin/)**
 
 ### Guides
 
-* [Introduction](guide/introduction.md)
-* [Installation](guide/installation.md)
-* [Getting Started](guide/getting_started.md)
-* [CLI](guide/CLI.md)
-* [Dashboard](guide/dashboard.md)
-* [API](guide/API.md)
-* [Examples](guide/examples.md)
-* [API Reference](reference/index.md)
+* [Introduction](https://diljit22.github.io/quantFin/guide/introduction/)
+* [Installation](https://diljit22.github.io/quantFin/guide/installation/)
+* [Getting Started](https://diljit22.github.io/quantFin/guide/getting_started/)
+* [CLI](https://diljit22.github.io/quantFin/guide/CLI/)
+* [Dashboard](https://diljit22.github.io/quantFin/guide/dashboard/)
+* [API](https://diljit22.github.io/quantFin/guide/API/)
+* [Examples](https://diljit22.github.io/quantFin/guide/examples/)
+* [API Reference](https://diljit22.github.io/quantfin/reference/)
 
 ## Contributing
 
