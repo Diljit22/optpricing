@@ -1,33 +1,61 @@
 # Installation
 
-The optpricing library is published on the Python Package Index (PyPI) and can be easily installed using `pip`. A Python version of 3.10 or higher is required.
+`optpricing` is designed for a straightforward installation using `pip` and is compatible with Python 3.10 and higher.
 
-## Standard Installation
+## User Installation
 
-For most use cases, including running the command-line interface for calibration and backtesting, you can install the core library with the following command:
+Install the latest stable release from PyPI to get:
+
+- The core Python API
+- The `optpricing` CLI
+- The interactive dashboard
 
 ```bash
 pip install optpricing
 ```
 
-This will install the library and all its core dependencies, such as numpy, scipy, and typer.
-
-## Full Installation (with Dashboard)
-
-The library includes an optional interactive dashboard built with Streamlit, which provides a visual way to interact with the pricing and calibration tools. To install the core library along with the dependencies needed to run the dashboard, use the [app] extra:
+Confirm the installation by checking the package version:
 
 ```bash
-pip install optpricing[app]
+import optpricing
+print(optpricing.__version__)  # Prints the installed version
 ```
 
-This is the recommended installation if you plan to use the visual tools.
+Launch the CLI or dashboard:
+
+```bash
+optpricing --help  # View CLI commands
+optpricing/dashboard  # Launch the dashboard
+```
+
+For more details, visit the [Getting Started guide](guide/getting_started.md)
 
 ## Developer Installation
 
-If you wish to contribute to the development of optpricing, or if you want to make local modifications to the source code, you should clone the repository and install it in "editable" mode.
+To contribute, run tests, or execute benchmarks, follow these steps inside a virtual environment:
 
 ```bash
+# 1. Clone the repo
 git clone https://github.com/diljit22/quantfin.git
-cd optpricing
-pip install -e .[app,dev]
+cd quantfin
+
+# 2. Create & activate a venv (Linux/macOS)
+python -m venv .venv
+source .venv/bin/activate  # On Windows, use: .venv\Scripts\activate
+
+# 3. Install editable with dev-extras
+pip install --upgrade pip
+pip install -e ".[dev]"
 ```
+
+### Running Benchmarks and Tests
+
+- The benchmark scripts are located in the `examples/` directory and require a local clone. For details, see the [Benchmarks Guide](guide/benchmarks.md).
+
+- Run the test suite with:
+
+    ```bash
+    pytest tests/ --cov=src/optpricing --cov-report=term-missing
+    ```
+
+    A live pulse is available at <https://app.codecov.io/gh/diljit22/quantfin>.
