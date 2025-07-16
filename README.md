@@ -156,7 +156,6 @@ The full documentation includes installation instructions, user guides, examples
 * [CLI](guide/CLI.md)
 * [Dashboard](guide/dashboard.md)
 * [API](guide/API.md)
-* [Benchmarks](guide/Benchmarks.md)
 * [Examples](guide/examples.md)
 * [API Reference](reference/index.md)
 

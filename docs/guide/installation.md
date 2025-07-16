@@ -50,7 +50,7 @@ pip install -e ".[dev]"
 
 ### Running Benchmarks and Tests
 
-- The benchmark scripts are located in the `examples/` directory and require a local clone. For details, see the [Benchmarks Guide](guide/benchmarks.md).
+- The benchmark scripts are located in the `examples/` directory and require a local clone.
 
 - Run the test suite with:
 
