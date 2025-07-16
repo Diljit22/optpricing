@@ -128,6 +128,6 @@ optpricing optpricing/dashboard/Home.py
 
 Explore the full capabilities of `optpricing` with these guides:
 
-* [Dashboard Guide](https://diljit22.github.io/quantfin/guide/dashboard.md): A visual tour of the interactive UI.
-* [Examples Guide](https://diljit22.github.io/quantfin/guide/examples.md): Advanced benchmarks and use cases.
-* [API Guide](https://diljit22.github.io/quantfin/guide/API.md): Detailed API documentation for custom workflows.
+* [Dashboard Guide](https://diljit22.github.io/quantFin/guide/dashboard.md): A visual tour of the interactive UI.
+* [Examples Guide](https://diljit22.github.io/quantFin/guide/examples.md): Advanced benchmarks and use cases.
+* [API Guide](https://diljit22.github.io/quantFin/guide/API.md): Detailed API documentation for custom workflows.
