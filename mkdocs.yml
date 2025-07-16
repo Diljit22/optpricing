@@ -70,6 +70,8 @@ nav:
       - Introduction: guide/introduction.md
       - Installation: guide/installation.md
       - Getting Started: guide/getting_started.md
+      - API: guide/API.md
+      - CLI: guide/CLI.md
       - Dashboard: guide/dashboard.md
       - Examples: guide/examples.md
   - API Reference:
