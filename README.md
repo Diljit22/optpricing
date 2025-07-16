@@ -157,7 +157,7 @@ The full documentation includes installation instructions, user guides, examples
 * [Dashboard](https://diljit22.github.io/quantFin/guide/dashboard/)
 * [API](https://diljit22.github.io/quantFin/guide/API/)
 * [Examples](https://diljit22.github.io/quantFin/guide/examples/)
-* [API Reference](https://diljit22.github.io/quantfin/reference/)
+* [API Reference](https://diljit22.github.io/quantFin/reference/)
 
 ## Contributing
 
