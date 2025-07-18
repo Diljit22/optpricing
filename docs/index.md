@@ -3,7 +3,7 @@
 `optpricing` is a Python library for pricing, calibrating, and analyzing financial derivatives. It is built with a focus on architectural clarity, model breadth, and practical usability through a robust API, command-line interface, and an interactive dashboard.
 
 Diljit Singh
-linkedin.com/in/singhdiljit/
+[LinkedIn](https://linkedin.com/in/singhdiljit/)
 
 ---
 
