@@ -1,9 +1,9 @@
 # OptPricing: A Quantitative Finance Library for Derivative Pricing and Analysis
 
-[![Tests](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=tests)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/diljit22/quantfin/branch/main/graph/badge.svg)](https://codecov.io/gh/diljit22/quantfin)
-[![Ruff](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=ruff)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/github/actions/workflow/status/diljit22/quantfin/ci.yml?branch=main&label=docs)](https://github.com/diljit22/quantfin/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/ci.yml?branch=main&label=tests)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/diljit22/optpricing/branch/main/graph/badge.svg)](https://codecov.io/gh/diljit22/optpricing)
+[![Ruff](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/ci.yml?branch=main&label=ruff)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/ci.yml?branch=main&label=docs)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/optpricing.svg)](https://pypi.org/project/optpricing/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -58,7 +58,7 @@ Some models require historical data (e.g., for calibration). Download data for a
 optpricing data download --ticker SPY
 ```
 
-For more details, see the [Getting Started Guide](https://diljit22.github.io/quantFin/guide/getting_started/).
+For more details, see the [Getting Started Guide](https://diljit22.github.io/optpricing/guide/getting_started/).
 
 ### 3. Use the CLI
 
@@ -74,7 +74,7 @@ To price the same contract as an American Option use:
 optpricing price -t AAPL -k 210 -T 2025-12-19 --style american --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
 ```
 
-For more details, see the [CLI Guide](https://diljit22.github.io/quantFin/guide/CLI/).
+For more details, see the [CLI Guide](https://diljit22.github.io/optpricing/guide/CLI/).
 
 ### 4. Launch the Dashboard
 
@@ -84,7 +84,7 @@ Visualize option chains and model outputs, interact with a pricing calculator fe
 optpricing dashboard
 ```
 
-For more details, see the [Dashboard Guide](https://diljit22.github.io/quantFin/guide/dashboard/).
+For more details, see the [Dashboard Guide](https://diljit22.github.io/optpricing/guide/dashboard/).
 
 ### 5. Use the Programmatic API
 
@@ -138,7 +138,7 @@ print(f"Vasicek ZCB Price: {p_vasi:.4f}")
 print(f"CIR ZCB Price:     {p_cir:.4f}")
 ```
 
-For more details, see the [API Guide](https://diljit22.github.io/quantFin/guide/API/).
+For more details, see the [API Guide](https://diljit22.github.io/optpricing/guide/API/).
 
 ---
 
@@ -146,18 +146,18 @@ For more details, see the [API Guide](https://diljit22.github.io/quantFin/guide/
 
 The full documentation includes installation instructions, user guides, examples, and a complete API reference.
 
-* **[View the Official Documentation](https://diljit22.github.io/quantFin/)**
+* **[View the Official Documentation](https://diljit22.github.io/optpricing/)**
 
 ### Guides
 
-* [Introduction](https://diljit22.github.io/quantFin/guide/introduction/)
-* [Installation](https://diljit22.github.io/quantFin/guide/installation/)
-* [Getting Started](https://diljit22.github.io/quantFin/guide/getting_started/)
-* [CLI](https://diljit22.github.io/quantFin/guide/CLI/)
-* [Dashboard](https://diljit22.github.io/quantFin/guide/dashboard/)
-* [API](https://diljit22.github.io/quantFin/guide/API/)
-* [Examples](https://diljit22.github.io/quantFin/guide/examples/)
-* [API Reference](https://diljit22.github.io/quantFin/reference/)
+* [Introduction](https://diljit22.github.io/optpricing/guide/introduction/)
+* [Installation](https://diljit22.github.io/optpricing/guide/installation/)
+* [Getting Started](https://diljit22.github.io/optpricing/guide/getting_started/)
+* [CLI](https://diljit22.github.io/optpricing/guide/CLI/)
+* [Dashboard](https://diljit22.github.io/optpricing/guide/dashboard/)
+* [API](https://diljit22.github.io/optpricing/guide/API/)
+* [Examples](https://diljit22.github.io/optpricing/guide/examples/)
+* [API Reference](https://diljit22.github.io/optpricing/reference/)
 
 ## Contributing
 

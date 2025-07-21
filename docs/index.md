@@ -35,11 +35,11 @@ Diljit Singh
 
 ### Guides
 
-* [Introduction](https://diljit22.github.io/quantFin/guide/introduction/)
-* [Installation](https://diljit22.github.io/quantFin/guide/installation/)
-* [Getting Started](https://diljit22.github.io/quantFin/guide/getting_started/)
-* [CLI](https://diljit22.github.io/quantFin/guide/CLI/)
-* [Dashboard](https://diljit22.github.io/quantFin/guide/dashboard/)
-* [API](https://diljit22.github.io/quantFin/guide/API/)
-* [Examples](https://diljit22.github.io/quantFin/guide/examples/)
+* [Introduction](https://diljit22.github.io/optpricing/guide/introduction/)
+* [Installation](https://diljit22.github.io/optpricing/guide/installation/)
+* [Getting Started](https://diljit22.github.io/optpricing/guide/getting_started/)
+* [CLI](https://diljit22.github.io/optpricing/guide/CLI/)
+* [Dashboard](https://diljit22.github.io/optpricing/guide/dashboard/)
+* [API](https://diljit22.github.io/optpricing/guide/API/)
+* [Examples](https://diljit22.github.io/optpricing/guide/examples/)
 * [API Reference](reference/index.md)

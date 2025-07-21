@@ -36,8 +36,8 @@ To contribute, run tests, or execute benchmarks, follow these steps inside a vir
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/diljit22/quantfin.git
-cd quantfin
+git clone https://github.com/diljit22/optpricing.git
+cd optpricing
 
 # 2. Create & activate a venv (Linux/macOS)
 python -m venv .venv
@@ -58,4 +58,4 @@ pip install -e ".[dev]"
     pytest tests/ --cov=src/optpricing --cov-report=term-missing
     ```
 
-    A live pulse is available at <https://app.codecov.io/gh/diljit22/quantfin>.
+    A live pulse is available at <https://app.codecov.io/gh/diljit22/optpricing>.

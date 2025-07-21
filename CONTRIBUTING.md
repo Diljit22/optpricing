@@ -8,7 +8,7 @@ Thank you for your interest in improving optpricing! Even though this is a small
 2. **Clone** your fork locally:
 
    ```bash
-   git clone https://github.com/diljit22/quantfin.git
+   git clone https://github.com/diljit22/optpricing.git
    cd optpricing
    ```
 
@@ -26,7 +26,7 @@ Thank you for your interest in improving optpricing! Even though this is a small
   ruff format .
   ruff check .
   ```
-  
+
 * Please write clear, modular code and include docstrings in NumPy style.
 
 ## Testing
