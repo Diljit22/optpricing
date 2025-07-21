@@ -210,6 +210,7 @@ def plot_error_heatmap(
 
 
 def plot_calendar_heatmap(market_data: pd.DataFrame) -> go.Figure:
+    """Plot the calandar heatmap."""
     if market_data.empty:
         return go.Figure().update_layout(title="No market data to plot calendar.")
     df = market_data.copy()
