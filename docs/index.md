@@ -5,6 +5,8 @@
 Diljit Singh
 [LinkedIn](https://linkedin.com/in/singhdiljit/)
 
+![OptPricing Dashboard Demo](./images/optPricing_demo.gif){ width="50%" style="display: block; margin-left: auto; margin-right: auto;" }
+
 ---
 
 ## Core Features
