@@ -119,7 +119,7 @@ This command runs the calibration workflow, prints the results, and saves optimi
 Visualize option chains and model outputs with an interactive Streamlit dashboard supporting 15 models and 10 techniques:
 
 ```bash
-optpricing optpricing/dashboard/Home.py
+optpricing dashboard
 ```
 
 ---
