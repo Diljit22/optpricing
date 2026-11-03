@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -6,6 +7,9 @@ from typer.testing import CliRunner
 from optpricing.cli.main import app
 
 runner = CliRunner()
+
+# The command rejects maturities in the past, so the date must be relative to today.
+FUTURE_MATURITY = (date.today() + timedelta(days=365)).isoformat()
 
 
 @patch("optpricing.cli.commands.price.select_fastest_technique")
@@ -36,7 +40,7 @@ def test_price_command(mock_get_div, mock_get_chain, mock_fit_rate, mock_select_
             "--strike",
             "150",
             "--maturity",
-            "2025-12-31",
+            FUTURE_MATURITY,
             "--model",
             "BSM",
             "--param",
