@@ -82,6 +82,13 @@ class KouModel(BaseModel):
         ParamValidator.require(p, req, model=self.name)
         ParamValidator.positive(p, ["sigma", "lambda", "eta1", "eta2"], model=self.name)
         ParamValidator.bounded(p, "p_up", 0.0, 1.0, model=self.name)
+        if not (p["eta1"] > 1.0):
+            # E[exp(Y)] = p*eta1/(eta1-1) + (1-p)*eta2/(eta2+1) is finite only if
+            # eta1 > 1 (Kou 2002); the compensator is undefined otherwise.
+            raise ValueError(
+                f"{self.name}: parameter 'eta1' must be greater than 1 for the "
+                "jump compensator to exist."
+            )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, KouModel):

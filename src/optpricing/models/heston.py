@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 from typing import Any
 
@@ -91,8 +92,10 @@ class HestonModel(BaseModel):
         ParamValidator.positive(p, ["kappa", "theta", "vol_of_vol"], model=self.name)
         ParamValidator.bounded(p, "rho", -1.0, 1.0, model=self.name)
         if 2 * p["kappa"] * p["theta"] < p["vol_of_vol"] ** 2:
-            print(
-                f"Warning: Params for {self.name} do not satisfy the Feller condition."
+            warnings.warn(
+                f"{self.name}: parameters do not satisfy the Feller condition "
+                "(2*kappa*theta >= vol_of_vol^2); the variance can reach zero.",
+                stacklevel=2,
             )
 
     def __eq__(self, other: object) -> bool:
@@ -110,7 +113,7 @@ class HestonModel(BaseModel):
         spot: float,
         r: float,
         q: float,
-        v0: float,
+        v0: float | None = None,
         **_: Any,
     ) -> CF:
         """
@@ -126,8 +129,9 @@ class HestonModel(BaseModel):
             The continuously compounded risk-free rate.
         q : float
             The continuously compounded dividend yield.
-        v0 : float
-            The initial variance of the asset's returns.
+        v0 : float | None, optional
+            The initial variance of the asset's returns. Defaults to the model's
+            ``v0`` parameter.
 
         Returns
         -------
@@ -135,6 +139,12 @@ class HestonModel(BaseModel):
             The characteristic function.
         """
         p = self.params
+        if v0 is None:
+            v0 = p.get("v0")
+            if v0 is None:
+                raise ValueError(
+                    f"{self.name}: 'v0' must be a model parameter or a pricing kwarg."
+                )
         kappa, theta, rho, vol_of_vol = (
             p["kappa"],
             p["theta"],

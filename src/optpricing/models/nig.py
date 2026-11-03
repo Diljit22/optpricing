@@ -39,6 +39,13 @@ class NIGModel(BaseModel):
         ParamValidator.positive(p, ["alpha", "delta"], model=self.name)
         if not (abs(p["beta"]) < p["alpha"]):
             raise ValueError("NIG params must satisfy |beta| < alpha.")
+        if not (abs(p["beta"] + 1.0) < p["alpha"]):
+            # The martingale correction uses sqrt(alpha^2 - (beta+1)^2), i.e. the
+            # exponential moment E[exp(X_t)] must exist.
+            raise ValueError(
+                "NIG params must satisfy |beta + 1| < alpha for the risk-neutral "
+                "measure to exist."
+            )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, NIGModel):
@@ -163,8 +170,14 @@ class NIGModel(BaseModel):
 
         p = self.params
         alpha, beta, delta = p["alpha"], p["beta"], p["delta"]
-        mu_ig = delta * T / np.sqrt(alpha**2 - beta**2)
-        ig_time = invgauss.rvs(mu=mu_ig, size=size, random_state=rng)
+        gamma = np.sqrt(alpha**2 - beta**2)
+        # The NIG subordinator at horizon T is IG(mean = delta*T/gamma,
+        # shape = (delta*T)^2) (Barndorff-Nielsen 1997). scipy parametrises
+        # invgauss(mu, scale) as IG(mean = mu*scale, shape = scale).
+        shape = (delta * T) ** 2
+        ig_time = invgauss.rvs(
+            mu=1.0 / (gamma * delta * T), scale=shape, size=size, random_state=rng
+        )
         bm_drift = beta * ig_time
         bm_diffusion = np.sqrt(ig_time) * rng.standard_normal(size=size)
         return bm_drift + bm_diffusion

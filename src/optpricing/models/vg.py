@@ -60,6 +60,13 @@ class VarianceGammaModel(BaseModel):
         req = ["sigma", "nu", "theta"]
         ParamValidator.require(p, req, model=self.name)
         ParamValidator.positive(p, ["sigma", "nu"], model=self.name)
+        if not (p["theta"] * p["nu"] + 0.5 * p["sigma"] ** 2 * p["nu"] < 1.0):
+            # E[exp(X_t)] = (1 - theta*nu - sigma^2*nu/2)^(-t/nu) must be finite
+            # (Madan, Carr & Chang 1998) for the risk-neutral drift to exist.
+            raise ValueError(
+                f"{self.name}: parameters must satisfy theta*nu + sigma^2*nu/2 < 1 "
+                "for the risk-neutral measure to exist."
+            )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, VarianceGammaModel):

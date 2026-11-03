@@ -78,7 +78,7 @@ class BatesModel(BaseModel):
         spot: float,
         r: float,
         q: float,
-        v0: float,
+        v0: float | None = None,
         **_: Any,
     ) -> CF:
         """
@@ -94,8 +94,9 @@ class BatesModel(BaseModel):
             The continuously compounded risk-free rate.
         q : float
             The continuously compounded dividend yield.
-        v0 : float
-            The initial variance of the asset's returns.
+        v0 : float | None, optional
+            The initial variance of the asset's returns. Defaults to the model's
+            ``v0`` parameter.
 
         Returns
         -------
@@ -103,6 +104,12 @@ class BatesModel(BaseModel):
             The characteristic function.
         """
         p = self.params
+        if v0 is None:
+            v0 = p.get("v0")
+            if v0 is None:
+                raise ValueError(
+                    f"{self.name}: 'v0' must be a model parameter or a pricing kwarg."
+                )
         kappa, theta, rho, vol_of_vol = (
             p["kappa"],
             p["theta"],

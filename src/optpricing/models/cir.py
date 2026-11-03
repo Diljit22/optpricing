@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 from typing import Any
 
 from optpricing.models.base import BaseModel, ParamValidator
@@ -37,7 +38,11 @@ class CIRModel(BaseModel):
         ParamValidator.require(p, req, model=self.name)
         ParamValidator.positive(p, ["kappa", "theta", "sigma"], model=self.name)
         if 2 * p["kappa"] * p["theta"] < p["sigma"] ** 2:
-            print("Warning: CIR parameters do not satisfy the Feller condition.")
+            warnings.warn(
+                f"{self.name}: parameters do not satisfy the Feller condition "
+                "(2*kappa*theta >= sigma^2); the short rate can reach zero.",
+                stacklevel=2,
+            )
 
     def _closed_form_impl(
         self,
