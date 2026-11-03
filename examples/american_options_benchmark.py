@@ -169,7 +169,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
         {
             "model_name": "SABR",
             "model_instance": SABRModel(
-                params={"alpha": 0.5, "beta": 0.8, "rho": -0.6}
+                params={"alpha": 0.5, "beta": 0.8, "rho": -0.6, "nu": 0.5}
             ),
             "stock": stock,
             "rate": rate,
@@ -183,6 +183,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
                     "alpha": 0.5,
                     "beta": 0.8,
                     "rho": -0.6,
+                    "nu": 0.5,
                     "lambda": 0.4,
                     "mu_j": -0.1,
                     "sigma_j": 0.15,
