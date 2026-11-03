@@ -20,7 +20,8 @@ def dashboard():
             subprocess.run(["streamlit", "run", str(app_path)], check=True)
     except FileNotFoundError:
         typer.secho(
-            "Error: 'streamlit' command not found. Hint: `pip install optpricing[app]`",
+            "Error: 'streamlit' command not found. "
+            "Hint: `pip install 'optpricing[ui]'`",
             fg=typer.colors.RED,
         )
         raise typer.Exit(code=1)

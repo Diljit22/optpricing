@@ -1,65 +1,106 @@
 [build-system]
-requires = [
-    "setuptools>=79",
-    "wheel",
-    "setuptools_scm[toml]>=8"
-]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "optpricing"
 dynamic = ["version"]
-authors = [
-    { name="Diljit Singh", email="first_last22@google.com" },
-]
 description = "A financial options pricing and analysis library."
 readme = "README.md"
-requires-python = ">=3.10"
-license = { file="LICENSE" }
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Diljit Singh" }]
+keywords = [
+    "options",
+    "derivatives",
+    "quantitative-finance",
+    "option-pricing",
+    "heston",
+    "monte-carlo",
+    "fft",
+    "calibration",
+]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
 
+# Floors are the oldest releases with wheels for every supported CPython (3.11-3.14)
+# and were verified with `uv pip install --resolution lowest-direct` + the full test
+# suite on each interpreter. Do not raise a floor without re-running that check.
 dependencies = [
-    "numpy~=2.2.5",
-    "scipy~=1.15.2",
-    "pandas~=2.2.3",
-    "numba~=0.61.2",
-    "pyyaml~=6.0.2",
-    "click~=8.1",
-    "typer~=0.15.2",
-    "streamlit~=1.45.1",
-    "matplotlib~=3.10.1",
-    "plotly~=6.1.2",
-    "yfinance~=0.2.63",
-    "tabulate~=0.9.0",
+    "numpy>=2.3.2",
+    "scipy>=1.16.1",
+    "pandas>=2.3.3",
+    "numba>=0.63",
+    "pyyaml>=6.0.3",
+    "typer>=0.15.3",
+    "yfinance>=0.2.63",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest",
-    "pytest-cov",
-    "ruff==0.11.6",
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocstrings[python]",
-    "mkdocs-section-index",
-    "line_profiler",
-    "pre-commit",
-    "codecov",
+# Streamlit dashboard (`optpricing dashboard`).
+ui = [
+    "streamlit>=1.45.1",
+    "plotly>=6.1.2",
 ]
 
 [project.urls]
-"Homepage" = "https://diljit22.github.io/optpricing/"
+Homepage = "https://diljit22.github.io/optpricing/"
+Documentation = "https://diljit22.github.io/optpricing/"
+Repository = "https://github.com/Diljit22/optpricing"
+Issues = "https://github.com/Diljit22/optpricing/issues"
+Changelog = "https://github.com/Diljit22/optpricing/blob/main/CHANGELOG.md"
 
 [project.scripts]
 optpricing = "optpricing.cli.main:app"
 
+# Development tooling (PEP 735). Not published with the package.
+#   uv sync                      -> default `dev` group (test + lint + docs + pre-commit)
+#   uv sync --group test         -> just what the test suite needs
+#   pip install -e . --group dev -> pip >= 25.1
+[dependency-groups]
+test = [
+    "optpricing[ui]",
+    "pytest>=8.3",
+    "pytest-cov>=5",
+]
+lint = [
+    "ruff==0.17.3",
+]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6",
+    "mkdocstrings[python]>=0.29",
+    "mkdocs-section-index>=0.3.9",
+]
+profile = [
+    "line-profiler>=4.2",
+    "py-spy>=0.4",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "docs" },
+    "pre-commit>=4.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -76,22 +117,28 @@ select = ["E", "W", "F", "I", "N", "UP", "NPY"]
 ignore = ["N803", "N806"]
 
 [tool.ruff.lint.per-file-ignores]
-# streamlit ignores
+# streamlit page files are named for the sidebar, not for PEP 8
 "src/optpricing/dashboard/pages/*.py" = ["N999"]
 "src/optpricing/dashboard/Home.py" = ["N999"]
-# numba ignores
+# numba kernels use the legacy np.random API on purpose
 "src/optpricing/techniques/kernels/mc_kernels.py" = ["NPY002"]
 "src/optpricing/techniques/kernels/american_mc_kernels.py" = ["NPY002", "E722"]
 "src/optpricing/techniques/kernels/path_kernels.py" = ["NPY002"]
-
-# tests
-"tests/**/*.py" = ["S101"]
 
 [tool.ruff.format]
 quote-style = "double"
 skip-magic-trailing-comma = false
 
 [tool.pytest.ini_options]
-minversion = "6.0"
-addopts = "-ra -q --cov=src/optpricing --cov-report=term-missing --cov-config=.coveragerc"
+minversion = "8.0"
 testpaths = ["tests"]
+# Coverage is opt-in: `pytest --cov` (CI does this); plain `pytest` stays fast and debuggable.
+addopts = "-ra --strict-markers --strict-config"
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["optpricing"]
+omit = ["*/dashboard/pages/*"]
+
+[tool.coverage.report]
+show_missing = true
