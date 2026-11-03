@@ -1,11 +1,11 @@
 # OptPricing: A Quantitative Finance Library for Derivative Pricing and Analysis
 
-[![Tests](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/ci.yml?branch=main&label=tests)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/ci.yml?branch=main&label=ci)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/diljit22/optpricing/branch/main/graph/badge.svg)](https://codecov.io/gh/diljit22/optpricing)
-[![Ruff](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/ci.yml?branch=main&label=ruff)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/ci.yml?branch=main&label=docs)](https://github.com/diljit22/optpricing/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/diljit22/optpricing/pages.yml?branch=main&label=docs)](https://github.com/diljit22/optpricing/actions/workflows/pages.yml)
 [![PyPI version](https://img.shields.io/pypi/v/optpricing.svg)](https://pypi.org/project/optpricing/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 `optpricing` is a Python library for pricing, calibrating, and analyzing financial derivatives. It is built with a focus on architectural clarity, model breadth, and practical usability through a robust API, command-line interface, and an interactive dashboard.
@@ -42,12 +42,13 @@ Diljit Singh
 
 ## Quick Start
 
-`optpricing` is designed for a straightforward installation using `pip` and is compatible with Python 3.10 and higher.
+`optpricing` installs with `pip` (or `uv`) and supports Python 3.11 through 3.14.
 
 ### 1. Install the Library
 
 ```bash
-pip install optpricing
+pip install optpricing          # library + CLI
+pip install "optpricing[ui]"    # also the Streamlit dashboard
 ```
 
 ### 2. Download Historical Data
@@ -78,7 +79,7 @@ For more details, see the [CLI Guide](https://diljit22.github.io/optpricing/guid
 
 ### 4. Launch the Dashboard
 
-Visualize option chains and model outputs, interact with a pricing calculator featuring 15 models and 10 techniques.
+Visualize option chains and model outputs, and interact with a pricing calculator covering 12 models and 8 techniques (the full library exposes 17 pricing models plus parity/implied-rate models, and 9 techniques). Requires the `ui` extra.
 
 ```bash
 optpricing dashboard

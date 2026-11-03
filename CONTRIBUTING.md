@@ -12,19 +12,22 @@ Thank you for your interest in improving optpricing! Even though this is a small
    cd optpricing
    ```
 
-3. **Install** development dependencies:
+3. **Install** the project and development tooling with [uv](https://docs.astral.sh/uv/):
 
    ```bash
-   pip install -e '.[app,dev]'
+   uv sync                      # creates .venv from uv.lock (Python from .python-version)
+   uv run pre-commit install    # optional but recommended
    ```
+
+   Without uv, use `pip install -e . --group dev` (pip >= 25.1) in a virtual environment.
 
 ## Coding Style
 
-* This project uses **Ruff** for linting and formatting:
+* This project uses **Ruff** for linting and formatting; CI enforces both:
 
   ```bash
-  ruff format .
-  ruff check .
+  uv run ruff format .
+  uv run ruff check .
   ```
 
 * Please write clear, modular code and include docstrings in NumPy style.
@@ -34,10 +37,11 @@ Thank you for your interest in improving optpricing! Even though this is a small
 Run the full test suite with:
 
 ```bash
-pytest
+uv run pytest          # quick
+uv run pytest --cov    # with coverage, as CI runs it
 ```
 
-> **Note:** Some dashboard-related files/functions do not yet have pytest coverage.
+CI runs the suite on Python 3.11–3.14 (3.15 experimental) and additionally against the minimum supported dependency versions, so keep new dependency floors honest.
 
 ## Submitting Changes
 
