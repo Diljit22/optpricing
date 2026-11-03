@@ -1,6 +1,11 @@
-include README.md
-include LICENSE
-include CHANGELOG.md
-include pyproject.toml
-include mkdocs.yml
-recursive-include docs *
+# setuptools_scm seeds the sdist with every git-tracked file. Keep the archive to
+# what a source build and the test suite need; data, artifacts, docs and CI config
+# live in the repository only.
+prune data
+prune artifacts
+prune docs
+prune examples
+prune .github
+exclude .gitignore .pre-commit-config.yaml .python-version
+exclude codecov.yml config.yaml mkdocs.yml uv.lock
+exclude CODE_OF_CONDUCT.md CONTRIBUTING.md PULL_REQUEST_TEMPLATE.md SECURITY.md
