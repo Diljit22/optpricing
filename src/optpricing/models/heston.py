@@ -33,7 +33,7 @@ class HestonModel(BaseModel):
         "kappa": 2.0,
         "theta": 0.04,
         "rho": -0.7,
-        "vol_of_vol": 0.5,
+        "vol_of_vol": 0.3,
     }
     param_defs = {
         "v0": {
@@ -66,7 +66,7 @@ class HestonModel(BaseModel):
         },
         "vol_of_vol": {
             "label": "Vol of Vol",
-            "default": 0.5,
+            "default": 0.3,
             "min": 0.1,
             "max": 1.5,
             "step": 0.05,

@@ -35,7 +35,7 @@ class BatesModel(BaseModel):
         "kappa": 2.0,
         "theta": 0.04,
         "rho": -0.7,
-        "vol_of_vol": 0.5,
+        "vol_of_vol": 0.3,
         "lambda": 0.5,
         "mu_j": -0.1,
         "sigma_j": 0.15,
