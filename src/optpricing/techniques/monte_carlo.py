@@ -101,7 +101,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         # Dispatch to the correct simulation method
         if getattr(model, "has_exact_sampler", False):
-            ST = model.sample_terminal_spot(S0, r, T, self.n_paths)
+            ST = model.sample_terminal_spot(S0, r, T, self.n_paths, q=q, rng=self.rng)
         elif getattr(model, "is_pure_levy", False):
             ST = self._simulate_levy_terminal(model, S0, r, q, T)
         else:
@@ -220,15 +220,18 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             sim_params["log_s0"] = math.log(S0)
 
         if model.has_variance_process:
-            dw_v = self.rng.standard_normal(size=(num_draws, self.n_steps)) * math.sqrt(
-                dt
+            # The kernels correlate the variance driver themselves
+            # (dW_v = rho*dW_s + sqrt(1-rho^2)*dZ), so they must receive two
+            # *independent* Brownian increments. Pre-correlating here applied
+            # rho twice (effective rho(1+sqrt(1-rho^2)) and an inflated
+            # vol-of-vol), biasing every stochastic-volatility MC price.
+            sqrt_dt = math.sqrt(dt)
+            sim_params["dw1"] = (
+                self.rng.standard_normal(size=(num_draws, self.n_steps)) * sqrt_dt
             )
-            dw_uncorr = self.rng.standard_normal(
-                size=(num_draws, self.n_steps)
-            ) * math.sqrt(dt)
-            rho = model.params.get("rho", 0)
-            sim_params["dw1"] = rho * dw_v + math.sqrt(1 - rho**2) * dw_uncorr
-            sim_params["dw2"] = dw_v
+            sim_params["dw2"] = (
+                self.rng.standard_normal(size=(num_draws, self.n_steps)) * sqrt_dt
+            )
         else:
             sim_params["dw"] = self.rng.standard_normal(
                 size=(num_draws, self.n_steps)
