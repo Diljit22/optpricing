@@ -6,10 +6,10 @@ This file is being done more for the sake of completion, no real point is being 
 
 ## Supported Versions
 
-- **main** branch — under active maintenance  
+- **main** branch — under active maintenance
 - Older releases — not supported
 
 ## Reporting a Vulnerability
 
-If you discover a security issue in optpricing, please report it privately by emailing  
+If you discover a security issue in optpricing, please report it privately by emailing
 **DiljitSingh22@googles_emailing_service.com**.

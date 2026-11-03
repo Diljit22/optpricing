@@ -1,12 +1,12 @@
 ## Description
 
-Please include a summary of the changes and the related issue.  
+Please include a summary of the changes and the related issue.
 Fixes # (issue)
 
 ## How Has This Been Tested?
 
-- [ ] Linted with `ruff check .`  
-- [ ] Ran `pytest`  
+- [ ] Linted with `ruff check .`
+- [ ] Ran `pytest`
 
 ## Types of changes
 
@@ -17,7 +17,7 @@ Fixes # (issue)
 
 ## Checklist
 
-- [ ] Performed a self-review  
+- [ ] Performed a self-review
 - [ ] Add numpy-type docs
-- [ ] Align with current package versions  
-- [ ] My changes generate no new warnings  
+- [ ] Align with current package versions
+- [ ] My changes generate no new warnings
