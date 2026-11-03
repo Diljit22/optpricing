@@ -135,6 +135,10 @@ testpaths = ["tests"]
 # Coverage is opt-in: `pytest --cov` (CI does this); plain `pytest` stays fast and debuggable.
 addopts = "-ra --strict-markers --strict-config"
 xfail_strict = true
+filterwarnings = [
+    # Several fixtures deliberately use Feller-violating Heston/CIR parameters.
+    "ignore:.*do not satisfy the Feller condition.*:UserWarning",
+]
 
 [tool.coverage.run]
 source = ["optpricing"]
