@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 from scipy.special import gamma as gamma_func
 
-from optpricing.models.base import CF, BaseModel, ParamValidator
+from optpricing.models.base import CF, BaseModel, ParamValidator, sample_from_cf
 
 __doc__ = """
 Defines the CGMY (Carr, Geman, Madan, Yor, 2002) pure-jump Levy model.
@@ -18,8 +18,11 @@ class CGMYModel(BaseModel):
     CGMY (Carr, Geman, Madan, Yor, 2002) pure-jump Levy model.
 
     This is a flexible four-parameter model that can capture skewness and kurtosis.
-    It has a known characteristic function for all valid parameters. Monte Carlo
-    simulation is supported for the special case Y=1 (Variance Gamma process).
+    It has a known characteristic function for all valid parameters (``Y < 2``),
+    including the limiting cases ``Y = 0`` (difference of two gamma processes,
+    i.e. Variance Gamma) and ``Y = 1``. Monte Carlo sampling is exact for ``Y = 0``
+    and uses inverse-transform sampling of the terminal characteristic function
+    otherwise.
     """
 
     name: str = "CGMY"
@@ -50,8 +53,14 @@ class CGMYModel(BaseModel):
             raise ValueError(
                 "CGMY parameter Y must be less than 2 for finite variance."
             )
-        if p["Y"] <= 0 and p["C"] != 0:
-            print("Warning: CGMY with Y<=0 and C!=0 can have infinite moments.")
+        if p["Y"] < 0:
+            raise ValueError("CGMY parameter Y must be non-negative.")
+        if not (p["M"] > 1):
+            # E[exp(X_t)] = exp(t * psi(-i)) requires the right tail to decay
+            # faster than exp(-x): M > 1 (Carr, Geman, Madan & Yor 2002).
+            raise ValueError(
+                "CGMY parameter M must exceed 1 for the risk-neutral measure to exist."
+            )
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CGMYModel):
@@ -120,14 +129,36 @@ class CGMYModel(BaseModel):
         p = self.params
         C, G, M, Y = p["C"], p["G"], p["M"], p["Y"]
 
+        # Levy exponent psi(u) with Gamma(-Y) poles at Y = 0 and Y = 1 replaced
+        # by their limits: Y -> 0 gives the Variance-Gamma (gamma difference)
+        # exponent, Y -> 1 gives the x*log(x) form.
+        if np.isclose(Y, 0.0):
+
+            def psi(u):
+                return C * (np.log(M / (M - 1j * u)) + np.log(G / (G + 1j * u)))
+
+        elif np.isclose(Y, 1.0):
+
+            def psi(u):
+                return C * (
+                    (M - 1j * u) * np.log(M - 1j * u)
+                    - M * np.log(M)
+                    + (G + 1j * u) * np.log(G + 1j * u)
+                    - G * np.log(G)
+                )
+
+        else:
+            gamma_minus_y = gamma_func(-Y)
+
+            def psi(u):
+                return (
+                    C
+                    * gamma_minus_y
+                    * ((M - 1j * u) ** Y - M**Y + (G + 1j * u) ** Y - G**Y)
+                )
+
         def phi_raw(u: np.ndarray | complex) -> np.ndarray | complex:
-            term = (
-                C
-                * t
-                * gamma_func(-Y)
-                * ((M - 1j * u) ** Y - M**Y + (G + 1j * u) ** Y - G**Y)
-            )
-            return np.exp(term)
+            return np.exp(t * psi(u))
 
         return phi_raw
 
@@ -138,10 +169,13 @@ class CGMYModel(BaseModel):
         rng: np.random.Generator,
     ) -> np.ndarray:
         """
-        Generates exact samples of the terminal log-return for the CGMY process.
+        Generates samples of the terminal log-return of the raw CGMY process.
 
-        NOTE: This is only implemented for the special case Y=1, where the
-        process is a difference of two time-changed Brownian motions.
+        For ``Y = 0`` the process is the difference of two independent gamma
+        processes with shape ``C*T`` and rates ``M`` and ``G`` (exact). For any
+        other ``Y`` the terminal law is sampled by inverse transform of the
+        characteristic function (COS expansion), see
+        :func:`optpricing.models.base.sample_from_cf`.
 
         Parameters
         ----------
@@ -156,27 +190,16 @@ class CGMYModel(BaseModel):
         -------
         np.ndarray
             An array of simulated terminal log-returns.
-
-        Raises
-        ------
-        NotImplementedError
-            If the model parameter Y is not equal to 1.
         """
         p = self.params
         C, G, M, Y = p["C"], p["G"], p["M"], p["Y"]
 
-        if not np.isclose(Y, 1.0):
-            raise NotImplementedError(
-                "Monte Carlo sampling for CGMY is only implemented for Y=1."
-            )
+        if np.isclose(Y, 0.0):
+            g_up = rng.gamma(shape=C * T, scale=1 / M, size=size)
+            g_down = rng.gamma(shape=C * T, scale=1 / G, size=size)
+            return g_up - g_down
 
-        # For Y=1, CGMY is a scaled difference of two Gamma processes.
-        # This is equivalent to a Variance Gamma process.
-        # Can sample this by time-changing a Brownian motion.
-        g_up = rng.gamma(shape=C * T, scale=1 / M, size=size)
-        g_down = rng.gamma(shape=C * T, scale=1 / G, size=size)
-
-        return g_up - g_down
+        return sample_from_cf(self.raw_cf(t=T), size, rng)
 
     #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any:
