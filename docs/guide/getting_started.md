@@ -59,7 +59,9 @@ stock = Stock(spot=100.0, dividend=0.01)
 rate = Rate(rate=0.05)
 
 # Choose a model and technique
-heston_model = HestonModel(params={"v0": 0.04, "kappa": 2.0, "theta": 0.05, "rho": -0.7, "vol_of_vol": 0.5})
+heston_model = HestonModel(
+    params={"v0": 0.04, "kappa": 2.0, "theta": 0.05, "rho": -0.7, "vol_of_vol": 0.5}
+)
 mc_technique = AmericanMonteCarloTechnique()
 
 # Calculate the price
@@ -116,7 +118,7 @@ This command runs the calibration workflow, prints the results, and saves optimi
 
 ## 4. Launching the Dashboard
 
-Visualize option chains and model outputs with an interactive Streamlit dashboard supporting 15 models and 10 techniques:
+Visualize option chains and model outputs with an interactive Streamlit dashboard covering 12 models and 8 techniques (install the `ui` extra first: `pip install "optpricing[ui]"`):
 
 ```bash
 optpricing dashboard

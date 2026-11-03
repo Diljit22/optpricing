@@ -56,23 +56,15 @@ from optpricing.techniques import AmericanMonteCarloTechnique
 american_option = Option(strike=105, maturity=1.0, option_type=OptionType.PUT)
 
 # 2. Instantiate a more complex model and the appropriate technique
-heston_model = HestonModel(params={
-    "v0": 0.04,
-    "kappa": 2.0,
-    "theta": 0.05,
-    "rho": -0.7,
-    "vol_of_vol": 0.5
-})
+heston_model = HestonModel(
+    params={"v0": 0.04, "kappa": 2.0, "theta": 0.05, "rho": -0.7, "vol_of_vol": 0.5}
+)
 lsmc_technique = AmericanMonteCarloTechnique(n_paths=20000, n_steps=100)
 
 # 3. Calculate the price
 # Note: The 'v0' parameter is passed as a keyword argument for the simulation
 result = lsmc_technique.price(
-    american_option,
-    stock,
-    heston_model,
-    rate,
-    v0=heston_model.params['v0']
+    american_option, stock, heston_model, rate, v0=heston_model.params["v0"]
 )
 print(f"The American option price is: {result.price:.4f}")
 ```
@@ -86,11 +78,7 @@ The library includes mixins for common tasks like calculating implied volatility
 target_price = 7.50
 
 iv = cf_technique.implied_volatility(
-    option,
-    stock,
-    bsm_model,
-    rate,
-    target_price=target_price
+    option, stock, bsm_model, rate, target_price=target_price
 )
 
 print(f"Implied volatility for a target price of ${target_price:.2f}: {iv:.4%}")
