@@ -182,7 +182,10 @@ def bates_path_kernel(
 
 # Docstring for sabr_path_kernel
 """
-JIT-compiled kernel for SABR SDE that returns the full path matrix.
+JIT-compiled kernel for the SABR forward dynamics returning the full matrix
+of *spot* paths: the forward F_t is simulated and converted with
+S_t = F_t exp(-(r - q)(T - t)), where T = n_steps * dt. `s0` is the initial
+(shifted) forward; the shift must be removed by the caller.
 """
 
 
@@ -194,7 +197,7 @@ def sabr_path_kernel(
     v0: float,
     r: float,
     q: float,
-    alpha: float,
+    nu: float,
     beta: float,
     rho: float,
     dt: float,
@@ -202,27 +205,29 @@ def sabr_path_kernel(
     dw2: np.ndarray,
 ) -> np.ndarray:
     paths = np.zeros((n_paths, n_steps + 1))
-    paths[:, 0] = s0
-    s = np.full(n_paths, s0)
+    horizon = n_steps * dt
+    paths[:, 0] = s0 * np.exp(-(r - q) * horizon)
+    f = np.full(n_paths, s0)
     v = np.full(n_paths, v0)
     rho_bar = np.sqrt(1 - rho**2)
 
     for i in range(n_steps):
         z1, z2 = dw1[:, i], dw2[:, i]
         correlated_z2 = rho * z1 + rho_bar * z2
-        s_pos, v_pos = np.maximum(s, 1e-8), np.maximum(v, 0)
+        f_pos, v_pos = np.maximum(f, 1e-8), np.maximum(v, 0)
 
-        s += (r - q) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        f += v_pos * (f_pos**beta) * z1
         if beta > 0.0:
-            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
-        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
-        paths[:, i + 1] = s
+            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
+        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
+        paths[:, i + 1] = f * np.exp(-(r - q) * (horizon - (i + 1) * dt))
     return paths
 
 
 # Docstring for sabr_jump_path_kernel
 """
-JIT-compiled kernel for SABR Jump SDE that returns the full path matrix.
+JIT-compiled kernel for SABR forward dynamics with compensated log-normal
+jumps, returning spot paths (see `sabr_path_kernel`).
 """
 
 
@@ -234,7 +239,7 @@ def sabr_jump_path_kernel(
     v0: float,
     r: float,
     q: float,
-    alpha: float,
+    nu: float,
     beta: float,
     rho: float,
     lambda_: float,
@@ -246,8 +251,9 @@ def sabr_jump_path_kernel(
     jump_counts: np.ndarray,
 ) -> np.ndarray:
     paths = np.zeros((n_paths, n_steps + 1))
-    paths[:, 0] = s0
-    s = np.full(n_paths, s0)
+    horizon = n_steps * dt
+    paths[:, 0] = s0 * np.exp(-(r - q) * horizon)
+    f = np.full(n_paths, s0)
     v = np.full(n_paths, v0)
     rho_bar = np.sqrt(1 - rho**2)
     compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
@@ -255,12 +261,12 @@ def sabr_jump_path_kernel(
     for i in range(n_steps):
         z1, z2 = dw1[:, i], dw2[:, i]
         correlated_z2 = rho * z1 + rho_bar * z2
-        s_pos, v_pos = np.maximum(s, 1e-8), np.maximum(v, 0)
+        f_pos, v_pos = np.maximum(f, 1e-8), np.maximum(v, 0)
 
-        s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        f += -compensator * f_pos * dt + v_pos * (f_pos**beta) * z1
         if beta > 0.0:
-            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
-        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
+            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
+        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
 
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
@@ -270,9 +276,9 @@ def sabr_jump_path_kernel(
             for path_idx in range(n_paths):
                 if jumps_this_step[path_idx] > 0:
                     for _ in range(jumps_this_step[path_idx]):
-                        s[path_idx] *= jump_multipliers[jump_idx]
+                        f[path_idx] *= jump_multipliers[jump_idx]
                         jump_idx += 1
-        paths[:, i + 1] = s
+        paths[:, i + 1] = f * np.exp(-(r - q) * (horizon - (i + 1) * dt))
     return paths
 
 

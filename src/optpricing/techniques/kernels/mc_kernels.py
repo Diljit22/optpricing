@@ -179,7 +179,11 @@ def bates_kernel(
 
 # Docstring for sabr_kernel
 """
-JIT-compiled kernel for SABR SDE simulation.
+JIT-compiled kernel for the SABR forward dynamics
+    dF = sigma_t F^beta dW,  d sigma_t = nu sigma_t dZ,  d<W,Z> = rho dt.
+`s0` is the (shifted) initial forward and the kernel returns the terminal
+forward, which equals the terminal spot. `r` and `q` are unused (they only
+enter through the forward) and kept for a uniform kernel signature.
 """
 
 
@@ -191,14 +195,14 @@ def sabr_kernel(
     v0,
     r,
     q,
-    alpha,
+    nu,
     beta,
     rho,
     dt,
     dw1,
     dw2,
 ):
-    s = np.full(n_paths, s0)
+    f = np.full(n_paths, s0)
     v = np.full(n_paths, v0)  # v is sigma_t in SABR
     rho_bar = np.sqrt(1 - rho**2)
 
@@ -207,22 +211,22 @@ def sabr_kernel(
         z2 = dw2[:, i]
         correlated_z2 = rho * z1 + rho_bar * z2
 
-        # Evolve spot price S_t directly
-        s_pos = np.maximum(s, 1e-8)  # Avoid negative spot
+        f_pos = np.maximum(f, 1e-8)
         v_pos = np.maximum(v, 0)
-        s += (r - q) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        f += v_pos * (f_pos**beta) * z1
         if beta > 0.0:
-            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
+            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
 
-        # Evolve volatility sigma_t (lognormal process)
-        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
+        # Exact lognormal step for sigma_t
+        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
 
-    return s
+    return f
 
 
 # Docstring for sabr_jump_kernel
 """
-JIT-compiled kernel for SABR with log-normal jumps on the spot process.
+JIT-compiled kernel for SABR forward dynamics with compensated log-normal jumps:
+    dF/F- = -lambda k dt + sigma_t F^(beta-1) dW + (e^J - 1) dN,  k = E[e^J] - 1.
 """
 
 
@@ -234,7 +238,7 @@ def sabr_jump_kernel(
     v0,
     r,
     q,
-    alpha,
+    nu,
     beta,
     rho,
     lambda_,
@@ -245,7 +249,7 @@ def sabr_jump_kernel(
     dw2,
     jump_counts,
 ):
-    s = np.full(n_paths, s0)
+    f = np.full(n_paths, s0)
     v = np.full(n_paths, v0)  # v is sigma_t
     rho_bar = np.sqrt(1 - rho**2)
     compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
@@ -256,28 +260,28 @@ def sabr_jump_kernel(
 
         correlated_z2 = rho * z1 + rho_bar * z2
 
-        s_pos = np.maximum(s, 1e-8)
+        f_pos = np.maximum(f, 1e-8)
         v_pos = np.maximum(v, 0)
 
-        # SABR diffusion part
-        s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        # SABR diffusion part with the jump compensator in the drift
+        f += -compensator * f_pos * dt + v_pos * (f_pos**beta) * z1
         if beta > 0.0:
-            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
-        v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
+            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
+        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
 
         jumps_this_step = jump_counts[:, i]
         if np.any(jumps_this_step > 0):
             num_jumps = np.sum(jumps_this_step)
 
-            # Jumps are multiplicative: S_t+ = S_t * exp(J)
+            # Jumps are multiplicative: F_t+ = F_t * exp(J)
             jump_multipliers = np.exp(np.random.normal(mu_j, sigma_j, num_jumps))
             jump_idx = 0
             for path_idx in range(n_paths):
                 for _ in range(jumps_this_step[path_idx]):
-                    s[path_idx] *= jump_multipliers[jump_idx]
+                    f[path_idx] *= jump_multipliers[jump_idx]
                     jump_idx += 1
 
-    return s
+    return f
 
 
 # Docstring for kou_kernel

@@ -126,9 +126,10 @@ def test_bates_path_kernel_drift():
 
 
 def test_sabr_path_kernel_drift():
-    """Tests the deterministic drift of the SABR path kernel."""
+    """With no noise the forward is constant; the returned spot path is the
+    forward discounted at (r - q) to each time step."""
     s0, v0 = 100.0, 0.5
-    alpha, beta, rho = 0.5, 0.8, -0.6
+    nu, beta, rho = 0.5, 0.8, -0.6
     dw1 = np.zeros((N_PATHS, N_STEPS))
     dw2 = np.zeros((N_PATHS, N_STEPS))
 
@@ -139,7 +140,7 @@ def test_sabr_path_kernel_drift():
         v0,
         R,
         Q,
-        alpha,
+        nu,
         beta,
         rho,
         DT,
@@ -147,8 +148,9 @@ def test_sabr_path_kernel_drift():
         dw2,
     )
 
-    expected_s_drift = (R - Q) * s0 * DT
-    assert paths[0, -1] == pytest.approx(s0 + expected_s_drift)
+    horizon = N_STEPS * DT
+    assert paths[0, 0] == pytest.approx(s0 * np.exp(-(R - Q) * horizon))
+    assert paths[0, -1] == pytest.approx(s0)
 
 
 def test_bsm_path_kernel_statistical_properties():

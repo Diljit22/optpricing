@@ -128,12 +128,14 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         kernel_params = {"r": r, "q": q, "dt": dt}
 
         if getattr(model, "is_sabr", False):
+            # alpha = initial volatility sigma_0 (overridable via the legacy
+            # `v0` kwarg), nu = volatility of volatility.
             kernel_params.update(
                 {
-                    "alpha": p["alpha"],
+                    "nu": p["nu"],
                     "beta": p["beta"],
                     "rho": p["rho"],
-                    "v0": kwargs.get("v0", p.get("alpha")),
+                    "v0": kwargs.get("v0", p["alpha"]),
                 }
             )
             if model.has_jumps:
@@ -214,8 +216,11 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         )
 
         sim_params = {"n_paths": num_draws, "n_steps": self.n_steps, **kernel_params}
-        if getattr(model, "is_sabr", False):
-            sim_params["s0"] = S0
+        is_sabr = getattr(model, "is_sabr", False)
+        if is_sabr:
+            # SABR is specified on the (shifted) forward; the kernel returns the
+            # terminal forward, which is the terminal spot.
+            sim_params["s0"] = S0 * math.exp((r - q) * T) + model.shift
         else:
             sim_params["log_s0"] = math.log(S0)
 
@@ -257,7 +262,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             ST_anti = kernel(**sim_params)
             ST = np.concatenate([ST, ST_anti])
 
-        return ST if getattr(model, "is_sabr", False) else np.exp(ST)
+        return ST - model.shift if is_sabr else np.exp(ST)
 
     def _simulate_levy_terminal(
         self,

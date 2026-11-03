@@ -87,10 +87,10 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         if isinstance(model, SABRModel | SABRJumpModel):
             kernel_params.update(
                 {
-                    "alpha": p["alpha"],
+                    "nu": p["nu"],
                     "beta": p["beta"],
                     "rho": p["rho"],
-                    "v0": kwargs.get("v0", p.get("alpha")),
+                    "v0": kwargs.get("v0", p["alpha"]),
                 }
             )
             if model.has_jumps:
@@ -172,8 +172,11 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             "n_steps": self.n_steps,
             **kernel_params,
         }
-        if isinstance(model, SABRModel | SABRJumpModel):
-            sim_params["s0"] = S0
+        is_sabr = isinstance(model, SABRModel | SABRJumpModel)
+        if is_sabr:
+            # SABR evolves the (shifted) forward; the path kernels convert the
+            # forward paths back to spot paths for the exercise decision.
+            sim_params["s0"] = S0 * math.exp((r - q) * T) + model.shift
         else:
             sim_params["log_s0"] = math.log(S0)
 
@@ -203,5 +206,12 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
 
             paths_anti = kernel(**sim_params)
             paths = np.concatenate([paths, paths_anti])
+
+        if is_sabr and model.shift:
+            # The kernels discount the shifted forward; remove the shift so the
+            # exercise decision sees spot prices.
+            horizon = self.n_steps * dt
+            times = np.arange(self.n_steps + 1) * dt
+            paths = paths - model.shift * np.exp(-(r - q) * (horizon - times))
 
         return paths

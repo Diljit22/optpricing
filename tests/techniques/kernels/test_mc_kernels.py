@@ -166,9 +166,9 @@ def test_bates_kernel_drift():
 
 
 def test_sabr_kernel_drift():
-    """Tests the deterministic drift of the SABR kernel."""
+    """The SABR kernel evolves the forward, which has no drift."""
     s0, v0 = 100.0, 0.5
-    alpha, beta, rho = 0.5, 0.8, -0.6
+    nu, beta, rho = 0.5, 0.8, -0.6
     dw1 = np.zeros((N_PATHS_DRIFT, N_STEPS))
     dw2 = np.zeros((N_PATHS_DRIFT, N_STEPS))
 
@@ -179,7 +179,7 @@ def test_sabr_kernel_drift():
         v0,
         R,
         Q,
-        alpha,
+        nu,
         beta,
         rho,
         DT,
@@ -187,8 +187,7 @@ def test_sabr_kernel_drift():
         dw2,
     )
 
-    expected_s_drift = (R - Q) * s0 * DT
-    assert sT[0] == pytest.approx(s0 + expected_s_drift)
+    assert sT[0] == pytest.approx(s0)
 
 
 def test_heston_kernel_variance_process():
@@ -353,15 +352,11 @@ def test_bates_kernel_jumps_are_applied():
 def test_sabr_kernel_volatility_process():
     """
     Tests the log-normal volatility process of the SABR kernel.
-    The mean of the log of the terminal volatility should match its
-    analytical expectation, which is log(v0) - 0.5 * alpha^2 * T.
+    The forward is a martingale under its own dynamics: E[F_T] = F_0,
+    regardless of the volatility process.
     """
     s0, v0 = 100.0, 0.5
-    alpha, beta, rho = 0.5, 0.8, -0.6
-
-    # Tests the risk-neutral expectation of the spot price.
-    # For a tradeable asset S, E[S_T] = s0 * exp((r-q)*T). This
-    # must hold true regardless of the volatility model.
+    nu, beta, rho = 0.5, 0.8, -0.6
 
     rng = np.random.default_rng(0)
     dw1 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
@@ -374,7 +369,7 @@ def test_sabr_kernel_volatility_process():
         v0,
         R,
         Q,
-        alpha,
+        nu,
         beta,
         rho,
         DT,
@@ -382,7 +377,7 @@ def test_sabr_kernel_volatility_process():
         dw2,
     )
 
-    expected_mean_spot = s0 * np.exp((R - Q) * T)
+    expected_mean_spot = s0  # forward martingale
 
     t_stat, p_value = stats.ttest_1samp(sT, expected_mean_spot)
 
@@ -396,7 +391,7 @@ def test_sabr_jump_kernel_jumps_are_applied():
     simulation with jumps to one without.
     """
     s0, v0 = 100.0, 0.5
-    alpha, beta, rho = 0.5, 0.8, -0.6
+    nu, beta, rho = 0.5, 0.8, -0.6
     lambda_, mu_j, sigma_j = 5.0, -0.1, 0.15  # High jump intensity
 
     rng = np.random.default_rng(0)
@@ -412,7 +407,7 @@ def test_sabr_jump_kernel_jumps_are_applied():
         v0,
         R,
         Q,
-        alpha,
+        nu,
         beta,
         rho,
         lambda_,
@@ -433,7 +428,7 @@ def test_sabr_jump_kernel_jumps_are_applied():
         v0,
         R,
         Q,
-        alpha,
+        nu,
         beta,
         rho,
         lambda_,
