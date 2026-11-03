@@ -7,6 +7,7 @@ build/
 dist/
 env/
 venv/
+.venv/
 .env
 
 # IDEs and Tools
@@ -19,6 +20,8 @@ venv/
 # Test artifacts
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 
 # Documentation artifacts
@@ -29,3 +32,5 @@ todo/
 notes/
 text_drafts/
 todo.txt
+PLAN.md
+AGENTS.md
