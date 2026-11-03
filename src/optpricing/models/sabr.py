@@ -88,19 +88,6 @@ class SABRModel(BaseModel):
     strikes not too far from the forward); Monte Carlo simulates the forward
     with an Euler step for ``F`` and the exact lognormal step for ``sigma_t``.
 
-    Parameters
-    ----------
-    alpha : float
-        Initial volatility ``sigma_0``.
-    beta : float
-        CEV exponent in ``[0, 1]`` (0 = normal, 1 = lognormal).
-    rho : float
-        Correlation between forward and volatility in ``(-1, 1)``.
-    nu : float
-        Volatility of volatility.
-    shift : float, optional
-        Displacement for shifted SABR (default 0).
-
     Notes
     -----
     Before v2.5 the model had three parameters and used ``alpha`` as the
@@ -148,6 +135,13 @@ class SABRModel(BaseModel):
         ----------
         params : dict[str, float] | None, optional
             A dictionary of model parameters. If None, `default_params` are used.
+            Keys:
+
+            - ``alpha``: initial volatility ``sigma_0``.
+            - ``beta``: CEV exponent in ``[0, 1]`` (0 = normal, 1 = lognormal).
+            - ``rho``: correlation between forward and volatility in ``(-1, 1)``.
+            - ``nu``: volatility of volatility.
+            - ``shift`` (optional): displacement for shifted SABR (default 0).
         """
         params = dict(params) if params is not None else dict(self.default_params)
         if "nu" not in params and "alpha" in params:
