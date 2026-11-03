@@ -45,9 +45,8 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
             "last_price", ticker_obj.history("1d")["Close"].iloc[0]
         )
 
-        chain_df.dropna(
+        chain_df = chain_df.dropna(
             subset=["marketPrice", "strike", "maturity", "impliedVolatility"],
-            inplace=True,
         )
         chain_df = chain_df[
             (chain_df["marketPrice"] > 0.01) & (chain_df["maturity"] > 1 / 365.25)
@@ -112,6 +111,7 @@ def save_market_snapshot(tickers: list[str]):
             continue
 
         filename = MARKET_SNAPSHOT_DIR / f"{ticker}_{today_str}.parquet"
+        filename.parent.mkdir(parents=True, exist_ok=True)
         chain_df.to_parquet(filename)
         print(f"  -> Successfully saved {len(chain_df)} options to {filename}")
 
