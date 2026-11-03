@@ -1,289 +1,93 @@
+"""Full-path kernels: shape, initial column, consistency with the terminal
+kernels (same generator state -> same terminal values), and SABR forward-to-spot
+conversion."""
+
+import math
+
 import numpy as np
 import pytest
-from scipy import stats
 
-from optpricing.techniques.kernels import path_kernels
+from optpricing.techniques.kernels import mc_kernels, path_kernels
 
-N_PATHS = 10
-N_STEPS = 1
-N_PATHS_STOCHASTIC = 50000
-DT = 0.01
-R = 0.05
-Q = 0.01
+N_PATHS = 4000
+N_STEPS = 20
+DT = 0.05
+T = N_STEPS * DT
+R, Q = 0.05, 0.01
+S0 = 100.0
+LOG_S0 = math.log(S0)
 
 
-def test_bsm_path_kernel_drift():
-    """Tests the deterministic drift of the BSM path kernel."""
-    s0 = 100.0
-    log_s0 = np.log(s0)
-    sigma = 0.2
-    dw = np.zeros((N_PATHS, N_STEPS))
+def gen(seed=0):
+    return np.random.default_rng(seed)
 
+
+@pytest.mark.parametrize(
+    "name, args",
+    [
+        ("bsm", (LOG_S0, R, Q, 0.2, DT)),
+        ("heston", (LOG_S0, 0.04, R, Q, 2.0, 0.04, -0.7, 0.3, DT)),
+        ("merton", (LOG_S0, R, Q, 0.2, 0.5, -0.1, 0.15, DT)),
+        ("bates", (LOG_S0, 0.04, R, Q, 2.0, 0.04, -0.7, 0.3, 0.5, -0.1, 0.15, DT)),
+        ("kou", (LOG_S0, R, Q, 0.15, 1.0, 0.6, 10.0, 5.0, DT)),
+    ],
+)
+@pytest.mark.parametrize("antithetic", [False, True])
+def test_path_kernel_matches_terminal_kernel(name, args, antithetic):
+    """Path and terminal kernels consume the generator identically, so the last
+    column of the path matrix must equal the terminal kernel's output."""
+    path_kernel = getattr(path_kernels, f"{name}_path_kernel")
+    terminal_kernel = getattr(mc_kernels, f"{name}_kernel")
+    paths = path_kernel(gen(3), N_PATHS, N_STEPS, antithetic, *args)
+    log_terminal = terminal_kernel(gen(3), N_PATHS, N_STEPS, antithetic, *args)
+
+    assert paths.shape == (N_STEPS + 1, N_PATHS)
+    np.testing.assert_allclose(paths[0], S0)
+    np.testing.assert_allclose(paths[-1], np.exp(log_terminal), rtol=1e-12)
+    assert np.all(paths > 0)
+
+
+def test_bsm_path_kernel_zero_vol_is_pure_drift():
     paths = path_kernels.bsm_path_kernel(
-        N_PATHS,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        DT,
-        dw,
+        gen(), 5, N_STEPS, False, LOG_S0, R, Q, 1e-12, DT
     )
-
-    expected_drift = (R - Q - 0.5 * sigma**2) * DT
-    assert paths[0, -1] == pytest.approx(s0 * np.exp(expected_drift))
-
-
-def test_heston_path_kernel_drift():
-    """Tests the deterministic drift of the Heston path kernel."""
-    s0, v0 = 100.0, 0.04
-    log_s0 = np.log(s0)
-    kappa, theta, rho, vol_of_vol = 2.0, 0.04, -0.7, 0.5
-    dw1 = np.zeros((N_PATHS, N_STEPS))
-    dw2 = np.zeros((N_PATHS, N_STEPS))
-
-    paths = path_kernels.heston_path_kernel(
-        N_PATHS,
-        N_STEPS,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        DT,
-        dw1,
-        dw2,
-    )
-
-    expected_s_drift = (R - Q - 0.5 * v0) * DT
-    assert paths[0, -1] == pytest.approx(s0 * np.exp(expected_s_drift))
+    expected = S0 * np.exp((R - Q) * DT * np.arange(N_STEPS + 1))
+    np.testing.assert_allclose(paths, np.tile(expected[:, None], (1, 5)), rtol=1e-9)
 
 
-def test_merton_path_kernel_drift():
-    """Tests the deterministic drift of the Merton path kernel (no jumps)."""
-    s0 = 100.0
-    log_s0 = np.log(s0)
-    sigma, lambda_, mu_j, sigma_j = 0.2, 0.5, -0.1, 0.15
-    dw = np.zeros((N_PATHS, N_STEPS))
-    jump_counts = np.zeros((N_PATHS, N_STEPS), dtype=np.int64)
-
-    paths = path_kernels.merton_path_kernel(
-        N_PATHS,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw,
-        jump_counts,
-    )
-
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    expected_drift = (R - Q - 0.5 * sigma**2 - compensator) * DT
-    assert paths[0, -1] == pytest.approx(s0 * np.exp(expected_drift))
-
-
-def test_bates_path_kernel_drift():
-    """Tests the deterministic drift of the Bates path kernel (no jumps)."""
-    s0, v0 = 100.0, 0.04
-    log_s0 = np.log(s0)
-    kappa, theta, rho, vol_of_vol = 2.0, 0.04, -0.7, 0.5
-    lambda_, mu_j, sigma_j = 0.5, -0.1, 0.15
-    dw1 = np.zeros((N_PATHS, N_STEPS))
-    dw2 = np.zeros((N_PATHS, N_STEPS))
-    jump_counts = np.zeros((N_PATHS, N_STEPS), dtype=np.int64)
-
-    paths = path_kernels.bates_path_kernel(
-        N_PATHS,
-        N_STEPS,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw1,
-        dw2,
-        jump_counts,
-    )
-
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    expected_s_drift = (R - Q - 0.5 * v0 - compensator) * DT
-    assert paths[0, -1] == pytest.approx(s0 * np.exp(expected_s_drift))
-
-
-def test_sabr_path_kernel_drift():
-    """With no noise the forward is constant; the returned spot path is the
-    forward discounted at (r - q) to each time step."""
-    s0, v0 = 100.0, 0.5
-    nu, beta, rho = 0.5, 0.8, -0.6
-    dw1 = np.zeros((N_PATHS, N_STEPS))
-    dw2 = np.zeros((N_PATHS, N_STEPS))
-
+def test_sabr_path_kernel_returns_spot_paths():
+    """The forward is simulated and converted: S_0 equals the spot, and
+    E[S_t] tracks the forward at every time step."""
+    f0 = S0 * math.exp((R - Q) * T)
     paths = path_kernels.sabr_path_kernel(
-        N_PATHS,
-        N_STEPS,
-        s0,
-        v0,
-        R,
-        Q,
-        nu,
-        beta,
-        rho,
-        DT,
-        dw1,
-        dw2,
+        gen(), 40_000, N_STEPS, False, f0, 0.5, R, Q, 0.5, 0.8, -0.6, DT
     )
-
-    horizon = N_STEPS * DT
-    assert paths[0, 0] == pytest.approx(s0 * np.exp(-(R - Q) * horizon))
-    assert paths[0, -1] == pytest.approx(s0)
-
-
-def test_bsm_path_kernel_statistical_properties():
-    """
-    Tests that the terminal values of the BSM path kernel match the
-    known analytical distribution of log-prices.
-    """
-    s0 = 100.0
-    log_s0 = np.log(s0)
-    sigma = 0.2
-    T = N_STEPS * DT
-
-    rng = np.random.default_rng(0)
-    dw = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    paths = path_kernels.bsm_path_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        DT,
-        dw,
+    np.testing.assert_allclose(paths[0], S0)
+    times = DT * np.arange(N_STEPS + 1)
+    np.testing.assert_allclose(
+        paths.mean(axis=1), S0 * np.exp((R - Q) * times), rtol=6e-3
     )
-
-    sT = paths[:, -1]
-    log_sT = np.log(sT)
-
-    expected_mean = log_s0 + (R - Q - 0.5 * sigma**2) * T
-    expected_variance = sigma**2 * T
-
-    # Mean test
-    t_stat, p_value_mean = stats.ttest_1samp(log_sT, expected_mean)
-    msg_ = f"Mean test failed: p-value {p_value_mean:.4f} is too low."
-    assert p_value_mean > 0.01, msg_
-
-    # Variance test
-    actual_variance = np.var(log_sT)
-    chi2_stat = (N_PATHS_STOCHASTIC - 1) * actual_variance / expected_variance
-    p_value_var = stats.chi2.sf(chi2_stat, N_PATHS_STOCHASTIC - 1) * 2  # Two-tailed
-    msg_ = f"Variance test failed: p-value {p_value_var:.4f} is too low."
-    assert p_value_var > 0.01, msg_
+    assert np.all(paths >= 0.0)
 
 
-def test_heston_path_kernel_risk_neutral_mean():
-    """
-    Tests that the terminal values of the Heston path kernel follow the
-    risk-neutral expectation E[S_T] = S_0 * exp((r-q)*T).
-    """
-    s0, v0 = 100.0, 0.04
-    log_s0 = np.log(s0)
-    kappa, theta, rho, vol_of_vol = 2.0, 0.04, -0.7, 0.5
-    T = N_STEPS * DT
-
-    rng = np.random.default_rng(0)
-    dw1 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-    dw2 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    paths = path_kernels.heston_path_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        DT,
-        dw1,
-        dw2,
+def test_sabr_path_kernel_zero_noise_is_discounted_forward():
+    f0 = S0 * math.exp((R - Q) * T)
+    paths = path_kernels.sabr_path_kernel(
+        gen(), 3, N_STEPS, False, f0, 1e-12, R, Q, 1e-12, 0.8, -0.6, DT
     )
-
-    sT = paths[:, -1]
-    expected_mean_spot = s0 * np.exp((R - Q) * T)
-
-    t_stat, p_value = stats.ttest_1samp(sT, expected_mean_spot)
-    msg_ = f"Heston path mean spot price test failed: p-value {p_value:.4f}."
-    assert p_value > 0.01, msg_
-
-
-def test_merton_path_kernel_jumps_are_applied():
-    """
-    Tests that the Merton path kernel correctly applies jumps by comparing
-    a simulation with jumps to one without.
-    """
-    s0 = 100.0
-    log_s0 = np.log(s0)
-    sigma, lambda_, mu_j, sigma_j = 0.2, 5.0, -0.1, 0.15
-
-    rng = np.random.default_rng(0)
-    dw = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    # With jumps
-    jump_counts = rng.poisson(lambda_ * DT, (N_PATHS_STOCHASTIC, N_STEPS))
-    paths_with_jumps = path_kernels.merton_path_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw,
-        jump_counts,
+    times = DT * np.arange(N_STEPS + 1)
+    np.testing.assert_allclose(
+        paths[:, 0], f0 * np.exp(-(R - Q) * (T - times)), rtol=1e-9
     )
+    assert paths[0, 0] == pytest.approx(S0)
+    assert paths[-1, 0] == pytest.approx(f0)
 
-    # Without jumps
-    no_jump_counts = np.zeros((N_PATHS_STOCHASTIC, N_STEPS), dtype=np.int64)
-    paths_no_jumps = path_kernels.merton_path_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw,
-        no_jump_counts,
+
+def test_sabr_jump_path_kernel_shape_and_start():
+    f0 = S0 * math.exp((R - Q) * T)
+    paths = path_kernels.sabr_jump_path_kernel(
+        gen(), 2000, N_STEPS, True, f0, 0.5, R, Q, 0.5, 0.8, -0.6, 0.4, -0.1, 0.15, DT
     )
-
-    # The means of the terminal prices should be different
-    sT_with_jumps = paths_with_jumps[:, -1]
-    sT_no_jumps = paths_no_jumps[:, -1]
-
-    t_stat, p_value = stats.ttest_ind(sT_with_jumps, sT_no_jumps, equal_var=False)
-    msg_ = "Merton path distributions should be different, but were not."
-    assert p_value < 0.01, msg_
+    assert paths.shape == (N_STEPS + 1, 2000)
+    np.testing.assert_allclose(paths[0], S0)
+    assert np.all(paths >= 0.0)

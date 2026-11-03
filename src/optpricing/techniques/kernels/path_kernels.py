@@ -1,334 +1,425 @@
 from __future__ import annotations
 
+import math
+
 import numba
 import numpy as np
 
+from .mc_kernels import _qe_constants, _qe_step
+
 __doc__ = """
-JIT-compiled kernel for American option pricing via Monte Carlo.
+JIT-compiled (`numba`) kernels that return the full matrix of simulated spot
+paths in time-major layout, shape ``(n_steps + 1, n_paths)`` including ``t = 0``,
+for American (Longstaff-Schwartz) pricing. Time-major storage keeps every
+per-step write in the kernels and every per-date read in the backward induction
+contiguous.
+
+Random numbers are drawn inside the kernels from the ``numpy.random.Generator``
+passed in (see ``mc_kernels``); with ``antithetic=True`` the second half of the
+paths uses the negated increments of the first half.
 """
 
 
-# Docstring for bsm_path_kernel
-"""
-JIT-compiled kernel for BSM SDE that returns the full path matrix.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
-def bsm_path_kernel(
-    n_paths: int,
-    n_steps: int,
-    log_s0: float,
-    r: float,
-    q: float,
-    sigma: float,
-    dt: float,
-    dw: np.ndarray,
-) -> np.ndarray:
-    paths = np.zeros((n_paths, n_steps + 1))
-    paths[:, 0] = np.exp(log_s0)
+@numba.njit(cache=True, nogil=True)
+def bsm_path_kernel(gen, n_paths, n_steps, antithetic, log_s0, r, q, sigma, dt):
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    paths[0, :] = math.exp(log_s0)
     log_s = np.full(n_paths, log_s0)
-    drift = (r - q - 0.5 * sigma**2) * dt
+    drift = (r - q - 0.5 * sigma * sigma) * dt
+    vol = sigma * math.sqrt(dt)
     for i in range(n_steps):
-        log_s += drift + sigma * dw[:, i]
-        paths[:, i + 1] = np.exp(log_s)
+        z = gen.standard_normal(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                log_s[k] += drift + vol * sign * z[j]
+                paths[i + 1, k] = math.exp(log_s[k])
     return paths
 
 
-# Docstring for heston_path_kernel
-"""
-JIT-compiled kernel for Heston SDE that returns the full path matrix.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def heston_path_kernel(
-    n_paths: int,
-    n_steps: int,
-    log_s0: float,
-    v0: float,
-    r: float,
-    q: float,
-    kappa: float,
-    theta: float,
-    rho: float,
-    vol_of_vol: float,
-    dt: float,
-    dw1: np.ndarray,
-    dw2: np.ndarray,
-) -> np.ndarray:
-    paths = np.zeros((n_paths, n_steps + 1))
-    paths[:, 0] = np.exp(log_s0)
+    gen,
+    n_paths,
+    n_steps,
+    antithetic,
+    log_s0,
+    v0,
+    r,
+    q,
+    kappa,
+    theta,
+    rho,
+    vol_of_vol,
+    dt,
+):
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    paths[0, :] = math.exp(log_s0)
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
-    rho_bar = np.sqrt(1 - rho**2)
-
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
     for i in range(n_steps):
-        z1, z2 = dw1[:, i], dw2[:, i]
-        correlated_z2 = rho * z1 + rho_bar * z2
-        v_pos = np.maximum(v, 0)
-        v_sqrt = np.sqrt(v_pos)
-
-        log_s += (r - q - 0.5 * v_pos) * dt + v_sqrt * z1
-        v = np.maximum(
-            0, v + kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * correlated_z2
-        )
-        paths[:, i + 1] = np.exp(log_s)
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_s = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                sq = math.sqrt(v_pos)
+                log_s[k] += (r - q - 0.5 * v_pos) * dt + sq * dw_s
+                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
+                v[k] = v_new if v_new > 0.0 else 0.0
+                paths[i + 1, k] = math.exp(log_s[k])
     return paths
 
 
-# Docstring for merton_path_kernel
-"""
-JIT-compiled kernel for Merton SDE that returns the full path matrix.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def merton_path_kernel(
-    n_paths: int,
-    n_steps: int,
-    log_s0: float,
-    r: float,
-    q: float,
-    sigma: float,
-    lambda_: float,
-    mu_j: float,
-    sigma_j: float,
-    dt: float,
-    dw: np.ndarray,
-    jump_counts: np.ndarray,
-) -> np.ndarray:
-    paths = np.zeros((n_paths, n_steps + 1))
-    paths[:, 0] = np.exp(log_s0)
+    gen, n_paths, n_steps, antithetic, log_s0, r, q, sigma, lambda_, mu_j, sigma_j, dt
+):
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    paths[0, :] = math.exp(log_s0)
     log_s = np.full(n_paths, log_s0)
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    drift = (r - q - 0.5 * sigma**2 - compensator) * dt
-
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    drift = (r - q - 0.5 * sigma * sigma - compensator) * dt
+    vol = sigma * math.sqrt(dt)
     for i in range(n_steps):
-        log_s += drift + sigma * dw[:, i]
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_jumps = np.sum(jumps_this_step)
-            jump_sizes = np.random.normal(mu_j, sigma_j, num_jumps)
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                if jumps_this_step[path_idx] > 0:
-                    log_s[path_idx] += np.sum(
-                        jump_sizes[jump_idx : jump_idx + jumps_this_step[path_idx]]
-                    )
-                    jump_idx += jumps_this_step[path_idx]
-        paths[:, i + 1] = np.exp(log_s)
+        z = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                log_s[k] += drift + vol * sign * z[j]
+                for _n in range(counts[j]):
+                    log_s[k] += gen.normal(mu_j, sigma_j)
+                paths[i + 1, k] = math.exp(log_s[k])
     return paths
 
 
-# Docstring for bates_path_kernel
-"""
-JIT-compiled kernel for Bates SDE that returns the full path matrix.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def bates_path_kernel(
-    n_paths: int,
-    n_steps: int,
-    log_s0: float,
-    v0: float,
-    r: float,
-    q: float,
-    kappa: float,
-    theta: float,
-    rho: float,
-    vol_of_vol: float,
-    lambda_: float,
-    mu_j: float,
-    sigma_j: float,
-    dt: float,
-    dw1: np.ndarray,
-    dw2: np.ndarray,
-    jump_counts: np.ndarray,
-) -> np.ndarray:
-    paths = np.zeros((n_paths, n_steps + 1))
-    paths[:, 0] = np.exp(log_s0)
+    gen,
+    n_paths,
+    n_steps,
+    antithetic,
+    log_s0,
+    v0,
+    r,
+    q,
+    kappa,
+    theta,
+    rho,
+    vol_of_vol,
+    lambda_,
+    mu_j,
+    sigma_j,
+    dt,
+):
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    paths[0, :] = math.exp(log_s0)
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    rho_bar = np.sqrt(1 - rho**2)
-
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
     for i in range(n_steps):
-        z1, z2 = dw1[:, i], dw2[:, i]
-        correlated_z2 = rho * z1 + rho_bar * z2
-        v_pos = np.maximum(v, 0)
-        v_sqrt = np.sqrt(v_pos)
-
-        log_s += (r - q - 0.5 * v_pos - compensator) * dt + v_sqrt * z1
-        v = np.maximum(
-            0, v + kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * correlated_z2
-        )
-
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_jumps = np.sum(jumps_this_step)
-            jump_sizes = np.random.normal(mu_j, sigma_j, num_jumps)
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                if jumps_this_step[path_idx] > 0:
-                    log_s[path_idx] += np.sum(
-                        jump_sizes[jump_idx : jump_idx + jumps_this_step[path_idx]]
-                    )
-                    jump_idx += jumps_this_step[path_idx]
-        paths[:, i + 1] = np.exp(log_s)
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_s = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                sq = math.sqrt(v_pos)
+                log_s[k] += (r - q - 0.5 * v_pos - compensator) * dt + sq * dw_s
+                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
+                v[k] = v_new if v_new > 0.0 else 0.0
+                for _n in range(counts[j]):
+                    log_s[k] += gen.normal(mu_j, sigma_j)
+                paths[i + 1, k] = math.exp(log_s[k])
     return paths
 
 
-# Docstring for sabr_path_kernel
-"""
-JIT-compiled kernel for the SABR forward dynamics returning the full matrix
-of *spot* paths: the forward F_t is simulated and converted with
-S_t = F_t exp(-(r - q)(T - t)), where T = n_steps * dt. `s0` is the initial
-(shifted) forward; the shift must be removed by the caller.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
-def sabr_path_kernel(
-    n_paths: int,
-    n_steps: int,
-    s0: float,
-    v0: float,
-    r: float,
-    q: float,
-    nu: float,
-    beta: float,
-    rho: float,
-    dt: float,
-    dw1: np.ndarray,
-    dw2: np.ndarray,
-) -> np.ndarray:
-    paths = np.zeros((n_paths, n_steps + 1))
-    horizon = n_steps * dt
-    paths[:, 0] = s0 * np.exp(-(r - q) * horizon)
-    f = np.full(n_paths, s0)
-    v = np.full(n_paths, v0)
-    rho_bar = np.sqrt(1 - rho**2)
-
-    for i in range(n_steps):
-        z1, z2 = dw1[:, i], dw2[:, i]
-        correlated_z2 = rho * z1 + rho_bar * z2
-        f_pos, v_pos = np.maximum(f, 1e-8), np.maximum(v, 0)
-
-        f += v_pos * (f_pos**beta) * z1
-        if beta > 0.0:
-            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
-        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
-        paths[:, i + 1] = f * np.exp(-(r - q) * (horizon - (i + 1) * dt))
-    return paths
-
-
-# Docstring for sabr_jump_path_kernel
-"""
-JIT-compiled kernel for SABR forward dynamics with compensated log-normal
-jumps, returning spot paths (see `sabr_path_kernel`).
-"""
-
-
-@numba.jit(nopython=True, cache=True)
-def sabr_jump_path_kernel(
-    n_paths: int,
-    n_steps: int,
-    s0: float,
-    v0: float,
-    r: float,
-    q: float,
-    nu: float,
-    beta: float,
-    rho: float,
-    lambda_: float,
-    mu_j: float,
-    sigma_j: float,
-    dt: float,
-    dw1: np.ndarray,
-    dw2: np.ndarray,
-    jump_counts: np.ndarray,
-) -> np.ndarray:
-    paths = np.zeros((n_paths, n_steps + 1))
-    horizon = n_steps * dt
-    paths[:, 0] = s0 * np.exp(-(r - q) * horizon)
-    f = np.full(n_paths, s0)
-    v = np.full(n_paths, v0)
-    rho_bar = np.sqrt(1 - rho**2)
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-
-    for i in range(n_steps):
-        z1, z2 = dw1[:, i], dw2[:, i]
-        correlated_z2 = rho * z1 + rho_bar * z2
-        f_pos, v_pos = np.maximum(f, 1e-8), np.maximum(v, 0)
-
-        f += -compensator * f_pos * dt + v_pos * (f_pos**beta) * z1
-        if beta > 0.0:
-            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
-        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
-
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_jumps = np.sum(jumps_this_step)
-            jump_multipliers = np.exp(np.random.normal(mu_j, sigma_j, num_jumps))
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                if jumps_this_step[path_idx] > 0:
-                    for _ in range(jumps_this_step[path_idx]):
-                        f[path_idx] *= jump_multipliers[jump_idx]
-                        jump_idx += 1
-        paths[:, i + 1] = f * np.exp(-(r - q) * (horizon - (i + 1) * dt))
-    return paths
-
-
-# Docstring for kou_path_kernel
-"""
-JIT-compiled kernel for Kou SDE that returns the full path matrix.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def kou_path_kernel(
-    n_paths: int,
-    n_steps: int,
-    log_s0: float,
-    r: float,
-    q: float,
-    sigma: float,
-    lambda_: float,
-    p_up: float,
-    eta1: float,
-    eta2: float,
-    dt: float,
-    dw: np.ndarray,
-    jump_counts: np.ndarray,
-) -> np.ndarray:
-    paths = np.zeros((n_paths, n_steps + 1))
-    paths[:, 0] = np.exp(log_s0)
+    gen,
+    n_paths,
+    n_steps,
+    antithetic,
+    log_s0,
+    r,
+    q,
+    sigma,
+    lambda_,
+    p_up,
+    eta1,
+    eta2,
+    dt,
+):
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    paths[0, :] = math.exp(log_s0)
     log_s = np.full(n_paths, log_s0)
     compensator = lambda_ * (
-        (p_up * eta1 / (eta1 - 1)) + ((1 - p_up) * eta2 / (eta2 + 1)) - 1
+        p_up * eta1 / (eta1 - 1.0) + (1.0 - p_up) * eta2 / (eta2 + 1.0) - 1.0
     )
-    drift = (r - q - 0.5 * sigma**2 - compensator) * dt
-
+    drift = (r - q - 0.5 * sigma * sigma - compensator) * dt
+    vol = sigma * math.sqrt(dt)
     for i in range(n_steps):
-        log_s += drift + sigma * dw[:, i]
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_total_jumps = np.sum(jumps_this_step)
-            up_or_down = np.random.random(num_total_jumps)
-            up_jumps = np.random.exponential(1.0 / eta1, num_total_jumps)
-            down_jumps = -np.random.exponential(1.0 / eta2, num_total_jumps)
-            all_jumps = np.where(up_or_down < p_up, up_jumps, down_jumps)
+        z = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                log_s[k] += drift + vol * sign * z[j]
+                for _n in range(counts[j]):
+                    if gen.random() < p_up:
+                        log_s[k] += gen.exponential(1.0 / eta1)
+                    else:
+                        log_s[k] -= gen.exponential(1.0 / eta2)
+                paths[i + 1, k] = math.exp(log_s[k])
+    return paths
 
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                num_jumps_on_path = jumps_this_step[path_idx]
-                if num_jumps_on_path > 0:
-                    log_s[path_idx] += np.sum(
-                        all_jumps[jump_idx : jump_idx + num_jumps_on_path]
-                    )
-                    jump_idx += num_jumps_on_path
-        paths[:, i + 1] = np.exp(log_s)
+
+@numba.njit(cache=True, nogil=True)
+def sabr_path_kernel(
+    gen, n_paths, n_steps, antithetic, f0, v0, r, q, nu, beta, rho, dt
+):
+    """
+    SABR forward dynamics returning *spot* paths: the forward F_t is simulated
+    and converted with S_t = F_t exp(-(r - q)(T - t)), T = n_steps * dt. `f0` is
+    the initial (shifted) forward; the caller removes the shift.
+    """
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    horizon = n_steps * dt
+    paths[0, :] = f0 * math.exp(-(r - q) * horizon)
+    f = np.full(n_paths, f0)
+    v = np.full(n_paths, v0)
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
+    vol_drift = -0.5 * nu * nu * dt
+    for i in range(n_steps):
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        discount = math.exp(-(r - q) * (horizon - (i + 1) * dt))
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_f = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                f_pos = f[k] if f[k] > 1e-8 else 1e-8
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                f_new = f[k] + v_pos * f_pos**beta * dw_f
+                if beta > 0.0 and f_new < 0.0:
+                    f_new = 0.0
+                f[k] = f_new
+                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
+                paths[i + 1, k] = f_new * discount
+    return paths
+
+
+@numba.njit(cache=True, nogil=True)
+def sabr_jump_path_kernel(
+    gen,
+    n_paths,
+    n_steps,
+    antithetic,
+    f0,
+    v0,
+    r,
+    q,
+    nu,
+    beta,
+    rho,
+    lambda_,
+    mu_j,
+    sigma_j,
+    dt,
+):
+    """SABR forward dynamics with compensated log-normal jumps, returning spot
+    paths (see `sabr_path_kernel`)."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    horizon = n_steps * dt
+    paths[0, :] = f0 * math.exp(-(r - q) * horizon)
+    f = np.full(n_paths, f0)
+    v = np.full(n_paths, v0)
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
+    vol_drift = -0.5 * nu * nu * dt
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    for i in range(n_steps):
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        discount = math.exp(-(r - q) * (horizon - (i + 1) * dt))
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_f = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                f_pos = f[k] if f[k] > 1e-8 else 1e-8
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                f_new = f[k] - compensator * f_pos * dt + v_pos * f_pos**beta * dw_f
+                if beta > 0.0 and f_new < 0.0:
+                    f_new = 0.0
+                for _n in range(counts[j]):
+                    f_new *= math.exp(gen.normal(mu_j, sigma_j))
+                f[k] = f_new
+                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
+                paths[i + 1, k] = f_new * discount
+    return paths
+
+
+@numba.njit(cache=True, nogil=True)
+def heston_qe_path_kernel(
+    gen,
+    n_paths,
+    n_steps,
+    antithetic,
+    log_s0,
+    v0,
+    r,
+    q,
+    kappa,
+    theta,
+    rho,
+    vol_of_vol,
+    dt,
+):
+    """Heston paths with the Quadratic-Exponential variance scheme."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    paths[0, :] = math.exp(log_s0)
+    log_s = np.full(n_paths, log_s0)
+    v = np.full(n_paths, v0)
+    e, c1, c2, k0_plain, k1, k2, k3, k4 = _qe_constants(
+        kappa, theta, rho, vol_of_vol, dt
+    )
+    drift = (r - q) * dt
+    for i in range(n_steps):
+        z_s = gen.standard_normal(half)
+        z_v = gen.standard_normal(half)
+        u = gen.random(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                uu = u[j] if s_idx == 0 else 1.0 - u[j]
+                v_new, d_log = _qe_step(
+                    v[k],
+                    sign * z_s[j],
+                    sign * z_v[j],
+                    uu,
+                    theta,
+                    e,
+                    c1,
+                    c2,
+                    k0_plain,
+                    k1,
+                    k2,
+                    k3,
+                    k4,
+                )
+                log_s[k] += drift + d_log
+                v[k] = v_new
+                paths[i + 1, k] = math.exp(log_s[k])
+    return paths
+
+
+@numba.njit(cache=True, nogil=True)
+def bates_qe_path_kernel(
+    gen,
+    n_paths,
+    n_steps,
+    antithetic,
+    log_s0,
+    v0,
+    r,
+    q,
+    kappa,
+    theta,
+    rho,
+    vol_of_vol,
+    lambda_,
+    mu_j,
+    sigma_j,
+    dt,
+):
+    """Bates paths with the QE variance scheme and compensated jumps."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    paths = np.empty((n_steps + 1, n_paths))
+    paths[0, :] = math.exp(log_s0)
+    log_s = np.full(n_paths, log_s0)
+    v = np.full(n_paths, v0)
+    e, c1, c2, k0_plain, k1, k2, k3, k4 = _qe_constants(
+        kappa, theta, rho, vol_of_vol, dt
+    )
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    drift = (r - q - compensator) * dt
+    for i in range(n_steps):
+        z_s = gen.standard_normal(half)
+        z_v = gen.standard_normal(half)
+        u = gen.random(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                uu = u[j] if s_idx == 0 else 1.0 - u[j]
+                v_new, d_log = _qe_step(
+                    v[k],
+                    sign * z_s[j],
+                    sign * z_v[j],
+                    uu,
+                    theta,
+                    e,
+                    c1,
+                    c2,
+                    k0_plain,
+                    k1,
+                    k2,
+                    k3,
+                    k4,
+                )
+                log_s[k] += drift + d_log
+                v[k] = v_new
+                for _n in range(counts[j]):
+                    log_s[k] += gen.normal(mu_j, sigma_j)
+                paths[i + 1, k] = math.exp(log_s[k])
     return paths

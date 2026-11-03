@@ -9,12 +9,19 @@ import numpy as np
 from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.models import BaseModel
 from optpricing.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+from optpricing.techniques.base.random_utils import (
+    DEFAULT_CHUNK_SIZE,
+    plan_chunks,
+    run_chunks,
+)
 
 from .kernels.mc_kernels import (
     bates_kernel,
+    bates_qe_kernel,
     bsm_kernel,
     dupire_kernel,
     heston_kernel,
+    heston_qe_kernel,
     kou_kernel,
     merton_kernel,
     sabr_jump_kernel,
@@ -40,6 +47,9 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         n_steps: int = 100,
         antithetic: bool = True,
         seed: int | None = None,
+        n_jobs: int | None = None,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        variance_scheme: str = "qe",
     ):
         """
         Initializes the Monte Carlo engine.
@@ -54,13 +64,30 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             Whether to use antithetic variates for variance reduction, by default True.
         seed : int | None, optional
             Seed for the random number generator for reproducibility, by default None.
+        n_jobs : int | None, optional
+            Maximum number of threads simulating path chunks concurrently. None
+            uses ``OPTPRICING_MC_THREADS`` or the CPU count. Results do not
+            depend on this value.
+        chunk_size : int, optional
+            Paths per chunk (and per random stream), by default 8192. Results
+            depend on the seed and on this value only.
+        variance_scheme : {"qe", "euler"}, optional
+            Discretisation of the Heston/Bates variance process: Andersen's
+            Quadratic-Exponential scheme with martingale correction (default,
+            accurate with ~50 steps even when the Feller condition fails) or
+            full-truncation Euler.
         """
         if antithetic and n_paths % 2 != 0:
             n_paths += 1
+        if variance_scheme not in ("qe", "euler"):
+            raise ValueError("variance_scheme must be 'qe' or 'euler'.")
         self.n_paths = n_paths
         self.n_steps = n_steps
         self.antithetic = antithetic
         self.rng = np.random.default_rng(seed)
+        self.n_jobs = n_jobs
+        self.chunk_size = int(chunk_size)
+        self.variance_scheme = variance_scheme
 
     def price(
         self,
@@ -125,19 +152,18 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
     ) -> tuple[Callable, dict[str, Any]]:
         """Selects the appropriate JIT-compiled kernel and prepares its parameters."""
         p = model.params
-        kernel_params = {"r": r, "q": q, "dt": dt}
 
         if getattr(model, "is_sabr", False):
             # alpha = initial volatility sigma_0 (overridable via the legacy
-            # `v0` kwarg), nu = volatility of volatility.
-            kernel_params.update(
-                {
-                    "nu": p["nu"],
-                    "beta": p["beta"],
-                    "rho": p["rho"],
-                    "v0": kwargs.get("v0", p["alpha"]),
-                }
-            )
+            # `v0` kwarg), nu = volatility of volatility. The forward is set
+            # by the caller (`f0`).
+            kernel_params = {
+                "v0": kwargs.get("v0", p["alpha"]),
+                "nu": p["nu"],
+                "beta": p["beta"],
+                "rho": p["rho"],
+                "dt": dt,
+            }
             if model.has_jumps:
                 kernel_params.update(
                     {"lambda_": p["lambda"], "mu_j": p["mu_j"], "sigma_j": p["sigma_j"]}
@@ -145,34 +171,41 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
                 return sabr_jump_kernel, kernel_params
             return sabr_kernel, kernel_params
 
+        kernel_params = {"r": r, "q": q, "dt": dt}
+
         if getattr(model, "is_local_vol", False):  # Dupire
+            kernel_params["vol_surface_func"] = p["vol_surface"]
             return dupire_kernel, kernel_params
 
         if model.has_variance_process and model.has_jumps:  # Bates
             kernel_params.update(
                 {
+                    "v0": kwargs.get("v0", p.get("v0")),
                     "kappa": p["kappa"],
                     "theta": p["theta"],
                     "rho": p["rho"],
                     "vol_of_vol": p["vol_of_vol"],
-                    "v0": kwargs.get("v0", p.get("v0")),
+                    "lambda_": p["lambda"],
+                    "mu_j": p["mu_j"],
+                    "sigma_j": p["sigma_j"],
                 }
             )
-            kernel_params.update(
-                {"lambda_": p["lambda"], "mu_j": p["mu_j"], "sigma_j": p["sigma_j"]}
-            )
-            return bates_kernel, kernel_params
+            return (
+                bates_qe_kernel if self.variance_scheme == "qe" else bates_kernel
+            ), kernel_params
         elif model.has_variance_process:  # Heston
             kernel_params.update(
                 {
+                    "v0": kwargs.get("v0", p.get("v0")),
                     "kappa": p["kappa"],
                     "theta": p["theta"],
                     "rho": p["rho"],
                     "vol_of_vol": p["vol_of_vol"],
-                    "v0": kwargs.get("v0", p.get("v0")),
                 }
             )
-            return heston_kernel, kernel_params
+            return (
+                heston_qe_kernel if self.variance_scheme == "qe" else heston_kernel
+            ), kernel_params
         elif model.name == "Kou Double-Exponential Jump":  # Kou Model
             kernel_params.update(
                 {
@@ -207,62 +240,41 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         T: float,
         **kwargs: Any,
     ) -> np.ndarray:
-        """Prepares random numbers and executes the dispatched SDE kernel."""
-        dt = T / self.n_steps
-        num_draws = self.n_paths // 2 if self.antithetic else self.n_paths
+        """
+        Simulates the terminal spot with the dispatched kernel.
 
+        Paths are split into chunks of `chunk_size`; each chunk owns an
+        independent generator spawned from one draw of `self.rng` (so common
+        random numbers keep working) and the numba kernels run concurrently.
+        """
+        dt = T / self.n_steps
         kernel, kernel_params = self._get_sde_kernel_and_params(
             model, r, q, dt, **kwargs
         )
-
-        sim_params = {"n_paths": num_draws, "n_steps": self.n_steps, **kernel_params}
         is_sabr = getattr(model, "is_sabr", False)
         if is_sabr:
             # SABR is specified on the (shifted) forward; the kernel returns the
             # terminal forward, which is the terminal spot.
-            sim_params["s0"] = S0 * math.exp((r - q) * T) + model.shift
+            kernel_params["f0"] = S0 * math.exp((r - q) * T) + model.shift
         else:
-            sim_params["log_s0"] = math.log(S0)
+            kernel_params["log_s0"] = math.log(S0)
 
-        if model.has_variance_process:
-            # The kernels correlate the variance driver themselves
-            # (dW_v = rho*dW_s + sqrt(1-rho^2)*dZ), so they must receive two
-            # *independent* Brownian increments. Pre-correlating here applied
-            # rho twice (effective rho(1+sqrt(1-rho^2)) and an inflated
-            # vol-of-vol), biasing every stochastic-volatility MC price.
-            sqrt_dt = math.sqrt(dt)
-            sim_params["dw1"] = (
-                self.rng.standard_normal(size=(num_draws, self.n_steps)) * sqrt_dt
-            )
-            sim_params["dw2"] = (
-                self.rng.standard_normal(size=(num_draws, self.n_steps)) * sqrt_dt
-            )
-        else:
-            sim_params["dw"] = self.rng.standard_normal(
-                size=(num_draws, self.n_steps)
-            ) * math.sqrt(dt)
-
-        if model.has_jumps:
-            sim_params["jump_counts"] = self.rng.poisson(
-                lam=model.params["lambda"] * dt, size=(num_draws, self.n_steps)
-            )
-
-        if getattr(model, "is_local_vol", False):
-            sim_params["vol_surface_func"] = model.params["vol_surface"]
-
-        ST = kernel(**sim_params)
-
-        if self.antithetic and not getattr(model, "is_local_vol", False):
-            if "dw" in sim_params:
-                sim_params["dw"] *= -1
-            if "dw1" in sim_params:
-                sim_params["dw1"] *= -1
-            if "dw2" in sim_params:
-                sim_params["dw2"] *= -1
-            ST_anti = kernel(**sim_params)
-            ST = np.concatenate([ST, ST_anti])
-
-        return ST - model.shift if is_sabr else np.exp(ST)
+        generators, sizes = plan_chunks(
+            self.rng,
+            self.n_paths,
+            chunk_size=self.chunk_size,
+            antithetic=self.antithetic,
+        )
+        terminal = run_chunks(
+            kernel,
+            generators,
+            sizes,
+            n_jobs=self.n_jobs,
+            n_steps=self.n_steps,
+            antithetic=self.antithetic,
+            **kernel_params,
+        )
+        return terminal - model.shift if is_sabr else np.exp(terminal)
 
     def _simulate_levy_terminal(
         self,

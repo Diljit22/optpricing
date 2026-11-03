@@ -1,479 +1,178 @@
+"""Terminal-value kernels: forward (martingale) property, antithetic structure,
+distributional checks and reproducibility."""
+
+import math
+
 import numba
 import numpy as np
 import pytest
-from scipy import stats
 
 from optpricing.techniques.kernels import mc_kernels
 
-N_PATHS_DRIFT = 10
-N_PATHS_STOCHASTIC = 50000
-N_STEPS = 1
-DT = 0.01
-R = 0.05
-Q = 0.01
+N_PATHS = 100_000
+N_STEPS = 20
+DT = 0.02
 T = N_STEPS * DT
+R, Q = 0.05, 0.01
+LOG_S0 = math.log(100.0)
+FORWARD = 100.0 * math.exp((R - Q) * T)
 
 
-def test_bsm_kernel_statistical_properties():
-    """
-    Tests that the BSM kernel produces a distribution of terminal log-prices
-    that matches the known analytical mean and variance.
-    """
-    log_s0 = np.log(100)
+def gen(seed=0):
+    return np.random.default_rng(seed)
+
+
+def _forward_check(terminal_spot, label, rel=3e-3):
+    assert terminal_spot.mean() == pytest.approx(FORWARD, rel=rel), label
+
+
+def test_bsm_kernel_log_price_moments():
     sigma = 0.2
-
-    rng = np.random.default_rng(0)
-    dw = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    log_sT = mc_kernels.bsm_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        DT,
-        dw,
+    log_st = mc_kernels.bsm_kernel(
+        gen(), N_PATHS, N_STEPS, False, LOG_S0, R, Q, sigma, DT
     )
-
-    # mean and variance of the terminal log-price
-    expected_mean = log_s0 + (R - Q - 0.5 * sigma**2) * T
-    expected_variance = sigma**2 * T
-
-    # mean and variance from the simulation
-    actual_variance = np.var(log_sT)
-
-    # Mean test
-    t_stat, p_value_mean = stats.ttest_1samp(log_sT, expected_mean)
-    msg_ = f"Mean test failed: p-value {p_value_mean:.4f} is too low."
-    assert p_value_mean > 0.01, msg_
-
-    # Variance test
-    chi2_stat = (N_PATHS_STOCHASTIC - 1) * actual_variance / expected_variance
-    p_value_var = stats.chi2.sf(chi2_stat, N_PATHS_STOCHASTIC - 1) * 2
-
-    msg_ = f"Variance test failed: p-value {p_value_var:.4f} is too low."
-    assert p_value_var > 0.01, msg_
-
-
-def test_bsm_kernel_drift():
-    """Tests the deterministic drift of the BSM kernel."""
-    log_s0 = np.log(100)
-    sigma = 0.2
-    dw = np.zeros((N_PATHS_DRIFT, N_STEPS))
-
-    log_sT = mc_kernels.bsm_kernel(
-        N_PATHS_DRIFT,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        DT,
-        dw,
+    assert log_st.mean() == pytest.approx(
+        LOG_S0 + (R - Q - 0.5 * sigma**2) * T, abs=3e-3
     )
-
-    expected_drift = (R - Q - 0.5 * sigma**2) * DT
-    assert log_sT[0] == pytest.approx(log_s0 + expected_drift)
+    assert log_st.var() == pytest.approx(sigma**2 * T, rel=2e-2)
 
 
-def test_heston_kernel_drift():
-    """Tests the deterministic drift of the Heston kernel."""
-    log_s0, v0 = np.log(100), 0.04
-    kappa, theta, rho, vol_of_vol = 2.0, 0.04, -0.7, 0.5
-    dw1 = np.zeros((N_PATHS_DRIFT, N_STEPS))
-    dw2 = np.zeros((N_PATHS_DRIFT, N_STEPS))
-
-    log_sT = mc_kernels.heston_kernel(
-        N_PATHS_DRIFT,
-        N_STEPS,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        DT,
-        dw1,
-        dw2,
-    )
-
-    expected_s_drift = (R - Q - 0.5 * v0) * DT
-    assert log_sT[0] == pytest.approx(log_s0 + expected_s_drift)
+def test_bsm_kernel_zero_vol_is_pure_drift():
+    log_st = mc_kernels.bsm_kernel(gen(), 10, N_STEPS, False, LOG_S0, R, Q, 1e-12, DT)
+    np.testing.assert_allclose(log_st, LOG_S0 + (R - Q) * T, rtol=1e-12)
 
 
-def test_merton_kernel_drift():
-    """Tests the deterministic drift of the Merton kernel (no jumps)."""
-    log_s0 = np.log(100)
-    sigma, lambda_, mu_j, sigma_j = 0.2, 0.5, -0.1, 0.15
-    dw = np.zeros((N_PATHS_DRIFT, N_STEPS))
-    jump_counts = np.zeros((N_PATHS_DRIFT, N_STEPS), dtype=np.int64)
-
-    log_sT = mc_kernels.merton_kernel(
-        N_PATHS_DRIFT,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw,
-        jump_counts,
-    )
-
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    expected_drift = (R - Q - 0.5 * sigma**2 - compensator) * DT
-    assert log_sT[0] == pytest.approx(log_s0 + expected_drift)
-
-
-def test_bates_kernel_drift():
-    """Tests the deterministic drift of the Bates kernel (no jumps)."""
-    log_s0, v0 = np.log(100), 0.04
-    kappa, theta, rho, vol_of_vol = 2.0, 0.04, -0.7, 0.5
-    lambda_, mu_j, sigma_j = 0.5, -0.1, 0.15
-    dw1 = np.zeros((N_PATHS_DRIFT, N_STEPS))
-    dw2 = np.zeros((N_PATHS_DRIFT, N_STEPS))
-    jump_counts = np.zeros((N_PATHS_DRIFT, N_STEPS), dtype=np.int64)
-
-    log_sT = mc_kernels.bates_kernel(
-        N_PATHS_DRIFT,
-        N_STEPS,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw1,
-        dw2,
-        jump_counts,
-    )
-
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    expected_s_drift = (R - Q - 0.5 * v0 - compensator) * DT
-    assert log_sT[0] == pytest.approx(log_s0 + expected_s_drift)
-
-
-def test_sabr_kernel_drift():
-    """The SABR kernel evolves the forward, which has no drift."""
-    s0, v0 = 100.0, 0.5
-    nu, beta, rho = 0.5, 0.8, -0.6
-    dw1 = np.zeros((N_PATHS_DRIFT, N_STEPS))
-    dw2 = np.zeros((N_PATHS_DRIFT, N_STEPS))
-
-    sT = mc_kernels.sabr_kernel(
-        N_PATHS_DRIFT,
-        N_STEPS,
-        s0,
-        v0,
-        R,
-        Q,
-        nu,
-        beta,
-        rho,
-        DT,
-        dw1,
-        dw2,
-    )
-
-    assert sT[0] == pytest.approx(s0)
-
-
-def test_heston_kernel_variance_process():
-    """
-    Tests the variance process of the Heston kernel.
-    Checks that the terminal variance of the simulation
-    converges towards the long-term variance parameter 'theta'.
-    """
-    log_s0, v0 = np.log(100), 0.04
-    kappa, theta, rho, vol_of_vol = 2.0, 0.09, -0.7, 0.5  # Using theta > v0
-
-    local_n_steps = 100
-    local_dt = 0.01
-
-    rng = np.random.default_rng(0)
-    dw1 = rng.normal(0, np.sqrt(local_dt), (N_PATHS_STOCHASTIC, local_n_steps))
-    dw2 = rng.normal(0, np.sqrt(local_dt), (N_PATHS_STOCHASTIC, local_n_steps))
-
-    log_sT = mc_kernels.heston_kernel(
-        N_PATHS_STOCHASTIC,
-        local_n_steps,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        local_dt,
-        dw1,
-        dw2,
-    )
-
-    sT = np.exp(log_sT)
-    expected_mean_spot = np.exp(log_s0) * np.exp((R - Q) * local_n_steps * local_dt)
-    t_stat, p_value = stats.ttest_1samp(sT, expected_mean_spot)
-
-    msg_ = f"Heston mean spot price test failed: p-value {p_value:.4f} is too low."
-    assert p_value > 0.01, msg_
-
-
-def test_merton_kernel_jumps_are_applied():
-    """
-    Tests that the Merton kernel correctly applies jumps by comparing a simulation
-    with jumps to one without. The means of the two distributions should be
-    statistically different.
-    """
-    log_s0 = np.log(100)
-    sigma, lambda_, mu_j, sigma_j = 0.2, 5.0, -0.1, 0.15
-
-    rng = np.random.default_rng(0)
-    dw = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    jump_counts = rng.poisson(lambda_ * DT, (N_PATHS_STOCHASTIC, N_STEPS))
-    log_sT_with_jumps = mc_kernels.merton_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw,
-        jump_counts,
-    )
-
-    no_jump_counts = np.zeros((N_PATHS_STOCHASTIC, N_STEPS), dtype=np.int64)
-    log_sT_no_jumps = mc_kernels.merton_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        R,
-        Q,
-        sigma,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw,
-        no_jump_counts,
-    )
-
-    t_stat, p_value = stats.ttest_ind(
-        log_sT_with_jumps,
-        log_sT_no_jumps,
-        equal_var=False,
-    )
-
-    msg_ = "The distributions with and without jumps should be different, but were not."
-    assert p_value < 0.01, msg_
-
-
-def test_bates_kernel_jumps_are_applied():
-    """
-    Tests that the Bates kernel correctly applies jumps by comparing a simulation
-    with jumps to one without.
-    """
-    log_s0, v0 = np.log(100), 0.04
-    kappa, theta, rho, vol_of_vol = 2.0, 0.04, -0.7, 0.5
-    lambda_, mu_j, sigma_j = 5.0, -0.1, 0.15
-
-    rng = np.random.default_rng(0)
-    dw1 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-    dw2 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    jump_counts = rng.poisson(lambda_ * DT, (N_PATHS_STOCHASTIC, N_STEPS))
-    log_sT_with_jumps = mc_kernels.bates_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw1,
-        dw2,
-        jump_counts,
-    )
-
-    no_jump_counts = np.zeros((N_PATHS_STOCHASTIC, N_STEPS), dtype=np.int64)
-    log_sT_no_jumps = mc_kernels.bates_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        log_s0,
-        v0,
-        R,
-        Q,
-        kappa,
-        theta,
-        rho,
-        vol_of_vol,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw1,
-        dw2,
-        no_jump_counts,
-    )
-
-    t_stat, p_value = stats.ttest_ind(
-        log_sT_with_jumps,
-        log_sT_no_jumps,
-        equal_var=False,
-    )
-
-    msg_ = "The distributions with and without jumps should be different, but were not."
-    assert p_value < 0.01, msg_
-
-
-def test_sabr_kernel_volatility_process():
-    """
-    Tests the log-normal volatility process of the SABR kernel.
-    The forward is a martingale under its own dynamics: E[F_T] = F_0,
-    regardless of the volatility process.
-    """
-    s0, v0 = 100.0, 0.5
-    nu, beta, rho = 0.5, 0.8, -0.6
-
-    rng = np.random.default_rng(0)
-    dw1 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-    dw2 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    sT = mc_kernels.sabr_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        s0,
-        v0,
-        R,
-        Q,
-        nu,
-        beta,
-        rho,
-        DT,
-        dw1,
-        dw2,
-    )
-
-    expected_mean_spot = s0  # forward martingale
-
-    t_stat, p_value = stats.ttest_1samp(sT, expected_mean_spot)
-
-    msg = f"SABR mean spot price test failed: p-value {p_value:.4f} is too low."
-    assert p_value > 0.01, msg
-
-
-def test_sabr_jump_kernel_jumps_are_applied():
-    """
-    Tests that the SABR jump kernel correctly applies jumps by comparing a
-    simulation with jumps to one without.
-    """
-    s0, v0 = 100.0, 0.5
-    nu, beta, rho = 0.5, 0.8, -0.6
-    lambda_, mu_j, sigma_j = 5.0, -0.1, 0.15  # High jump intensity
-
-    rng = np.random.default_rng(0)
-    dw1 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-    dw2 = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    # Simulate with jumps
-    jump_counts = rng.poisson(lambda_ * DT, (N_PATHS_STOCHASTIC, N_STEPS))
-    sT_with_jumps = mc_kernels.sabr_jump_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        s0,
-        v0,
-        R,
-        Q,
-        nu,
-        beta,
-        rho,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw1,
-        dw2,
-        jump_counts,
-    )
-
-    # Simulate without jumps
-    no_jump_counts = np.zeros((N_PATHS_STOCHASTIC, N_STEPS), dtype=np.int64)
-    sT_no_jumps = mc_kernels.sabr_jump_kernel(
-        N_PATHS_STOCHASTIC,
-        N_STEPS,
-        s0,
-        v0,
-        R,
-        Q,
-        nu,
-        beta,
-        rho,
-        lambda_,
-        mu_j,
-        sigma_j,
-        DT,
-        dw1,
-        dw2,
-        no_jump_counts,
-    )
-
-    # The means should be different
-    t_stat, p_value = stats.ttest_ind(sT_with_jumps, sT_no_jumps, equal_var=False)
-    assert p_value < 0.01, "SABR jump distributions should be different, but were not."
-
-
-def test_dupire_kernel_with_constant_vol():
-    """
-    Tests that the Dupire kernel with a constant volatility surface behaves
-    identically to the BSM kernel.
-    """
-    log_s0 = np.log(100)
-    constant_sigma = 0.2
-
-    rng = np.random.default_rng(0)
-    dw = rng.normal(0, np.sqrt(DT), (N_PATHS_STOCHASTIC, N_STEPS))
-
-    # Define a constant volatility function for Dupire
-    @numba.jit(nopython=True)
-    def constant_vol_surface(t, s):
-        return constant_sigma
-
-    # Run Dupire kernel
-    log_sT_dupire = mc_kernels.dupire_kernel(
-        N_PATHS_STOCHASTIC, N_STEPS, log_s0, R, Q, DT, dw, constant_vol_surface
-    )
-
-    # Run BSM kernel with the same parameters
-    log_sT_bsm = mc_kernels.bsm_kernel(
-        N_PATHS_STOCHASTIC, N_STEPS, log_s0, R, Q, constant_sigma, DT, dw
-    )
-
+def test_antithetic_halves_are_mirror_images():
+    """With antithetic=True the second half uses the negated increments: for
+    BSM the log-returns of path j and path j + n/2 sum to twice the drift."""
+    sigma = 0.3
+    log_st = mc_kernels.bsm_kernel(gen(), 1000, N_STEPS, True, LOG_S0, R, Q, sigma, DT)
+    first, second = log_st[:500] - LOG_S0, log_st[500:] - LOG_S0
     np.testing.assert_allclose(
-        log_sT_dupire,
-        log_sT_bsm,
-        rtol=1e-9,
-        err_msg="Dupire with constant vol should match BSM",
+        first + second, 2 * (R - Q - 0.5 * sigma**2) * T, atol=1e-12
     )
+
+
+@pytest.mark.parametrize("antithetic", [False, True])
+def test_heston_kernel_is_a_martingale(antithetic):
+    log_st = mc_kernels.heston_kernel(
+        gen(),
+        N_PATHS,
+        N_STEPS,
+        antithetic,
+        LOG_S0,
+        0.04,
+        R,
+        Q,
+        2.0,
+        0.04,
+        -0.7,
+        0.3,
+        DT,
+    )
+    _forward_check(np.exp(log_st), "heston")
+
+
+def test_merton_kernel_is_a_martingale_and_jumps_add_variance():
+    sigma, lam, mu_j, sig_j = 0.2, 1.0, -0.1, 0.2
+    log_st = mc_kernels.merton_kernel(
+        gen(), N_PATHS, N_STEPS, False, LOG_S0, R, Q, sigma, lam, mu_j, sig_j, DT
+    )
+    _forward_check(np.exp(log_st), "merton", rel=4e-3)
+    expected_var = sigma**2 * T + lam * T * (mu_j**2 + sig_j**2)
+    assert log_st.var() == pytest.approx(expected_var, rel=3e-2)
+
+
+def test_bates_kernel_is_a_martingale():
+    log_st = mc_kernels.bates_kernel(
+        gen(),
+        N_PATHS,
+        N_STEPS,
+        False,
+        LOG_S0,
+        0.04,
+        R,
+        Q,
+        2.0,
+        0.04,
+        -0.7,
+        0.3,
+        0.5,
+        -0.1,
+        0.15,
+        DT,
+    )
+    _forward_check(np.exp(log_st), "bates", rel=4e-3)
+
+
+def test_kou_kernel_is_a_martingale_and_jumps_add_variance():
+    sigma, lam, p_up, eta1, eta2 = 0.15, 1.0, 0.6, 10.0, 5.0
+    log_st = mc_kernels.kou_kernel(
+        gen(), N_PATHS, N_STEPS, False, LOG_S0, R, Q, sigma, lam, p_up, eta1, eta2, DT
+    )
+    _forward_check(np.exp(log_st), "kou", rel=4e-3)
+    jump_second_moment = p_up * 2 / eta1**2 + (1 - p_up) * 2 / eta2**2
+    assert log_st.var() == pytest.approx(
+        sigma**2 * T + lam * T * jump_second_moment, rel=3e-2
+    )
+
+
+def test_sabr_kernel_forward_is_a_martingale_and_non_negative():
+    f0, v0, nu, beta, rho = FORWARD, 0.5, 0.5, 0.8, -0.6
+    ft = mc_kernels.sabr_kernel(
+        gen(), N_PATHS, N_STEPS, False, f0, v0, nu, beta, rho, DT
+    )
+    assert ft.mean() == pytest.approx(f0, rel=3e-3)
+    assert np.all(ft >= 0.0)
+
+
+def test_sabr_kernel_zero_vol_of_vol_zero_noise_is_constant():
+    ft = mc_kernels.sabr_kernel(
+        gen(), 10, N_STEPS, False, 100.0, 1e-12, 1e-12, 0.8, -0.6, DT
+    )
+    np.testing.assert_allclose(ft, 100.0, rtol=1e-9)
+
+
+def test_sabr_jump_kernel_forward_is_a_martingale():
+    ft = mc_kernels.sabr_jump_kernel(
+        gen(),
+        N_PATHS,
+        N_STEPS,
+        False,
+        FORWARD,
+        0.5,
+        0.5,
+        0.8,
+        -0.6,
+        0.4,
+        -0.1,
+        0.15,
+        DT,
+    )
+    assert ft.mean() == pytest.approx(FORWARD, rel=5e-3)
+
+
+def test_dupire_kernel_with_constant_vol_matches_bsm():
+    sigma = 0.2
+
+    @numba.njit
+    def constant_vol_surface(t, s):
+        return sigma
+
+    log_dupire = mc_kernels.dupire_kernel(
+        gen(1), 5000, N_STEPS, True, LOG_S0, R, Q, DT, constant_vol_surface
+    )
+    log_bsm = mc_kernels.bsm_kernel(
+        gen(1), 5000, N_STEPS, True, LOG_S0, R, Q, sigma, DT
+    )
+    np.testing.assert_allclose(log_dupire, log_bsm, rtol=1e-12)
+
+
+def test_kernels_are_reproducible_for_a_seed():
+    a = mc_kernels.heston_kernel(
+        gen(42), 2000, 5, True, LOG_S0, 0.04, R, Q, 2.0, 0.04, -0.7, 0.3, DT
+    )
+    b = mc_kernels.heston_kernel(
+        gen(42), 2000, 5, True, LOG_S0, 0.04, R, Q, 2.0, 0.04, -0.7, 0.3, DT
+    )
+    np.testing.assert_array_equal(a, b)

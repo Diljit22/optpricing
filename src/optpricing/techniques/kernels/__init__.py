@@ -16,9 +16,11 @@ from .lattice_kernels import (
 )
 from .mc_kernels import (
     bates_kernel,
+    bates_qe_kernel,
     bsm_kernel,
     dupire_kernel,
     heston_kernel,
+    heston_qe_kernel,
     kou_kernel,
     merton_kernel,
     sabr_jump_kernel,
@@ -26,8 +28,10 @@ from .mc_kernels import (
 )
 from .path_kernels import (
     bates_path_kernel,
+    bates_qe_path_kernel,
     bsm_path_kernel,
     heston_path_kernel,
+    heston_qe_path_kernel,
     kou_path_kernel,
     merton_path_kernel,
     sabr_jump_path_kernel,
@@ -42,8 +46,10 @@ __all__ = [
     # Monte Carlo Kernels
     "bsm_kernel",
     "heston_kernel",
+    "heston_qe_kernel",
     "merton_kernel",
     "bates_kernel",
+    "bates_qe_kernel",
     "sabr_kernel",
     "sabr_jump_kernel",
     "kou_kernel",
@@ -51,8 +57,10 @@ __all__ = [
     # Monte Carlo Path Kernels
     "bsm_path_kernel",
     "heston_path_kernel",
+    "heston_qe_path_kernel",
     "merton_path_kernel",
     "bates_path_kernel",
+    "bates_qe_path_kernel",
     "sabr_path_kernel",
     "sabr_jump_path_kernel",
     "kou_path_kernel",

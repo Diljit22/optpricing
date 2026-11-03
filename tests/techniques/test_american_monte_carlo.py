@@ -46,11 +46,14 @@ def test_get_path_kernel_selector():
     from optpricing.models import HestonModel
     from optpricing.techniques.kernels import path_kernels
 
-    technique = AmericanMonteCarloTechnique()
     heston_model = HestonModel()
 
-    kernel_func, _ = technique._get_path_kernel_and_params(
+    kernel_func, _ = AmericanMonteCarloTechnique()._get_path_kernel_and_params(
         model=heston_model, r=0.05, q=0.01, dt=0.01, v0=0.04
     )
+    assert kernel_func is path_kernels.heston_qe_path_kernel  # QE is the default
 
+    kernel_func, _ = AmericanMonteCarloTechnique(
+        variance_scheme="euler"
+    )._get_path_kernel_and_params(model=heston_model, r=0.05, q=0.01, dt=0.01, v0=0.04)
     assert kernel_func is path_kernels.heston_path_kernel

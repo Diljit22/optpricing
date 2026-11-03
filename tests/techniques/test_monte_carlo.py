@@ -90,7 +90,7 @@ def test_exact_sampler_dispatcher(setup):
     "model_instance, expected_kernel",
     [
         (BSMModel(), mc_kernels.bsm_kernel),
-        (HestonModel(), mc_kernels.heston_kernel),
+        (HestonModel(), mc_kernels.heston_qe_kernel),
         (
             MertonJumpModel(params=MertonJumpModel.default_params),
             mc_kernels.merton_kernel,
@@ -99,13 +99,22 @@ def test_exact_sampler_dispatcher(setup):
 )
 def test_get_sde_kernel_selector(model_instance, expected_kernel):
     """
-    Tests that the kernel selector returns the correct kernel for each model type.
+    Tests that the kernel selector returns the correct kernel for each model type
+    (Heston defaults to the QE variance scheme).
     """
     technique = MonteCarloTechnique()
     kernel_func, _ = technique._get_sde_kernel_and_params(
         model=model_instance, r=0.05, q=0.01, dt=0.01
     )
     assert kernel_func is expected_kernel
+
+
+def test_euler_variance_scheme_selects_euler_kernels():
+    technique = MonteCarloTechnique(variance_scheme="euler")
+    kernel_func, _ = technique._get_sde_kernel_and_params(
+        model=HestonModel(), r=0.05, q=0.01, dt=0.01
+    )
+    assert kernel_func is mc_kernels.heston_kernel
 
 
 def test_mc_price_correctness_for_bsm(setup):
@@ -120,7 +129,8 @@ def test_mc_price_correctness_for_bsm(setup):
     analytic_technique = ClosedFormTechnique()
     expected_price = analytic_technique.price(option, stock, model, rate).price
 
-    mc_technique = MonteCarloTechnique(n_paths=20000, n_steps=10, seed=0)
+    # 200k antithetic paths: standard error ~0.02 on this ~10.45 option.
+    mc_technique = MonteCarloTechnique(n_paths=200_000, n_steps=10, seed=0)
     mc_price = mc_technique.price(option, stock, model, rate).price
 
-    assert mc_price == pytest.approx(expected_price, abs=1e-2)
+    assert mc_price == pytest.approx(expected_price, abs=0.06)

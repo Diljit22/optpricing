@@ -4,17 +4,25 @@ import math
 from collections.abc import Callable
 from typing import Any
 
+import numba
 import numpy as np
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.models import BaseModel, SABRJumpModel, SABRModel
 from optpricing.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
+from optpricing.techniques.base.random_utils import (
+    DEFAULT_CHUNK_SIZE,
+    plan_chunks,
+    run_chunks,
+)
 
 from .kernels.american_mc_kernels import longstaff_schwartz_pricer
 from .kernels.path_kernels import (
     bates_path_kernel,
+    bates_qe_path_kernel,
     bsm_path_kernel,
     heston_path_kernel,
+    heston_qe_path_kernel,
     kou_path_kernel,
     merton_path_kernel,
     sabr_jump_path_kernel,
@@ -40,7 +48,23 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         antithetic: bool = True,
         seed: int | None = None,
         lsm_degree: int = 2,
+        n_jobs: int | None = None,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        variance_scheme: str = "qe",
     ):
+        """
+        Parameters
+        ----------
+        n_paths, n_steps, antithetic, seed, variance_scheme
+            As for `MonteCarloTechnique`.
+        lsm_degree : int, optional
+            Polynomial degree of the Longstaff-Schwartz regression, by default 2.
+        n_jobs : int | None, optional
+            Maximum number of threads simulating path chunks concurrently;
+            results do not depend on it.
+        chunk_size : int, optional
+            Paths per chunk and random stream, by default 8192.
+        """
         if antithetic and n_paths % 2 != 0:
             n_paths += 1
         self.n_paths = n_paths
@@ -48,6 +72,11 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         self.antithetic = antithetic
         self.rng = np.random.default_rng(seed)
         self.lsm_degree = lsm_degree
+        self.n_jobs = n_jobs
+        self.chunk_size = int(chunk_size)
+        if variance_scheme not in ("qe", "euler"):
+            raise ValueError("variance_scheme must be 'qe' or 'euler'.")
+        self.variance_scheme = variance_scheme
 
     def price(
         self,
@@ -69,6 +98,7 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             r=rate.get_rate(option.maturity),
             is_call=(option.option_type is OptionType.CALL),
             degree=self.lsm_degree,
+            n_threads=numba.get_num_threads(),
         )
         return PricingResult(price=price_val)
 
@@ -87,10 +117,10 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         if isinstance(model, SABRModel | SABRJumpModel):
             kernel_params.update(
                 {
+                    "v0": kwargs.get("v0", p["alpha"]),
                     "nu": p["nu"],
                     "beta": p["beta"],
                     "rho": p["rho"],
-                    "v0": kwargs.get("v0", p["alpha"]),
                 }
             )
             if model.has_jumps:
@@ -102,29 +132,37 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         if model.has_variance_process and model.has_jumps:
             kernel_params.update(
                 {
+                    "v0": kwargs.get("v0", p.get("v0")),
                     "kappa": p["kappa"],
                     "theta": p["theta"],
                     "rho": p["rho"],
                     "vol_of_vol": p["vol_of_vol"],
-                    "v0": kwargs.get("v0", p.get("v0")),
+                    "lambda_": p["lambda"],
+                    "mu_j": p["mu_j"],
+                    "sigma_j": p["sigma_j"],
                 }
             )
-            kernel_params.update(
-                {"lambda_": p["lambda"], "mu_j": p["mu_j"], "sigma_j": p["sigma_j"]}
-            )
-            return bates_path_kernel, kernel_params
-        elif model.has_variance_process:
+            return (
+                bates_qe_path_kernel
+                if self.variance_scheme == "qe"
+                else bates_path_kernel
+            ), kernel_params
+        if model.has_variance_process:
             kernel_params.update(
                 {
+                    "v0": kwargs.get("v0", p.get("v0")),
                     "kappa": p["kappa"],
                     "theta": p["theta"],
                     "rho": p["rho"],
                     "vol_of_vol": p["vol_of_vol"],
-                    "v0": kwargs.get("v0", p.get("v0")),
                 }
             )
-            return heston_path_kernel, kernel_params
-        elif model.name == "Kou Double-Exponential Jump":
+            return (
+                heston_qe_path_kernel
+                if self.variance_scheme == "qe"
+                else heston_path_kernel
+            ), kernel_params
+        if model.name == "Kou Double-Exponential Jump":
             kernel_params.update(
                 {
                     "sigma": p["sigma"],
@@ -135,7 +173,7 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
                 }
             )
             return kou_path_kernel, kernel_params
-        elif model.has_jumps:
+        if model.has_jumps:
             kernel_params.update(
                 {
                     "sigma": p["sigma"],
@@ -145,9 +183,8 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
                 }
             )
             return merton_path_kernel, kernel_params
-        else:
-            kernel_params["sigma"] = p.get("sigma")
-            return bsm_path_kernel, kernel_params
+        kernel_params["sigma"] = p["sigma"]
+        return bsm_path_kernel, kernel_params
 
     def _simulate_full_sde_paths(
         self,
@@ -157,61 +194,46 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         rate: Rate,
         **kwargs: Any,
     ) -> np.ndarray:
-        """Simulates and returns the full matrix of stock price paths."""
+        """Simulates the spot paths, time-major ``(n_steps + 1, n_paths)``."""
         S0, T = stock.spot, option.maturity
         r, q = rate.get_rate(T), stock.dividend
         dt = T / self.n_steps
-        num_draws = self.n_paths // 2 if self.antithetic else self.n_paths
 
         kernel, kernel_params = self._get_path_kernel_and_params(
             model, r, q, dt, **kwargs
         )
-
-        sim_params = {
-            "n_paths": num_draws,
-            "n_steps": self.n_steps,
-            **kernel_params,
-        }
         is_sabr = isinstance(model, SABRModel | SABRJumpModel)
         if is_sabr:
             # SABR evolves the (shifted) forward; the path kernels convert the
             # forward paths back to spot paths for the exercise decision.
-            sim_params["s0"] = S0 * math.exp((r - q) * T) + model.shift
+            kernel_params["f0"] = S0 * math.exp((r - q) * T) + model.shift
         else:
-            sim_params["log_s0"] = math.log(S0)
+            kernel_params["log_s0"] = math.log(S0)
 
-        # Generate standard normal draws (z) first, then scale by sqrt(dt)
-        if model.has_variance_process:
-            z1 = self.rng.standard_normal(size=(num_draws, self.n_steps))
-            z2 = self.rng.standard_normal(size=(num_draws, self.n_steps))
-            sim_params["dw1"] = z1 * math.sqrt(dt)
-            sim_params["dw2"] = z2 * math.sqrt(dt)
-        else:
-            z = self.rng.standard_normal(size=(num_draws, self.n_steps))
-            sim_params["dw"] = z * math.sqrt(dt)
-
-        if model.has_jumps:
-            sim_params["jump_counts"] = self.rng.poisson(
-                lam=model.params["lambda"] * dt, size=(num_draws, self.n_steps)
-            )
-
-        paths = kernel(**sim_params)
-
-        if self.antithetic:
-            if "dw" in sim_params:
-                sim_params["dw"] *= -1
-            if "dw1" in sim_params:
-                sim_params["dw1"] *= -1
-                sim_params["dw2"] *= -1
-
-            paths_anti = kernel(**sim_params)
-            paths = np.concatenate([paths, paths_anti])
+        generators, sizes = plan_chunks(
+            self.rng,
+            self.n_paths,
+            chunk_size=self.chunk_size,
+            antithetic=self.antithetic,
+        )
+        paths = run_chunks(
+            kernel,
+            generators,
+            sizes,
+            n_jobs=self.n_jobs,
+            axis=1,
+            n_steps=self.n_steps,
+            antithetic=self.antithetic,
+            **kernel_params,
+        )
 
         if is_sabr and model.shift:
             # The kernels discount the shifted forward; remove the shift so the
             # exercise decision sees spot prices.
             horizon = self.n_steps * dt
             times = np.arange(self.n_steps + 1) * dt
-            paths = paths - model.shift * np.exp(-(r - q) * (horizon - times))
+            paths = (
+                paths - (model.shift * np.exp(-(r - q) * (horizon - times)))[:, None]
+            )
 
         return paths

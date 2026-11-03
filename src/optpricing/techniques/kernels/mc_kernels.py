@@ -1,49 +1,50 @@
 from __future__ import annotations
 
+import math
+
 import numba
 import numpy as np
 
 __doc__ = """
-This module contains JIT-compiled (`numba`) kernels for simulating the SDE
-paths of different financial models. These functions are designed for performance.
+JIT-compiled (`numba`) kernels that simulate the terminal value of an SDE for a
+chunk of Monte Carlo paths.
+
+Every kernel draws its own random numbers from the ``numpy.random.Generator``
+it receives, so no increment arrays are materialised and the work can be split
+into independent chunks (one generator each, spawned from a single seed) that
+run concurrently: the kernels release the GIL. Results are reproducible for a
+given seed and chunk size, independently of the number of threads.
+
+With ``antithetic=True`` the first ``n_paths // 2`` paths use the drawn
+increments and the second half their negatives; ``n_paths`` must then be even.
+Jump counts are shared by an antithetic pair, jump sizes are drawn per path.
 """
 
-# Docstring for bsm_kernel
-"""
-JIT-compiled kernel for BSM SDE simulation.
-d(logS) = (r - q - 0.5*sigma^2)dt + sigma*dW
-"""
 
-
-@numba.jit(nopython=True, cache=True)
-def bsm_kernel(
-    n_paths,
-    n_steps,
-    log_s0,
-    r,
-    q,
-    sigma,
-    dt,
-    dw,
-):
+@numba.njit(cache=True, nogil=True)
+def bsm_kernel(gen, n_paths, n_steps, antithetic, log_s0, r, q, sigma, dt):
+    """Geometric Brownian motion: d log S = (r - q - sigma^2/2) dt + sigma dW."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
-    drift = (r - q - 0.5 * sigma**2) * dt
-    for i in range(n_steps):
-        log_s += drift + sigma * dw[:, i]
-
+    drift = (r - q - 0.5 * sigma * sigma) * dt
+    vol = sigma * math.sqrt(dt)
+    for _ in range(n_steps):
+        z = gen.standard_normal(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                log_s[off + j] += drift + vol * sign * z[j]
     return log_s
 
 
-# Docstring for heston_kernel
-"""
-JIT-compiled kernel for Heston SDE simulation (Full Truncation).
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def heston_kernel(
+    gen,
     n_paths,
     n_steps,
+    antithetic,
     log_s0,
     v0,
     r,
@@ -53,81 +54,63 @@ def heston_kernel(
     rho,
     vol_of_vol,
     dt,
-    dw1,
-    dw2,
 ):
+    """Heston, full-truncation Euler with the variance floored at zero."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
-    rho_bar = np.sqrt(1 - rho**2)
-
-    for i in range(n_steps):
-        z1 = dw1[:, i]
-        z2 = dw2[:, i]
-
-        correlated_z2 = rho * z1 + rho_bar * z2
-
-        v_pos = np.maximum(v, 0)
-        v_sqrt = np.sqrt(v_pos)
-
-        # Evolve log-spot with the first independent draw
-        log_s += (r - q - 0.5 * v_pos) * dt + v_sqrt * z1
-
-        # Evolve variance with the correlated draw
-        v += kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * correlated_z2
-        v = np.maximum(v, 0)  # Apply reflection to variance
-
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
+    for _ in range(n_steps):
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_s = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                sq = math.sqrt(v_pos)
+                log_s[k] += (r - q - 0.5 * v_pos) * dt + sq * dw_s
+                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
+                v[k] = v_new if v_new > 0.0 else 0.0
     return log_s
 
 
-# Docstring for merton_kernel
-"""
-JIT-compiled kernel for Merton Jump-Diffusion SDE simulation.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def merton_kernel(
-    n_paths,
-    n_steps,
-    log_s0,
-    r,
-    q,
-    sigma,
-    lambda_,
-    mu_j,
-    sigma_j,
-    dt,
-    dw,
-    jump_counts,
+    gen, n_paths, n_steps, antithetic, log_s0, r, q, sigma, lambda_, mu_j, sigma_j, dt
 ):
+    """Merton jump diffusion with compensated log-normal jumps."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    drift = (r - q - 0.5 * sigma**2 - compensator) * dt
-    for i in range(n_steps):
-        log_s += drift + sigma * dw[:, i]
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_jumps = np.sum(jumps_this_step)
-            jump_sizes = np.random.normal(mu_j, sigma_j, num_jumps)
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                for _ in range(jumps_this_step[path_idx]):
-                    log_s[path_idx] += jump_sizes[jump_idx]
-                    jump_idx += 1
-
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    drift = (r - q - 0.5 * sigma * sigma - compensator) * dt
+    vol = sigma * math.sqrt(dt)
+    for _ in range(n_steps):
+        z = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                log_s[k] += drift + vol * sign * z[j]
+                for _n in range(counts[j]):
+                    log_s[k] += gen.normal(mu_j, sigma_j)
     return log_s
 
 
-# Docstring for bates_kernel
-"""
-JIT-compiled kernel for Bates (Heston + Jumps) SDE simulation.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def bates_kernel(
+    gen,
     n_paths,
     n_steps,
+    antithetic,
     log_s0,
     v0,
     r,
@@ -140,160 +123,42 @@ def bates_kernel(
     mu_j,
     sigma_j,
     dt,
-    dw1,
-    dw2,
-    jump_counts,
 ):
+    """Bates: Heston diffusion plus compensated log-normal jumps."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
     v = np.full(n_paths, v0)
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-    rho_bar = np.sqrt(1 - rho**2)
-
-    for i in range(n_steps):
-        z1 = dw1[:, i]
-        z2 = dw2[:, i]
-
-        correlated_z2 = rho * z1 + rho_bar * z2
-
-        v_pos = np.maximum(v, 0)
-        v_sqrt = np.sqrt(v_pos)
-
-        # Heston part
-        log_s += (r - q - 0.5 * v_pos - compensator) * dt + v_sqrt * z1
-        v += kappa * (theta - v_pos) * dt + vol_of_vol * v_sqrt * correlated_z2
-        v = np.maximum(v, 0)
-
-        # Merton Jump part
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_jumps = np.sum(jumps_this_step)
-            jump_sizes = np.random.normal(mu_j, sigma_j, num_jumps)
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                for _ in range(jumps_this_step[path_idx]):
-                    log_s[path_idx] += jump_sizes[jump_idx]
-                    jump_idx += 1
-
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
+    for _ in range(n_steps):
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_s = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                sq = math.sqrt(v_pos)
+                log_s[k] += (r - q - 0.5 * v_pos - compensator) * dt + sq * dw_s
+                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
+                v[k] = v_new if v_new > 0.0 else 0.0
+                for _n in range(counts[j]):
+                    log_s[k] += gen.normal(mu_j, sigma_j)
     return log_s
 
 
-# Docstring for sabr_kernel
-"""
-JIT-compiled kernel for the SABR forward dynamics
-    dF = sigma_t F^beta dW,  d sigma_t = nu sigma_t dZ,  d<W,Z> = rho dt.
-`s0` is the (shifted) initial forward and the kernel returns the terminal
-forward, which equals the terminal spot. `r` and `q` are unused (they only
-enter through the forward) and kept for a uniform kernel signature.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
-def sabr_kernel(
-    n_paths,
-    n_steps,
-    s0,
-    v0,
-    r,
-    q,
-    nu,
-    beta,
-    rho,
-    dt,
-    dw1,
-    dw2,
-):
-    f = np.full(n_paths, s0)
-    v = np.full(n_paths, v0)  # v is sigma_t in SABR
-    rho_bar = np.sqrt(1 - rho**2)
-
-    for i in range(n_steps):
-        z1 = dw1[:, i]
-        z2 = dw2[:, i]
-        correlated_z2 = rho * z1 + rho_bar * z2
-
-        f_pos = np.maximum(f, 1e-8)
-        v_pos = np.maximum(v, 0)
-        f += v_pos * (f_pos**beta) * z1
-        if beta > 0.0:
-            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
-
-        # Exact lognormal step for sigma_t
-        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
-
-    return f
-
-
-# Docstring for sabr_jump_kernel
-"""
-JIT-compiled kernel for SABR forward dynamics with compensated log-normal jumps:
-    dF/F- = -lambda k dt + sigma_t F^(beta-1) dW + (e^J - 1) dN,  k = E[e^J] - 1.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
-def sabr_jump_kernel(
-    n_paths,
-    n_steps,
-    s0,
-    v0,
-    r,
-    q,
-    nu,
-    beta,
-    rho,
-    lambda_,
-    mu_j,
-    sigma_j,
-    dt,
-    dw1,
-    dw2,
-    jump_counts,
-):
-    f = np.full(n_paths, s0)
-    v = np.full(n_paths, v0)  # v is sigma_t
-    rho_bar = np.sqrt(1 - rho**2)
-    compensator = lambda_ * (np.exp(mu_j + 0.5 * sigma_j**2) - 1)
-
-    for i in range(n_steps):
-        z1 = dw1[:, i]
-        z2 = dw2[:, i]
-
-        correlated_z2 = rho * z1 + rho_bar * z2
-
-        f_pos = np.maximum(f, 1e-8)
-        v_pos = np.maximum(v, 0)
-
-        # SABR diffusion part with the jump compensator in the drift
-        f += -compensator * f_pos * dt + v_pos * (f_pos**beta) * z1
-        if beta > 0.0:
-            f = np.maximum(f, 0.0)  # the origin is absorbing for 0 < beta < 1
-        v = v * np.exp(-0.5 * nu**2 * dt + nu * correlated_z2)
-
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_jumps = np.sum(jumps_this_step)
-
-            # Jumps are multiplicative: F_t+ = F_t * exp(J)
-            jump_multipliers = np.exp(np.random.normal(mu_j, sigma_j, num_jumps))
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                for _ in range(jumps_this_step[path_idx]):
-                    f[path_idx] *= jump_multipliers[jump_idx]
-                    jump_idx += 1
-
-    return f
-
-
-# Docstring for kou_kernel
-"""
-JIT-compiled kernel for Kou Double-Exponential Jump-Diffusion SDE.
-"""
-
-
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
 def kou_kernel(
+    gen,
     n_paths,
     n_steps,
+    antithetic,
     log_s0,
     r,
     q,
@@ -303,65 +168,303 @@ def kou_kernel(
     eta1,
     eta2,
     dt,
-    dw,
-    jump_counts,
 ):
+    """Kou double-exponential jump diffusion with compensated jumps."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
     compensator = lambda_ * (
-        (p_up * eta1 / (eta1 - 1)) + ((1 - p_up) * eta2 / (eta2 + 1)) - 1
+        p_up * eta1 / (eta1 - 1.0) + (1.0 - p_up) * eta2 / (eta2 + 1.0) - 1.0
     )
-    drift = (r - q - 0.5 * sigma**2 - compensator) * dt
-
-    for i in range(n_steps):
-        log_s += drift + sigma * dw[:, i]
-        jumps_this_step = jump_counts[:, i]
-        if np.any(jumps_this_step > 0):
-            num_total_jumps = np.sum(jumps_this_step)
-
-            # Generate all jump sizes at once
-            up_or_down = np.random.random(num_total_jumps)
-            up_jumps = np.random.exponential(1.0 / eta1, num_total_jumps)
-            down_jumps = -np.random.exponential(1.0 / eta2, num_total_jumps)
-            all_jumps = np.where(up_or_down < p_up, up_jumps, down_jumps)
-
-            # Apply jumps to the correct paths
-            jump_idx = 0
-            for path_idx in range(n_paths):
-                num_jumps_on_path = jumps_this_step[path_idx]
-                if num_jumps_on_path > 0:
-                    log_s[path_idx] += np.sum(
-                        all_jumps[jump_idx : jump_idx + num_jumps_on_path]
-                    )
-                    jump_idx += num_jumps_on_path
-
+    drift = (r - q - 0.5 * sigma * sigma - compensator) * dt
+    vol = sigma * math.sqrt(dt)
+    for _ in range(n_steps):
+        z = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                log_s[k] += drift + vol * sign * z[j]
+                for _n in range(counts[j]):
+                    if gen.random() < p_up:
+                        log_s[k] += gen.exponential(1.0 / eta1)
+                    else:
+                        log_s[k] -= gen.exponential(1.0 / eta2)
     return log_s
 
 
-# Docstring for dupire_kernel
-"""
-JIT-compiled kernel for Dupire Local Volatility SDE simulation.
-Note: Numba cannot compile the vol_surface_func itself, so this kernel
-will have a slight overhead from calling back into Python for the vol lookup.
-"""
+@numba.njit(cache=True, nogil=True)
+def sabr_kernel(gen, n_paths, n_steps, antithetic, f0, v0, nu, beta, rho, dt):
+    """
+    SABR forward dynamics dF = sigma_t F^beta dW, d sigma_t = nu sigma_t dZ,
+    d<W,Z> = rho dt. `f0` is the (shifted) initial forward; the terminal forward
+    equals the terminal spot. The origin is absorbing for 0 < beta < 1.
+    """
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    f = np.full(n_paths, f0)
+    v = np.full(n_paths, v0)
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
+    vol_drift = -0.5 * nu * nu * dt
+    for _ in range(n_steps):
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_f = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                f_pos = f[k] if f[k] > 1e-8 else 1e-8
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                f_new = f[k] + v_pos * f_pos**beta * dw_f
+                if beta > 0.0 and f_new < 0.0:
+                    f_new = 0.0
+                f[k] = f_new
+                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
+    return f
 
 
-@numba.jit(nopython=True, cache=True)
+@numba.njit(cache=True, nogil=True)
+def sabr_jump_kernel(
+    gen, n_paths, n_steps, antithetic, f0, v0, nu, beta, rho, lambda_, mu_j, sigma_j, dt
+):
+    """SABR forward dynamics with compensated log-normal jumps on the forward."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    f = np.full(n_paths, f0)
+    v = np.full(n_paths, v0)
+    rho_bar = math.sqrt(1.0 - rho * rho)
+    sdt = math.sqrt(dt)
+    vol_drift = -0.5 * nu * nu * dt
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    for _ in range(n_steps):
+        z1 = gen.standard_normal(half)
+        z2 = gen.standard_normal(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                dw_f = sign * z1[j] * sdt
+                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
+                f_pos = f[k] if f[k] > 1e-8 else 1e-8
+                v_pos = v[k] if v[k] > 0.0 else 0.0
+                f_new = f[k] - compensator * f_pos * dt + v_pos * f_pos**beta * dw_f
+                if beta > 0.0 and f_new < 0.0:
+                    f_new = 0.0
+                for _n in range(counts[j]):
+                    f_new *= math.exp(gen.normal(mu_j, sigma_j))
+                f[k] = f_new
+                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
+    return f
+
+
+@numba.njit(cache=True, nogil=True)
 def dupire_kernel(
+    gen, n_paths, n_steps, antithetic, log_s0, r, q, dt, vol_surface_func
+):
+    """
+    Local volatility: d log S = (r - q - sigma(t, S)^2/2) dt + sigma(t, S) dW.
+    `vol_surface_func(t, s)` must be a numba-compiled scalar function.
+    """
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    log_s = np.full(n_paths, log_s0)
+    sdt = math.sqrt(dt)
+    for i in range(n_steps):
+        t = i * dt
+        z = gen.standard_normal(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                local_vol = vol_surface_func(t, math.exp(log_s[k]))
+                log_s[k] += (r - q - 0.5 * local_vol * local_vol) * dt + (
+                    local_vol * sign * z[j] * sdt
+                )
+    return log_s
+
+
+# ---------------------------------------------------------------------------
+# Quadratic-Exponential scheme (Andersen 2008) for the Heston variance process
+# ---------------------------------------------------------------------------
+QE_PSI_C = 1.5
+
+
+@numba.njit(cache=True, nogil=True, inline="always")
+def _qe_constants(kappa, theta, rho, vol_of_vol, dt):
+    """Pre-computed constants of the QE scheme with gamma_1 = gamma_2 = 1/2."""
+    e = math.exp(-kappa * dt)
+    c1 = vol_of_vol * vol_of_vol * e * (1.0 - e) / kappa
+    c2 = theta * vol_of_vol * vol_of_vol * (1.0 - e) ** 2 / (2.0 * kappa)
+    k1 = 0.5 * dt * (kappa * rho / vol_of_vol - 0.5) - rho / vol_of_vol
+    k2 = 0.5 * dt * (kappa * rho / vol_of_vol - 0.5) + rho / vol_of_vol
+    k3 = 0.5 * dt * (1.0 - rho * rho)
+    k4 = k3
+    k0_plain = -rho * kappa * theta * dt / vol_of_vol
+    return e, c1, c2, k0_plain, k1, k2, k3, k4
+
+
+@numba.njit(cache=True, nogil=True, inline="always")
+def _qe_step(v_old, z_s, z_v, u, theta, e, c1, c2, k0_plain, k1, k2, k3, k4):
+    """
+    One QE step: returns (v_new, increment of log S excluding the (r-q) dt drift).
+    Uses Andersen's martingale correction (eqs. 33-34) whenever it is defined.
+    """
+    m = theta + (v_old - theta) * e
+    s2 = v_old * c1 + c2
+    psi = s2 / (m * m)
+    a_coef = k2 + 0.5 * k4
+    if psi <= QE_PSI_C:
+        inv = 2.0 / psi
+        b2 = inv - 1.0 + math.sqrt(inv) * math.sqrt(inv - 1.0)
+        a = m / (1.0 + b2)
+        v_new = a * (math.sqrt(b2) + z_v) ** 2
+        two_a_a = 2.0 * a_coef * a
+        if two_a_a < 1.0:
+            k0 = (
+                -a_coef * b2 * a / (1.0 - two_a_a)
+                + 0.5 * math.log(1.0 - two_a_a)
+                - (k1 + 0.5 * k3) * v_old
+            )
+        else:
+            k0 = k0_plain
+    else:
+        p = (psi - 1.0) / (psi + 1.0)
+        beta = (1.0 - p) / m
+        if u >= 1.0:
+            u = 0.9999999999999999
+        v_new = 0.0 if u <= p else math.log((1.0 - p) / (1.0 - u)) / beta
+        if a_coef < beta:
+            k0 = (
+                -math.log(p + beta * (1.0 - p) / (beta - a_coef))
+                - (k1 + 0.5 * k3) * v_old
+            )
+        else:
+            k0 = k0_plain
+    d_log_s = k0 + k1 * v_old + k2 * v_new + math.sqrt(k3 * v_old + k4 * v_new) * z_s
+    return v_new, d_log_s
+
+
+@numba.njit(cache=True, nogil=True)
+def heston_qe_kernel(
+    gen,
     n_paths,
     n_steps,
+    antithetic,
     log_s0,
+    v0,
     r,
     q,
+    kappa,
+    theta,
+    rho,
+    vol_of_vol,
     dt,
-    dw,
-    vol_surface_func,
 ):
+    """Heston with the Quadratic-Exponential variance scheme (Andersen 2008)."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
-    for i in range(n_steps):
-        t_current = i * dt
-        current_spot = np.exp(log_s)
-        local_vol = vol_surface_func(t_current, current_spot)
-        drift = (r - q - 0.5 * local_vol**2) * dt
-        log_s += drift + local_vol * dw[:, i]
+    v = np.full(n_paths, v0)
+    e, c1, c2, k0_plain, k1, k2, k3, k4 = _qe_constants(
+        kappa, theta, rho, vol_of_vol, dt
+    )
+    drift = (r - q) * dt
+    for _ in range(n_steps):
+        z_s = gen.standard_normal(half)
+        z_v = gen.standard_normal(half)
+        u = gen.random(half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                uu = u[j] if s_idx == 0 else 1.0 - u[j]
+                v_new, d_log = _qe_step(
+                    v[k],
+                    sign * z_s[j],
+                    sign * z_v[j],
+                    uu,
+                    theta,
+                    e,
+                    c1,
+                    c2,
+                    k0_plain,
+                    k1,
+                    k2,
+                    k3,
+                    k4,
+                )
+                log_s[k] += drift + d_log
+                v[k] = v_new
+    return log_s
 
+
+@numba.njit(cache=True, nogil=True)
+def bates_qe_kernel(
+    gen,
+    n_paths,
+    n_steps,
+    antithetic,
+    log_s0,
+    v0,
+    r,
+    q,
+    kappa,
+    theta,
+    rho,
+    vol_of_vol,
+    lambda_,
+    mu_j,
+    sigma_j,
+    dt,
+):
+    """Bates with the QE variance scheme and compensated log-normal jumps."""
+    half = n_paths // 2 if antithetic else n_paths
+    n_signs = 2 if antithetic else 1
+    log_s = np.full(n_paths, log_s0)
+    v = np.full(n_paths, v0)
+    e, c1, c2, k0_plain, k1, k2, k3, k4 = _qe_constants(
+        kappa, theta, rho, vol_of_vol, dt
+    )
+    compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    drift = (r - q - compensator) * dt
+    for _ in range(n_steps):
+        z_s = gen.standard_normal(half)
+        z_v = gen.standard_normal(half)
+        u = gen.random(half)
+        counts = gen.poisson(lambda_ * dt, half)
+        for s_idx in range(n_signs):
+            sign = 1.0 if s_idx == 0 else -1.0
+            off = s_idx * half
+            for j in range(half):
+                k = off + j
+                uu = u[j] if s_idx == 0 else 1.0 - u[j]
+                v_new, d_log = _qe_step(
+                    v[k],
+                    sign * z_s[j],
+                    sign * z_v[j],
+                    uu,
+                    theta,
+                    e,
+                    c1,
+                    c2,
+                    k0_plain,
+                    k1,
+                    k2,
+                    k3,
+                    k4,
+                )
+                log_s[k] += drift + d_log
+                v[k] = v_new
+                for _n in range(counts[j]):
+                    log_s[k] += gen.normal(mu_j, sigma_j)
     return log_s

@@ -18,6 +18,8 @@ from optpricing import (
     HestonModel,
     HyperbolicModel,
     NIGModel,
+    Rate,
+    Stock,
     VarianceGammaModel,
 )
 from optpricing.models.base import sample_from_cf
@@ -246,23 +248,17 @@ def test_sabr_kernel_terminal_spots_are_non_negative():
     """
     from optpricing.techniques.kernels import sabr_kernel
 
-    n, m, dt = 50_000, 50, 2.0 / 50
-    rng = np.random.default_rng(9)
-    dw1 = rng.standard_normal((n, m)) * math.sqrt(dt)
-    dw2 = rng.standard_normal((n, m)) * math.sqrt(dt)
     terminal = sabr_kernel(
-        n_paths=n,
-        n_steps=m,
-        s0=100.0,
-        v0=3.0,
-        r=0.05,
-        q=0.01,
-        nu=1.5,
-        beta=0.3,
-        rho=-0.5,
-        dt=dt,
-        dw1=dw1,
-        dw2=dw2,
+        np.random.default_rng(9),
+        50_000,
+        50,
+        False,
+        100.0,
+        3.0,
+        1.5,
+        0.3,
+        -0.5,
+        2.0 / 50,
     )
     assert np.all(terminal >= 0.0)
     assert np.mean(terminal == 0.0) > 0.0  # the absorbing state is actually reached
@@ -299,24 +295,6 @@ def test_sabr_forward_mc_matches_hagan_black(
     assert mc == pytest.approx(hagan, abs=tol)
 
 
-def test_sabr_path_kernel_returns_spot_paths():
-    """The American driver needs spot paths; the kernel evolves the forward and
-    discounts it back: S_0 must equal the spot and E[S_t] the forward at t."""
-    from optpricing.techniques.kernels import sabr_path_kernel
-
-    n, steps, T, r, q = 20_000, 50, 1.0, 0.05, 0.01
-    dt = T / steps
-    rng = np.random.default_rng(0)
-    dw1 = rng.standard_normal((n, steps)) * math.sqrt(dt)
-    dw2 = rng.standard_normal((n, steps)) * math.sqrt(dt)
-    f0 = 100.0 * math.exp((r - q) * T)
-    paths = sabr_path_kernel(n, steps, f0, 0.5, r, q, 0.5, 0.8, -0.6, dt, dw1, dw2)
-    assert paths[:, 0] == pytest.approx(100.0)
-    assert paths[:, 25].mean() == pytest.approx(
-        100.0 * math.exp((r - q) * 0.5), rel=5e-3
-    )
-
-
 def test_sabr_american_put_dominates_european(stock, rate):
     from optpricing import SABRModel
     from optpricing.techniques import ClosedFormTechnique
@@ -342,3 +320,65 @@ def test_heston_and_bates_defaults_satisfy_feller(recwarn):
         heston, bates = HestonModel(), BatesModel()
     for p in (heston.params, bates.params):
         assert 2 * p["kappa"] * p["theta"] >= p["vol_of_vol"] ** 2
+
+
+@pytest.mark.parametrize(
+    "scheme, steps, tol",
+    [("qe", 20, 0.05), ("qe", 50, 0.05), ("euler", 252, 0.08)],
+    ids=["qe_20_steps", "qe_50_steps", "euler_252_steps"],
+)
+def test_heston_mc_variance_schemes_match_quantlib(
+    stock, rate, atm_call, heston_base, scheme, steps, tol
+):
+    """QuantLib AnalyticHestonEngine: 9.966521 (Feller-violating parameters)."""
+    mc = MonteCarloTechnique(
+        n_paths=400_000, n_steps=steps, seed=1, variance_scheme=scheme
+    )
+    assert mc.price(atm_call, stock, heston_base, rate).price == pytest.approx(
+        9.966521164, abs=tol
+    )
+
+
+def test_qe_scheme_handles_long_maturity_high_vol_of_vol():
+    """
+    QuantLib 29.018273 for S=100, K=120, T=10, r=3%, v0=theta=0.09, kappa=0.5,
+    xi=1, rho=-0.9. Full-truncation Euler is off by +9 even with 252 steps on
+    this case; the QE scheme (Andersen 2008) is within Monte Carlo noise at 20.
+    """
+    model = HestonModel(
+        params={"v0": 0.09, "kappa": 0.5, "theta": 0.09, "rho": -0.9, "vol_of_vol": 1.0}
+    )
+    option = make_option(120.0, 10.0)
+    stock, rate = Stock(spot=100.0, dividend=0.0), Rate(rate=0.03)
+    qe = (
+        MonteCarloTechnique(n_paths=400_000, n_steps=20, seed=1)
+        .price(option, stock, model, rate)
+        .price
+    )
+    assert qe == pytest.approx(29.018272864, abs=0.15)
+
+
+def test_bates_qe_matches_quantlib(stock, rate, atm_call):
+    bates = BatesModel(
+        params={
+            "v0": 0.04,
+            "kappa": 2.0,
+            "theta": 0.05,
+            "rho": -0.7,
+            "vol_of_vol": 0.5,
+            "lambda": 0.5,
+            "mu_j": -0.1,
+            "sigma_j": 0.15,
+        }
+    )
+    mc = MonteCarloTechnique(n_paths=400_000, n_steps=20, seed=1)
+    assert mc.price(atm_call, stock, bates, rate).price == pytest.approx(
+        11.259807425, abs=0.06
+    )
+
+
+def test_variance_scheme_is_validated():
+    with pytest.raises(ValueError, match="variance_scheme"):
+        MonteCarloTechnique(variance_scheme="milstein")
+    with pytest.raises(ValueError, match="variance_scheme"):
+        AmericanMonteCarloTechnique(variance_scheme="milstein")
