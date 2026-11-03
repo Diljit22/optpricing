@@ -15,7 +15,7 @@ d(logS) = (r - q - 0.5*sigma^2)dt + sigma*dW
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def bsm_kernel(
     n_paths,
     n_steps,
@@ -40,7 +40,7 @@ JIT-compiled kernel for Heston SDE simulation (Full Truncation).
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def heston_kernel(
     n_paths,
     n_steps,
@@ -85,7 +85,7 @@ JIT-compiled kernel for Merton Jump-Diffusion SDE simulation.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def merton_kernel(
     n_paths,
     n_steps,
@@ -124,7 +124,7 @@ JIT-compiled kernel for Bates (Heston + Jumps) SDE simulation.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def bates_kernel(
     n_paths,
     n_steps,
@@ -183,7 +183,7 @@ JIT-compiled kernel for SABR SDE simulation.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def sabr_kernel(
     n_paths,
     n_steps,
@@ -211,6 +211,8 @@ def sabr_kernel(
         s_pos = np.maximum(s, 1e-8)  # Avoid negative spot
         v_pos = np.maximum(v, 0)
         s += (r - q) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        if beta > 0.0:
+            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
 
         # Evolve volatility sigma_t (lognormal process)
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
@@ -224,7 +226,7 @@ JIT-compiled kernel for SABR with log-normal jumps on the spot process.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def sabr_jump_kernel(
     n_paths,
     n_steps,
@@ -259,6 +261,8 @@ def sabr_jump_kernel(
 
         # SABR diffusion part
         s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        if beta > 0.0:
+            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
 
         jumps_this_step = jump_counts[:, i]
@@ -282,7 +286,7 @@ JIT-compiled kernel for Kou Double-Exponential Jump-Diffusion SDE.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def kou_kernel(
     n_paths,
     n_steps,
@@ -337,7 +341,7 @@ will have a slight overhead from calling back into Python for the vol lookup.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def dupire_kernel(
     n_paths,
     n_steps,

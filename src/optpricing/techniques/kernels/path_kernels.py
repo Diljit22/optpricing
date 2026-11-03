@@ -14,7 +14,7 @@ JIT-compiled kernel for BSM SDE that returns the full path matrix.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def bsm_path_kernel(
     n_paths: int,
     n_steps: int,
@@ -41,7 +41,7 @@ JIT-compiled kernel for Heston SDE that returns the full path matrix.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def heston_path_kernel(
     n_paths: int,
     n_steps: int,
@@ -83,7 +83,7 @@ JIT-compiled kernel for Merton SDE that returns the full path matrix.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def merton_path_kernel(
     n_paths: int,
     n_steps: int,
@@ -127,7 +127,7 @@ JIT-compiled kernel for Bates SDE that returns the full path matrix.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def bates_path_kernel(
     n_paths: int,
     n_steps: int,
@@ -186,7 +186,7 @@ JIT-compiled kernel for SABR SDE that returns the full path matrix.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def sabr_path_kernel(
     n_paths: int,
     n_steps: int,
@@ -213,6 +213,8 @@ def sabr_path_kernel(
         s_pos, v_pos = np.maximum(s, 1e-8), np.maximum(v, 0)
 
         s += (r - q) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        if beta > 0.0:
+            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
         paths[:, i + 1] = s
     return paths
@@ -224,7 +226,7 @@ JIT-compiled kernel for SABR Jump SDE that returns the full path matrix.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def sabr_jump_path_kernel(
     n_paths: int,
     n_steps: int,
@@ -256,6 +258,8 @@ def sabr_jump_path_kernel(
         s_pos, v_pos = np.maximum(s, 1e-8), np.maximum(v, 0)
 
         s += (r - q - compensator) * s_pos * dt + v_pos * (s_pos**beta) * z1
+        if beta > 0.0:
+            s = np.maximum(s, 0.0)  # the origin is absorbing for 0 < beta < 1
         v = v * np.exp(-0.5 * alpha**2 * dt + alpha * correlated_z2)
 
         jumps_this_step = jump_counts[:, i]
@@ -278,7 +282,7 @@ JIT-compiled kernel for Kou SDE that returns the full path matrix.
 """
 
 
-@numba.jit(nopython=True, fastmath=True, cache=True)
+@numba.jit(nopython=True, cache=True)
 def kou_path_kernel(
     n_paths: int,
     n_steps: int,
