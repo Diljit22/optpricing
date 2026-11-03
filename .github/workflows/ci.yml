@@ -2,44 +2,144 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: "1"
 
 jobs:
-  test-and-lint:
+  lint:
+    name: Lint (ruff)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install lint group
+        run: uv sync --locked --only-group lint
+
+      - name: ruff check
+        run: uv run --no-sync ruff check . --output-format github
+
+      - name: ruff format --check
+        run: uv run --no-sync ruff format --check .
+
+  test:
+    name: Test (py${{ matrix.python-version }}${{ matrix.experimental && ', experimental' || '' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11"]
-
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        experimental: [false]
+        include:
+          # Newest CPython: allowed to fail until the compiled stack (PyYAML etc.) ships wheels.
+          - python-version: "3.15"
+            experimental: true
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
+          fetch-depth: 0 # setuptools_scm derives the version from tags
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev]
+      - name: Install project + test group
+        run: uv sync --locked --no-default-groups --group test
 
-      - name: Lint with ruff
-        run: |
-          ruff check .
-          ruff format --check .
+      - name: Run tests with coverage
+        run: uv run --no-sync pytest --cov --cov-report=xml --cov-report=term
 
-      - name: Run tests with pytest and generate coverage report
-        run: |
-          pytest --cov=src/optpricing --cov-report=xml
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12' && !cancelled()
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
           flags: unittests
           fail_ci_if_error: false
+
+  minimum-versions:
+    # Keeps the `>=` floors in pyproject.toml honest: install the oldest allowed
+    # version of every direct dependency and run the suite against it.
+    name: Minimum dependency versions (py3.11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Install with lowest direct versions
+        run: |
+          uv venv
+          uv pip install --resolution lowest-direct -e ".[ui]" --group test
+          uv pip list
+
+      - name: Run tests
+        run: uv run --no-sync pytest
+
+  build:
+    name: Build and check distributions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: twine check
+        run: uvx twine check --strict dist/*
+
+      - name: Guard against a bloated sdist
+        # setuptools_scm bundles every tracked file; MANIFEST.in prunes data/, artifacts/, docs/.
+        run: |
+          size=$(stat -c %s dist/*.tar.gz)
+          echo "sdist size: ${size} bytes"
+          if [ "$size" -gt 1000000 ]; then
+            echo "::error::sdist is larger than 1 MB - check MANIFEST.in"
+            exit 1
+          fi
+
+      - name: Smoke-test the wheel in a clean environment
+        run: |
+          uv venv /tmp/smoke
+          uv pip install --python /tmp/smoke/bin/python "$(ls dist/*.whl)[ui]"
+          /tmp/smoke/bin/optpricing --help
+          /tmp/smoke/bin/python -c "import optpricing; print(optpricing.__version__)"
