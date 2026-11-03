@@ -42,6 +42,7 @@ def save_historical_returns(
 
             log_returns = np.log(data["Close"] / data["Close"].shift(1)).dropna()
             filename = HISTORICAL_DIR / f"{ticker}_{period}_returns.parquet"
+            filename.parent.mkdir(parents=True, exist_ok=True)
             log_returns.to_frame(name="log_return").to_parquet(filename)
 
             print(f"  -> Saved to {filename}")

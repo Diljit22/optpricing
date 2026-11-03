@@ -123,5 +123,6 @@ class BacktestWorkflow:
         df = pd.DataFrame(self.results)
         today_str = pd.Timestamp.now().strftime("%Y-%m-%d")
         filepath = BACKTEST_LOGS_DIR / f"{self.ticker}_backtest_{today_str}.csv"
+        filepath.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(filepath, index=False)
         logger.info("Detailed backtest log saved to: %s", filepath)

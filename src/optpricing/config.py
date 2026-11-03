@@ -1,38 +1,44 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import yaml
 
 __doc__ = """
-Load or create the project's config.yaml and ensure all data/artifact directories exist.
+Resolve the project root, read the optional ``config.yaml`` and expose the data
+and artifact directories.
+
+The root is ``$OPTPRICING_HOME`` if set, otherwise the current working directory.
+Running from a source checkout therefore behaves as before, while an installed
+package no longer writes ``config.yaml`` or data folders next to its own modules
+in ``site-packages``. Nothing is created at import time; writers create the
+directory they need (see :func:`ensure_directories`).
 """
 
+DEFAULT_CONFIG: dict[str, object] = {
+    "live_data_provider": "yfinance",
+    "data_directory": "data",
+    "artifacts_directory": "artifacts",
+}
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(os.environ.get("OPTPRICING_HOME", Path.cwd())).resolve()
 CONFIG_FILE_PATH = PROJECT_ROOT / "config.yaml"
 
-if not CONFIG_FILE_PATH.exists():
-    print(f"Config file not found. Creating default config.yaml at {CONFIG_FILE_PATH}")
-    default_config = {
-        "live_data_provider": "yfinance",
-        "data_directory": "data",
-        "artifacts_directory": "artifacts",
-    }
-    with open(CONFIG_FILE_PATH, "w") as f:
-        yaml.dump(
-            default_config,
-            f,
-            default_flow_style=False,
-            sort_keys=False,
-        )
 
-with open(CONFIG_FILE_PATH) as f:
-    _config = yaml.safe_load(f) or {}
+def _load_config(path: Path) -> dict:
+    if not path.exists():
+        return dict(DEFAULT_CONFIG)
+    with open(path) as f:
+        loaded = yaml.safe_load(f) or {}
+    return {**DEFAULT_CONFIG, **loaded}
+
+
+_config = _load_config(CONFIG_FILE_PATH)
 
 # Directory Management
-DATA_DIR = PROJECT_ROOT / _config.get("data_directory", "data")
-ARTIFACTS_DIR = PROJECT_ROOT / _config.get("artifacts_directory", "artifacts")
+DATA_DIR = PROJECT_ROOT / str(_config.get("data_directory", "data"))
+ARTIFACTS_DIR = PROJECT_ROOT / str(_config.get("artifacts_directory", "artifacts"))
 
 # Input Data Directories
 MARKET_SNAPSHOT_DIR = DATA_DIR / "market_data_snapshots"
@@ -43,7 +49,6 @@ BACKTEST_LOGS_DIR = ARTIFACTS_DIR / "backtest_logs"
 CALIBRATED_PARAMS_DIR = ARTIFACTS_DIR / "calibrated_params"
 CALIBRATION_LOGS_DIR = ARTIFACTS_DIR / "calibration_logs"
 
-# Ensure all directories exist
 ALL_DIRS = [
     DATA_DIR,
     ARTIFACTS_DIR,
@@ -53,5 +58,9 @@ ALL_DIRS = [
     CALIBRATED_PARAMS_DIR,
     CALIBRATION_LOGS_DIR,
 ]
-for path in ALL_DIRS:
-    path.mkdir(parents=True, exist_ok=True)
+
+
+def ensure_directories() -> None:
+    """Create all data and artifact directories (idempotent)."""
+    for path in ALL_DIRS:
+        path.mkdir(parents=True, exist_ok=True)
