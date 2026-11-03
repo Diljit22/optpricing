@@ -83,6 +83,22 @@ def _lsmc_bsm_20k() -> float:
     return amc.price(PUT, STOCK, BSM, RATE).price
 
 
+def _heston_chain_400() -> float:
+    import pandas as pd
+
+    from optpricing.calibration.vectorized_pricer import price_options_vectorized
+
+    chain = pd.DataFrame(
+        [
+            {"strike": k, "maturity": t, "optionType": typ}
+            for t in (0.1, 0.25, 0.5, 1.0, 2.0)
+            for k in np.linspace(60, 150, 40)
+            for typ in ("call", "put")
+        ]
+    )
+    return float(price_options_vectorized(chain, STOCK, HESTON, RATE, v0=0.04).sum())
+
+
 CASES: dict[str, tuple[Callable[[], float], str]] = {
     "bsm_closed_form_x1000": (_bsm_closed_form, "1000 closed-form BSM prices"),
     "heston_fft": (_heston_fft, "Carr-Madan FFT, N=4096"),
@@ -91,6 +107,10 @@ CASES: dict[str, tuple[Callable[[], float], str]] = {
     "mc_bsm_100k": (_mc_bsm_100k, "100k paths x 100 steps, antithetic"),
     "mc_heston_100k": (_mc_heston_100k, "100k paths x 100 steps, antithetic"),
     "lsmc_bsm_20k": (_lsmc_bsm_20k, "Longstaff-Schwartz, 20k paths x 50 steps"),
+    "heston_chain_400": (
+        _heston_chain_400,
+        "vectorised chain pricer, 400 options x 5 maturities",
+    ),
 }
 
 

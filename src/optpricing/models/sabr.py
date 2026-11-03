@@ -5,7 +5,7 @@ import warnings
 from typing import Any
 
 import numpy as np
-from scipy.stats import norm
+from scipy.special import ndtr
 
 from optpricing.models.base import BaseModel, ParamValidator
 
@@ -274,8 +274,8 @@ class SABRModel(BaseModel):
         d2 = d1 - sigma * sqrt_t
         discount = math.exp(-r * t)
         if call:
-            return discount * (f_s * norm.cdf(d1) - k_s * norm.cdf(d2))
-        return discount * (k_s * norm.cdf(-d2) - f_s * norm.cdf(-d1))
+            return discount * (f_s * ndtr(d1) - k_s * ndtr(d2))
+        return discount * (k_s * ndtr(-d2) - f_s * ndtr(-d1))
 
     #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any:

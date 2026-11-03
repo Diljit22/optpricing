@@ -6,6 +6,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Performance
+
+- Monte Carlo engine rebuilt: the numba kernels draw their own random numbers from per-chunk
+  `numpy.random.Generator`s (spawned from one seed, fixed chunk size) and run concurrently on a thread pool
+  (`n_jobs`, `chunk_size` options; `OPTPRICING_MC_THREADS`). Results depend only on the seed and chunk size,
+  common-random-number Greeks are preserved, and jump sizes now come from the seeded stream. 100k-path
+  BSM 27.7 → 3.4 ms, Heston (Euler) 88.7 → 7.5 ms on 10 cores.
+- Heston/Bates Monte Carlo defaults to Andersen's Quadratic-Exponential variance scheme with martingale
+  correction (`variance_scheme="qe"`; `"euler"` keeps full truncation). 20 QE steps are more accurate than
+  252 Euler steps; on long-dated, high vol-of-vol parameters Euler was off by several price units.
+- Closed forms use `scipy.special.ndtr` (BSM price 28 → 2 µs); the Merton series is vectorised with log-space
+  Poisson weights (2.7 ms → 14 µs, no overflow past 170 terms).
+- `IntegrationTechnique` evaluates the Gil–Pelaez integrals on a cached composite Gauss–Legendre rule
+  (`method="gauss"`, 0.69 → 0.07 ms; `method="quad"` keeps the adaptive rule); the calibration chain pricer
+  uses the same rule (400 options 19.5 → 1.7 ms). `FFTTechnique` interpolates cubically and defaults to
+  `eta=0.125` (ATM error 5e-4 → 1e-6 at the same cost).
+- Longstaff–Schwartz: parallel power-sum regression on moneyness, time-major path matrices
+  (20k paths 32 → 13 ms); Crank–Nicolson PDE marches in numba with the two constant matrices factorised once
+  (200×200 grid 2.3 → 0.3 ms).
+- Kernel signatures changed: SDE kernels take `(gen, n_paths, n_steps, antithetic, ...)`, path kernels return
+  `(n_steps + 1, n_paths)` arrays, and `longstaff_schwartz_pricer` takes `n_threads`.
+
 ### Changed
 
 - Python 3.10 support dropped (end of life); supported versions are 3.11–3.14, with 3.15 tested as experimental.

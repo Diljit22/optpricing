@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
+from scipy.special import ndtr
 
 from optpricing.atoms import Rate, Stock
 
@@ -78,13 +78,14 @@ class BSMIVSolver:
                 sqrt_T = np.sqrt(T)
                 d1 = (np.log(S / K) + (r - q + 0.5 * iv**2) * T) / (iv * sqrt_T)
                 d2 = d1 - iv * sqrt_T
-                vega = S * np.exp(-q * T) * sqrt_T * norm.pdf(d1)
-                call_prices = S * np.exp(-q * T) * norm.cdf(d1) - K * np.exp(
-                    -r * T
-                ) * norm.cdf(d2)
-                put_prices = K * np.exp(-r * T) * norm.cdf(-d2) - S * np.exp(
-                    -q * T
-                ) * norm.cdf(-d1)
+                pdf_d1 = np.exp(-0.5 * d1 * d1) / np.sqrt(2.0 * np.pi)
+                vega = S * np.exp(-q * T) * sqrt_T * pdf_d1
+                call_prices = S * np.exp(-q * T) * ndtr(d1) - K * np.exp(-r * T) * ndtr(
+                    d2
+                )
+                put_prices = K * np.exp(-r * T) * ndtr(-d2) - S * np.exp(-q * T) * ndtr(
+                    -d1
+                )
             model_prices = np.where(is_call, call_prices, put_prices)
             error = model_prices - target_prices
             if np.all(np.abs(error) < self.tolerance):

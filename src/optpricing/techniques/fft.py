@@ -15,6 +15,24 @@ dampened, risk-neutral option price, following the Carr-Madan formula.
 """
 
 
+def _lagrange4(x: float, grid: np.ndarray, values: np.ndarray) -> float:
+    """Cubic Lagrange interpolation on a uniform grid (falls back to linear
+    interpolation within one cell of either end)."""
+    n = grid.size
+    i = int(np.searchsorted(grid, x)) - 1
+    if i < 1 or i > n - 3:
+        return float(np.interp(x, grid, values))
+    xs, ys = grid[i - 1 : i + 3], values[i - 1 : i + 3]
+    result = 0.0
+    for j in range(4):
+        term = ys[j]
+        for m in range(4):
+            if m != j:
+                term *= (x - xs[m]) / (xs[j] - xs[m])
+        result += term
+    return float(result)
+
+
 class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
     Fast Fourier Transform (FFT) pricer based on the Carr-Madan formula,
@@ -25,7 +43,7 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         self,
         *,
         n: int = 12,
-        eta: float = 0.25,
+        eta: float = 0.125,
         alpha: float | None = None,
     ):
         """
@@ -36,7 +54,8 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
         n : int, optional
             The exponent for the number of grid points (N = 2^n), by default 12.
         eta : float, optional
-            The spacing of the grid in the frequency domain, by default 0.25.
+            The spacing of the grid in the frequency domain, by default 0.125
+            (0.25 left a 3e-5 discretisation error on ATM prices).
         alpha : float | None, optional
             The dampening parameter. If None, it is auto-tuned based on a
             volatility proxy from the model. Defaults to None.
@@ -113,9 +132,11 @@ class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         call_price_grid = np.exp(-alpha * k_grid) / math.pi * fft_vals
 
-        # Interpolate to find the results at the target strike
+        # Cubic (4-point Lagrange) interpolation at the target log-strike; the
+        # grid spacing is ~0.6% in strike, so linear interpolation left errors
+        # of a few 1e-4 on ATM prices.
         k_target = math.log(K)
-        call_price = np.interp(k_target, k_grid, call_price_grid)
+        call_price = _lagrange4(k_target, k_grid, call_price_grid)
 
         if option.option_type is OptionType.CALL:
             price = call_price

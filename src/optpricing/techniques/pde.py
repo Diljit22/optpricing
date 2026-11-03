@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import numba
 import numpy as np
-from scipy.linalg import solve_banded
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.models import BaseModel, BSMModel
@@ -13,6 +13,73 @@ __doc__ = """
 Defines a pricing technique based on solving the Black-Scholes Partial
 Differential Equation (PDE) using a finite difference method.
 """
+
+
+@numba.njit(cache=True)
+def _thomas_factors(lower, diag, upper):
+    """Forward-elimination factors of a constant tridiagonal matrix
+    (sub-diagonal `lower[1:]`, diagonal `diag`, super-diagonal `upper[:-1]`)."""
+    n = diag.shape[0]
+    c_prime = np.empty(n)
+    denom = np.empty(n)
+    denom[0] = diag[0]
+    c_prime[0] = upper[0] / denom[0]
+    for i in range(1, n):
+        denom[i] = diag[i] - lower[i] * c_prime[i - 1]
+        c_prime[i] = upper[i] / denom[i] if i < n - 1 else 0.0
+    return c_prime, denom
+
+
+@numba.njit(cache=True)
+def _thomas_solve(lower, c_prime, denom, rhs, out):
+    n = rhs.shape[0]
+    out[0] = rhs[0] / denom[0]
+    for i in range(1, n):
+        out[i] = (rhs[i] - lower[i] * out[i - 1]) / denom[i]
+    for i in range(n - 2, -1, -1):
+        out[i] -= c_prime[i] * out[i + 1]
+
+
+@numba.njit(cache=True)
+def _march(V, a, b, c, thetas, hs, v_low, v_high):
+    """
+    Time-march the theta scheme (I - theta h A) V_new = (I + (1-theta) h A) V_old
+    with Dirichlet boundaries `v_low[s]`, `v_high[s]` at sub-step s. Each distinct
+    (theta, h) pair is factorised once.
+    """
+    n = a.shape[0]
+    n_sub = thetas.shape[0]
+    rhs = np.empty(n)
+    inner = np.empty(n)
+    # at most two distinct (theta, h) pairs: implicit half-steps and CN steps
+    th_a, h_a = thetas[0], hs[0]
+    lower_a = -th_a * h_a * a
+    diag_a = 1.0 - th_a * h_a * b
+    upper_a = -th_a * h_a * c
+    cp_a, den_a = _thomas_factors(lower_a, diag_a, upper_a)
+    th_b, h_b = thetas[n_sub - 1], hs[n_sub - 1]
+    lower_b = -th_b * h_b * a
+    diag_b = 1.0 - th_b * h_b * b
+    upper_b = -th_b * h_b * c
+    cp_b, den_b = _thomas_factors(lower_b, diag_b, upper_b)
+    for s in range(n_sub):
+        theta, h = thetas[s], hs[s]
+        explicit = (1.0 - theta) * h
+        for j in range(n):
+            rhs[j] = V[j + 1] + explicit * (
+                a[j] * V[j] + b[j] * V[j + 1] + c[j] * V[j + 2]
+            )
+        rhs[0] += theta * h * a[0] * v_low[s]
+        rhs[n - 1] += theta * h * c[n - 1] * v_high[s]
+        if theta == th_a and h == h_a:
+            _thomas_solve(lower_a, cp_a, den_a, rhs, inner)
+        else:
+            _thomas_solve(lower_b, cp_b, den_b, rhs, inner)
+        for j in range(n):
+            V[j + 1] = inner[j]
+        V[0] = v_low[s]
+        V[n + 1] = v_high[s]
+    return V
 
 
 class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
@@ -88,14 +155,6 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         b = -(sigma**2 * j**2 + r)
         c = 0.5 * (sigma**2 * j**2 + (r - q) * j)
 
-        def banded(theta: float, h: float) -> np.ndarray:
-            """Banded matrix of (I - theta*h*A) for scipy.linalg.solve_banded."""
-            lhs = np.zeros((3, M - 1))
-            lhs[0, 1:] = -theta * h * c[:-1]
-            lhs[1, :] = 1 - theta * h * b
-            lhs[2, :-1] = -theta * h * a[1:]
-            return lhs
-
         def boundary(tau: float) -> tuple[float, float]:
             """Dirichlet values at S=0 and S=S_max for time-to-expiry tau."""
             if is_call:
@@ -106,25 +165,21 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
 
         # Rannacher start-up: the first `rannacher_steps` CN steps are each
         # replaced by two fully implicit half-steps.
-        schedule: list[tuple[float, float]] = []  # (theta, h) per sub-step
         n_r = min(self.rannacher_steps, N)
-        schedule += [(1.0, 0.5 * dt)] * (2 * n_r)
-        schedule += [(0.5, dt)] * (N - n_r)
-
-        lhs_cache: dict[tuple[float, float], np.ndarray] = {}
-        tau = 0.0
-        for theta, h in schedule:
-            lhs = lhs_cache.get((theta, h))
-            if lhs is None:
-                lhs = lhs_cache[(theta, h)] = banded(theta, h)
-            explicit = 1.0 - theta
-            rhs = V[1:-1] + explicit * h * (a * V[:-2] + b * V[1:-1] + c * V[2:])
-            tau += h
-            v0_new, vM_new = boundary(tau)
-            rhs[0] += theta * h * a[0] * v0_new
-            rhs[-1] += theta * h * c[-1] * vM_new
-            V[1:-1] = solve_banded((1, 1), lhs, rhs, overwrite_b=True)
-            V[0], V[-1] = v0_new, vM_new
+        thetas = np.concatenate([np.ones(2 * n_r), np.full(N - n_r, 0.5)])
+        hs = np.concatenate([np.full(2 * n_r, 0.5 * dt), np.full(N - n_r, dt)])
+        taus = np.cumsum(hs)
+        bounds = np.array([boundary(t) for t in taus])
+        V = _march(
+            V,
+            a,
+            b,
+            c,
+            thetas,
+            hs,
+            np.ascontiguousarray(bounds[:, 0]),
+            np.ascontiguousarray(bounds[:, 1]),
+        )
 
         delta = (V[j0 + 1] - V[j0 - 1]) / (2 * dS)
         gamma_val = (V[j0 + 1] - 2 * V[j0] + V[j0 - 1]) / (dS**2)

@@ -3,13 +3,20 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import numpy as np
-from scipy.stats import norm
+from scipy.special import ndtr
 
 from optpricing.models.base import CF, BaseModel, ParamValidator, PDECoeffs
 
 __doc__ = """
 Defines the Black-Scholes-Merton (BSM) model for pricing European options.
 """
+
+_INV_SQRT_2PI = 0.3989422804014327
+
+
+def _npdf(x):
+    """Standard normal density (scalar or array), without scipy.stats overhead."""
+    return _INV_SQRT_2PI * np.exp(-0.5 * x * x)
 
 
 class BSMModel(BaseModel):
@@ -104,9 +111,9 @@ class BSMModel(BaseModel):
         df_rate = np.exp(-r * t)
 
         if call:
-            price = spot * df_div * norm.cdf(d1) - strike * df_rate * norm.cdf(d2)
+            price = spot * df_div * ndtr(d1) - strike * df_rate * ndtr(d2)
         else:
-            price = strike * df_rate * norm.cdf(-d2) - spot * df_div * norm.cdf(-d1)
+            price = strike * df_rate * ndtr(-d2) - spot * df_div * ndtr(-d1)
         return price
 
     def delta_analytic(
@@ -125,7 +132,7 @@ class BSMModel(BaseModel):
             sigma * np.sqrt(t)
         )
         df_div = np.exp(-q * t)
-        return df_div * norm.cdf(d1) if call else -df_div * norm.cdf(-d1)
+        return df_div * ndtr(d1) if call else -df_div * ndtr(-d1)
 
     def gamma_analytic(
         self,
@@ -141,7 +148,7 @@ class BSMModel(BaseModel):
         sqrt_t = np.sqrt(t)
         d1 = (np.log(spot / strike) + (r - q + 0.5 * sigma**2) * t) / (sigma * sqrt_t)
         df_div = np.exp(-q * t)
-        return df_div * norm.pdf(d1) / (spot * sigma * sqrt_t)
+        return df_div * _npdf(d1) / (spot * sigma * sqrt_t)
 
     def vega_analytic(
         self,
@@ -156,7 +163,7 @@ class BSMModel(BaseModel):
         sigma = self.params["sigma"]
         sqrt_t = np.sqrt(t)
         d1 = (np.log(spot / strike) + (r - q + 0.5 * sigma**2) * t) / (sigma * sqrt_t)
-        return spot * np.exp(-q * t) * norm.pdf(d1) * sqrt_t
+        return spot * np.exp(-q * t) * _npdf(d1) * sqrt_t
 
     def theta_analytic(
         self,
@@ -173,13 +180,13 @@ class BSMModel(BaseModel):
         sqrt_t = np.sqrt(t)
         d1 = (np.log(spot / strike) + (r - q + 0.5 * sigma**2) * t) / (sigma * sqrt_t)
         d2 = d1 - sigma * sqrt_t
-        term1 = -spot * np.exp(-q * t) * norm.pdf(d1) * sigma / (2 * sqrt_t)
+        term1 = -spot * np.exp(-q * t) * _npdf(d1) * sigma / (2 * sqrt_t)
         if call:
-            term2 = q * spot * np.exp(-q * t) * norm.cdf(d1)
-            term3 = -r * strike * np.exp(-r * t) * norm.cdf(d2)
+            term2 = q * spot * np.exp(-q * t) * ndtr(d1)
+            term3 = -r * strike * np.exp(-r * t) * ndtr(d2)
         else:
-            term2 = -q * spot * np.exp(-q * t) * norm.cdf(-d1)
-            term3 = r * strike * np.exp(-r * t) * norm.cdf(-d2)
+            term2 = -q * spot * np.exp(-q * t) * ndtr(-d1)
+            term3 = r * strike * np.exp(-r * t) * ndtr(-d2)
         return term1 + term2 + term3
 
     def rho_analytic(
@@ -197,7 +204,7 @@ class BSMModel(BaseModel):
         sqrt_t = np.sqrt(t)
         d2 = (np.log(spot / strike) + (r - q - 0.5 * sigma**2) * t) / (sigma * sqrt_t)
         df_rate = np.exp(-r * t)
-        return strike * t * df_rate * (norm.cdf(d2) if call else -norm.cdf(-d2))
+        return strike * t * df_rate * (ndtr(d2) if call else -ndtr(-d2))
 
     def _cf_impl(
         self,

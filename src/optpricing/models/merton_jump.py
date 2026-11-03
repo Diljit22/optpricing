@@ -4,7 +4,7 @@ import math
 from typing import Any
 
 import numpy as np
-from scipy.special import factorial
+from scipy.special import gammaln, ndtr
 
 from optpricing.models.base import CF, BaseModel, ParamValidator
 from optpricing.models.bsm import BSMModel
@@ -127,27 +127,39 @@ class MertonJumpModel(BaseModel):
         lambda_prime = lambda_ * (1 + k)
         y_mul = lambda_prime * t
 
-        interval = np.arange(max_sum_terms)
-        weights = np.exp(-y_mul) * (y_mul**interval) / factorial(interval)
+        n = np.arange(max_sum_terms)
+        # Poisson weights via logs (factorial overflows past n ~ 170).
+        log_weights = (
+            -y_mul + n * np.log(y_mul) - gammaln(n + 1.0) if y_mul > 0 else None
+        )
+        if log_weights is None:
+            weights = np.zeros(max_sum_terms)
+            weights[0] = 1.0
+        else:
+            weights = np.exp(log_weights)
+        # Truncate once the tail weight is negligible (past the mode).
+        keep = (weights >= 1e-12) | (n <= y_mul)
+        n_terms = int(np.max(np.nonzero(keep)[0])) + 1
+        n, weights = n[:n_terms], weights[:n_terms]
 
-        r_n = r - lambda_ * k + (interval * (mu_j + 0.5 * sigma_j**2)) / t
-        sigma_n_sq = self.params["sigma"] ** 2 + (interval * sigma_j**2) / t
-        sigma_n = np.sqrt(np.maximum(sigma_n_sq, 1e-12))
+        r_n = r - lambda_ * k + (n * (mu_j + 0.5 * sigma_j**2)) / t
+        sigma_n = np.sqrt(
+            np.maximum(self.params["sigma"] ** 2 + n * sigma_j**2 / t, 1e-12)
+        )
 
-        total_price = 0.0
-        for i in range(max_sum_terms):
-            # Terminate sum early if weights become negligible
-            if weights[i] < 1e-12 and i > lambda_prime * t:
-                break
-
-            temp_bsm_solver = self.bsm_solver.with_params(sigma=sigma_n[i])
-
-            price_term = temp_bsm_solver.price_closed_form(
-                spot=spot, strike=strike, r=r_n[i], q=q, t=t, call=call
-            )
-            total_price += weights[i] * price_term
-
-        return total_price
+        # Vectorised Black-Scholes-Merton over the series terms.
+        sqrt_t = math.sqrt(t)
+        d1 = (math.log(spot / strike) + (r_n - q + 0.5 * sigma_n**2) * t) / (
+            sigma_n * sqrt_t
+        )
+        d2 = d1 - sigma_n * sqrt_t
+        df_div = math.exp(-q * t)
+        df_rate = np.exp(-r_n * t)
+        if call:
+            prices = spot * df_div * ndtr(d1) - strike * df_rate * ndtr(d2)
+        else:
+            prices = strike * df_rate * ndtr(-d2) - spot * df_div * ndtr(-d1)
+        return float(np.dot(weights, prices))
 
     def _cf_impl(
         self,

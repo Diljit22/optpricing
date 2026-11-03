@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from scipy import integrate
+
+from optpricing.techniques.integration import IntegrationTechnique
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -64,15 +65,12 @@ def price_options_vectorized(
         phi = model.cf(t=T, spot=S, r=r, q=q, **kwargs)
         lnK = np.log(K)
 
-        def _integrand_p2(u: float) -> np.ndarray:
-            return (np.exp(-1j * u * lnK) * phi(u)).imag / u
-
-        def _integrand_p1(u: float) -> np.ndarray:
-            return (np.exp(-1j * u * lnK) * phi(u - 1j)).imag / u
-
-        # Vectorised quad once per maturity
-        p2, _ = integrate.quad_vec(_integrand_p2, 1e-15, upper_bound)
-        p1, _ = integrate.quad_vec(_integrand_p1, 1e-15, upper_bound)
+        # Composite Gauss-Legendre (same rule as IntegrationTechnique): one CF
+        # evaluation per maturity, integrands as a (strikes x nodes) matrix.
+        u, w = IntegrationTechnique.gauss_nodes(upper_bound, 24)
+        twist = np.exp(-1j * np.outer(lnK, u)) / u  # (n_strikes, n_nodes)
+        p2 = (twist * phi(u)).imag @ w
+        p1 = (twist * phi(u - 1j)).imag @ w
 
         denom = np.real(phi(-1j))
         denom = 1.0 if abs(denom) < 1e-12 else denom
