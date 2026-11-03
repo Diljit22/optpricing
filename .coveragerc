@@ -1,4 +1,0 @@
-[run]
-source = src/optpricing
-omit =
-    src/optpricing/dashboard/pages/*
