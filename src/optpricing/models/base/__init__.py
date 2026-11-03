@@ -7,6 +7,7 @@ parameter validation tools.
 """
 
 from .base_model import CF, BaseModel, PDECoeffs
+from .cf_sampler import sample_from_cf
 from .validators import ParamValidator
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "CF",
     "PDECoeffs",
     "ParamValidator",
+    "sample_from_cf",
 ]
