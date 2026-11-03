@@ -172,7 +172,7 @@ def price(
     stock = Stock(spot=spot, dividend=q_div)
     rate = Rate(rate=r_rate)
     maturity_years = (
-        pd.to_datetime(maturity) - pd.Timestamp.utcnow().tz_localize(None)
+        pd.to_datetime(maturity) - pd.Timestamp.now(tz="UTC").tz_localize(None)
     ).days / 365.25
     if maturity_years <= 0:
         _err("Maturity date must be in the future.")

@@ -95,7 +95,7 @@ class VolatilitySurface:
         market_ivs = self._calculate_ivs(stock, rate, self.data["marketPrice"])
         self.surface = self.data.copy()
         self.surface["iv"] = market_ivs
-        self.surface.dropna(inplace=True)
+        self.surface = self.surface.dropna()
         self.surface = self.surface[
             (self.surface["iv"] > 1e-4) & (self.surface["iv"] < 2.0)
         ]
@@ -146,5 +146,5 @@ class VolatilitySurface:
         )
         self.surface = self.data.copy()
         self.surface["iv"] = model_ivs
-        self.surface.dropna(inplace=True)
+        self.surface = self.surface.dropna()
         return self
