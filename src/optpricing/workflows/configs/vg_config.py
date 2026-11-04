@@ -5,7 +5,7 @@ Calibration recipe for the Variance Gamma model.
 """
 
 VG_WORKFLOW_CONFIG = {
-    "name": "Variance Gamma",
+    "name": "VG",
     "model_class": VarianceGammaModel,
     "initial_guess": {"sigma": 0.2, "nu": 0.1, "theta": -0.14},
     "frozen": {},

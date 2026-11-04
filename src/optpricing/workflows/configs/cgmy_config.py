@@ -1,7 +1,7 @@
 from optpricing.models import CGMYModel
 
 __doc__ = """
-Calibration recipe for the CGMY model.
+Calibration recipe for the CGMY model (``M > 1`` keeps the compensator finite).
 """
 
 CGMY_WORKFLOW_CONFIG = {
@@ -12,7 +12,7 @@ CGMY_WORKFLOW_CONFIG = {
     "bounds": {
         "C": (0.001, 1.0),
         "G": (0.1, 20.0),
-        "M": (0.1, 20.0),
+        "M": (1.05, 20.0),
         "Y": (0.0, 1.99),
     },
 }

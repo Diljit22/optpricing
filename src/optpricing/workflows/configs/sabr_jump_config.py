@@ -3,8 +3,9 @@ from optpricing.models import SABRJumpModel
 __doc__ = """
 Calibration recipe for the SABR Jump model.
 
-This configuration fits all SABR and jump parameters simultaneously
-to the market option prices.
+The model has neither a closed form nor a characteristic function, so it is
+priced by Monte Carlo and only calibrated when Monte Carlo pricing is
+explicitly allowed (``--allow-mc``).
 """
 
 SABR_JUMP_WORKFLOW_CONFIG = {
@@ -21,4 +22,5 @@ SABR_JUMP_WORKFLOW_CONFIG = {
     },
     "initial_guess": SABRJumpModel.default_params,
     "frozen": {},
+    "requires_mc": True,
 }
