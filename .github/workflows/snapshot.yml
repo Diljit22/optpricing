@@ -1,0 +1,101 @@
+name: Market snapshot
+
+# Grows the snapshot corpus: once per US trading day the liquid part of each
+# configured option chain is captured (schema v2: spot, T-bill rate and
+# parity-implied dividend yield included), compressed and committed.
+#
+# 20:45 UTC is 16:45 ET in summer (after the close, closing quotes) and
+# 15:45 ET in winter (live quotes, 15 minutes before the close). Market
+# holidays leave no trades for the day, `--only-fresh` then writes nothing and
+# the commit step is skipped. Footprint: ~25 KB per ticker and day (zstd).
+
+on:
+  schedule:
+    - cron: "45 20 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Space-separated tickers (default: snapshot_tickers in config.yaml)"
+        required: false
+        default: ""
+      full:
+        description: "Store full chains instead of liquid-only compact files"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Capture and commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install runtime dependencies
+        run: uv sync --locked --no-default-groups
+
+      - name: Refresh risk-free rate history (^IRX)
+        run: uv run --no-sync optpricing data download --rates
+
+      - name: Capture option chains
+        id: capture
+        env:
+          INPUT_TICKERS: ${{ inputs.tickers }}
+          INPUT_FULL: ${{ inputs.full }}
+        run: |
+          set -u
+          args=()
+          if [ -n "${INPUT_TICKERS}" ]; then
+            for t in ${INPUT_TICKERS}; do args+=(--ticker "$t"); done
+          else
+            # snapshot_tickers from config.yaml (falls back to default_tickers)
+            mapfile -t tickers < <(uv run --no-sync python -c "
+          import yaml; c = yaml.safe_load(open('config.yaml')) or {}
+          print('\n'.join(c.get('snapshot_tickers') or c.get('default_tickers') or []))")
+            for t in "${tickers[@]}"; do args+=(--ticker "$t"); done
+          fi
+          if [ "${INPUT_FULL}" != "true" ]; then args+=(--compact); fi
+          # exit code 1 means nothing fresh was written (holiday); that is fine
+          uv run --no-sync optpricing data snapshot "${args[@]}" --only-fresh || true
+          if [ -n "$(git status --porcelain data/)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new snapshot (market closed or feed stale)."
+          fi
+
+      - name: Commit and push
+        if: steps.capture.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "data: market snapshot $(date -u +%F) [skip ci]"
+          # Retry once on a concurrent push to the same branch.
+          for attempt in 1 2 3; do
+            if git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:${BRANCH}"; then
+              exit 0
+            fi
+            git pull --rebase "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "${BRANCH}"
+          done
+          exit 1
