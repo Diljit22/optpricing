@@ -1476,7 +1476,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "scipy", specifier = ">=1.16.1" },
     { name = "streamlit", marker = "extra == 'ui'", specifier = ">=1.45.1" },
-    { name = "typer", specifier = ">=0.15.3" },
+    { name = "typer", specifier = ">=0.16.0" },
     { name = "yfinance", specifier = ">=0.2.63" },
 ]
 provides-extras = ["ui"]
