@@ -22,6 +22,7 @@ class MertonJumpModel(BaseModel):
     name: str = "Merton Jump-Diffusion"
     supports_cf: bool = True
     has_closed_form: bool = True
+    vectorized_closed_form: bool = True
     supports_sde: bool = True
     has_jumps: bool = True
 
@@ -89,12 +90,12 @@ class MertonJumpModel(BaseModel):
         self,
         *,
         spot: float,
-        strike: float,
+        strike: float | np.ndarray,
         r: float,
         q: float,
         t: float,
-        call: bool = True,
-    ) -> float:
+        call: bool | np.ndarray = True,
+    ) -> float | np.ndarray:
         """
         Merton's closed-form solution as a sum of BSM prices.
 
@@ -102,21 +103,22 @@ class MertonJumpModel(BaseModel):
         ----------
         spot : float
             The current price of the underlying asset.
-        strike : float
-            The strike price of the option.
+        strike : float | np.ndarray
+            The strike price(s) of the option.
         r : float
             The continuously compounded risk-free rate.
         q : float
             The continuously compounded dividend yield.
         t : float
             The time to maturity of the option, in years.
-        call : bool, optional
-            True for a call option, False for a put. Defaults to True.
+        call : bool | np.ndarray, optional
+            True for a call option, False for a put; a boolean array prices a
+            mix of calls and puts for array ``strike``. Defaults to True.
 
         Returns
         -------
-        float
-            The price of the European option.
+        float | np.ndarray
+            The price(s) of the European option(s).
         """
         lambda_ = self.params["lambda"]
         mu_j = self.params["mu_j"]
@@ -147,19 +149,30 @@ class MertonJumpModel(BaseModel):
             np.maximum(self.params["sigma"] ** 2 + n * sigma_j**2 / t, 1e-12)
         )
 
-        # Vectorised Black-Scholes-Merton over the series terms.
+        # Vectorised Black-Scholes-Merton over the series terms (rows) and, for
+        # array input, over the strikes (columns).
         sqrt_t = math.sqrt(t)
-        d1 = (math.log(spot / strike) + (r_n - q + 0.5 * sigma_n**2) * t) / (
+        df_div = math.exp(-q * t)
+        df_rate = np.exp(-r_n * t)
+        scalar = np.ndim(strike) == 0 and not isinstance(call, np.ndarray)
+        if not scalar:
+            strike = np.atleast_1d(np.asarray(strike, dtype=float))
+            r_n, sigma_n, df_rate = r_n[:, None], sigma_n[:, None], df_rate[:, None]
+        d1 = (np.log(spot / strike) + (r_n - q + 0.5 * sigma_n**2) * t) / (
             sigma_n * sqrt_t
         )
         d2 = d1 - sigma_n * sqrt_t
-        df_div = math.exp(-q * t)
-        df_rate = np.exp(-r_n * t)
-        if call:
+        if isinstance(call, np.ndarray):
+            call_px = spot * df_div * ndtr(d1) - strike * df_rate * ndtr(d2)
+            put_px = strike * df_rate * ndtr(-d2) - spot * df_div * ndtr(-d1)
+            prices = np.where(call, call_px, put_px)
+        elif call:
             prices = spot * df_div * ndtr(d1) - strike * df_rate * ndtr(d2)
         else:
             prices = strike * df_rate * ndtr(-d2) - spot * df_div * ndtr(-d1)
-        return float(np.dot(weights, prices))
+        if scalar:
+            return float(np.dot(weights, prices))
+        return weights @ prices
 
     def _cf_impl(
         self,

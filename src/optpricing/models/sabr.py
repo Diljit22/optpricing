@@ -100,6 +100,7 @@ class SABRModel(BaseModel):
     supports_sde: bool = True
     has_variance_process: bool = True
     has_closed_form: bool = True
+    vectorized_closed_form: bool = True
     is_sabr: bool = True
     default_params = {"alpha": 0.5, "beta": 0.8, "rho": -0.6, "nu": 0.5}
     param_defs = {
@@ -236,13 +237,13 @@ class SABRModel(BaseModel):
         self,
         *,
         spot: float,
-        strike: float,
+        strike: float | np.ndarray,
         r: float,
         q: float,
         t: float,
-        call: bool = True,
+        call: bool | np.ndarray = True,
         **_: Any,
-    ) -> float:
+    ) -> float | np.ndarray:
         """
         Black-76 price with Hagan's implied volatility.
 
@@ -250,32 +251,41 @@ class SABRModel(BaseModel):
         ----------
         spot : float
             Current spot; converted to the forward ``S exp((r-q) t)``.
-        strike : float
-            Strike price.
+        strike : float | np.ndarray
+            Strike price(s).
         r : float
             Continuously compounded risk-free rate.
         q : float
             Continuously compounded dividend yield.
         t : float
             Time to maturity in years.
-        call : bool, optional
-            True for a call, False for a put. Defaults to True.
+        call : bool | np.ndarray, optional
+            True for a call, False for a put; a boolean array prices a mix of
+            calls and puts for array ``strike``. Defaults to True.
 
         Returns
         -------
-        float
-            The European option price.
+        float | np.ndarray
+            The European option price(s).
         """
         forward = spot * math.exp((r - q) * t)
-        sigma = float(self.implied_volatility(forward, strike, t))
+        scalar = np.ndim(strike) == 0 and not isinstance(call, np.ndarray)
+        strike = np.asarray(strike, dtype=float)
+        sigma = np.asarray(self.implied_volatility(forward, strike, t), dtype=float)
         f_s, k_s = forward + self.shift, strike + self.shift
         sqrt_t = math.sqrt(t)
-        d1 = (math.log(f_s / k_s) + 0.5 * sigma**2 * t) / (sigma * sqrt_t)
+        d1 = (np.log(f_s / k_s) + 0.5 * sigma**2 * t) / (sigma * sqrt_t)
         d2 = d1 - sigma * sqrt_t
         discount = math.exp(-r * t)
-        if call:
-            return discount * (f_s * ndtr(d1) - k_s * ndtr(d2))
-        return discount * (k_s * ndtr(-d2) - f_s * ndtr(-d1))
+        if isinstance(call, np.ndarray):
+            call_px = discount * (f_s * ndtr(d1) - k_s * ndtr(d2))
+            put_px = discount * (k_s * ndtr(-d2) - f_s * ndtr(-d1))
+            price = np.where(call, call_px, put_px)
+        elif call:
+            price = discount * (f_s * ndtr(d1) - k_s * ndtr(d2))
+        else:
+            price = discount * (k_s * ndtr(-d2) - f_s * ndtr(-d1))
+        return float(price) if scalar else price
 
     #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any:

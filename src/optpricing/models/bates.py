@@ -40,7 +40,13 @@ class BatesModel(BaseModel):
         "mu_j": -0.1,
         "sigma_j": 0.15,
     }
-    param_defs = {**HestonModel.param_defs, **MertonJumpModel.param_defs}
+    # Heston's variance parameters plus Merton's jump parameters; Merton's
+    # diffusion `sigma` is not a Bates parameter (the variance process plays
+    # that role) and used to leak in here, producing a dead slider/fit variable.
+    param_defs = {
+        **HestonModel.param_defs,
+        **{k: v for k, v in MertonJumpModel.param_defs.items() if k != "sigma"},
+    }
 
     def __init__(self, params: dict[str, float] | None = None):
         """

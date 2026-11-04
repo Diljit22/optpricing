@@ -12,12 +12,37 @@ Defines the Constant Elasticity of Variance (CEV) model.
 
 
 class CEVModel(BaseModel):
-    """Constant Elasticity of Variance (CEV) model."""
+    """
+    Constant Elasticity of Variance (CEV) model, ``dS = (r-q) S dt + sigma S^gamma dW``.
+
+    European options have the Cox (1975) / Schroder (1989) closed form in terms
+    of the noncentral chi-squared distribution (``price_closed_form``); the
+    terminal spot can be sampled exactly (``sample_terminal_spot``). For
+    ``gamma < 1`` the origin is absorbing, which both methods honour.
+    """
 
     name: str = "CEV"
     supports_sde: bool = True
     has_exact_sampler: bool = True
+    has_closed_form: bool = True
+    vectorized_closed_form: bool = True
     default_params = {"sigma": 0.8, "gamma": 0.7}
+    param_defs = {
+        "sigma": {
+            "label": "Volatility scale",
+            "default": 0.8,
+            "min": 0.01,
+            "max": 5.0,
+            "step": 0.01,
+        },
+        "gamma": {
+            "label": "Elasticity",
+            "default": 0.7,
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+        },
+    }
 
     def __init__(self, params: dict[str, float] | None = None):
         """
@@ -131,6 +156,101 @@ class CEVModel(BaseModel):
         f_tau = (scale * x) ** (1.0 / n)
         return np.exp(mu * T) * f_tau
 
+    def _closed_form_impl(
+        self,
+        *,
+        spot: float,
+        strike: float | np.ndarray,
+        r: float,
+        q: float,
+        t: float,
+        call: bool | np.ndarray = True,
+        **_: Any,
+    ) -> float | np.ndarray:
+        """
+        Cox/Schroder closed form for European options under CEV.
+
+        With ``a = (K e^{-(r-q)T})^{2(1-g)} / ((1-g)^2 v)``, ``b = 1/(1-g)``,
+        ``c = S^{2(1-g)} / ((1-g)^2 v)`` and
+        ``v = sigma^2 (e^{2(r-q)(g-1)T} - 1) / (2(r-q)(g-1))`` (``sigma^2 T`` when
+        ``r = q``), the call is (Hull, *Options, Futures and Other Derivatives*,
+        CEV section; Schroder 1989)
+
+        * ``g < 1``: ``S e^{-qT} [1 - X(a; b+2, c)] - K e^{-rT} X(c; b, a)``
+        * ``g > 1``: ``S e^{-qT} [1 - X(c; -b, a)] - K e^{-rT} X(a; 2-b, c)``
+
+        where ``X(z; k, nc)`` is the noncentral chi-squared CDF with ``k`` degrees
+        of freedom and non-centrality ``nc``. Puts follow from put-call parity on
+        the same terms. ``g`` within 1e-3 of 1 falls back to Black-Scholes with
+        the local volatility ``sigma S^{g-1}``.
+
+        Parameters
+        ----------
+        spot : float
+            The current price of the underlying asset.
+        strike : float | np.ndarray
+            The strike price(s).
+        r : float
+            The continuously compounded risk-free rate.
+        q : float
+            The continuously compounded dividend yield.
+        t : float
+            The time to maturity of the option, in years.
+        call : bool | np.ndarray, optional
+            True for a call option, False for a put; a boolean array prices a
+            mix of calls and puts for array ``strike``. Defaults to True.
+
+        Returns
+        -------
+        float | np.ndarray
+            The price(s) of the European option(s).
+        """
+        from scipy.special import ndtr
+        from scipy.stats import ncx2
+
+        p = self.params
+        sigma, gamma = p["sigma"], p["gamma"]
+        scalar = np.ndim(strike) == 0 and not isinstance(call, np.ndarray)
+        K = np.asarray(strike, dtype=float)
+        mu = r - q
+        df_div, df_rate = np.exp(-q * t), np.exp(-r * t)
+
+        if abs(1.0 - gamma) < 1e-3:
+            vol = sigma * spot ** (gamma - 1.0)
+            sqrt_t = np.sqrt(t)
+            d1 = (np.log(spot / K) + (mu + 0.5 * vol**2) * t) / (vol * sqrt_t)
+            d2 = d1 - vol * sqrt_t
+            call_px = spot * df_div * ndtr(d1) - K * df_rate * ndtr(d2)
+            put_px = K * df_rate * ndtr(-d2) - spot * df_div * ndtr(-d1)
+        else:
+            one_minus = 1.0 - gamma
+            exponent = 2.0 * mu * (gamma - 1.0) * t
+            v = (
+                sigma**2 * t
+                if abs(exponent) < 1e-12
+                else sigma**2 * np.expm1(exponent) / (exponent / t)
+            )
+            scale = one_minus**2 * v
+            a = (K * np.exp(-mu * t)) ** (2.0 * one_minus) / scale
+            b = 1.0 / one_minus
+            c = spot ** (2.0 * one_minus) / scale
+            if gamma < 1.0:
+                call_px = spot * df_div * (1.0 - ncx2.cdf(a, b + 2.0, c)) - (
+                    K * df_rate * ncx2.cdf(c, b, a)
+                )
+            else:
+                call_px = spot * df_div * (1.0 - ncx2.cdf(c, -b, a)) - (
+                    K * df_rate * ncx2.cdf(a, 2.0 - b, c)
+                )
+            # Put-call parity holds for the absorbed process (S is a martingale).
+            put_px = call_px - spot * df_div + K * df_rate
+
+        if isinstance(call, np.ndarray):
+            price = np.where(call, call_px, put_px)
+        else:
+            price = call_px if call else put_px
+        return float(price) if scalar else price
+
     #  Abstract Method Implementations
     def _sde_impl(self, **kwargs: Any) -> Any:
         raise NotImplementedError("CEV uses a specialized exact sampler.")
@@ -139,7 +259,4 @@ class CEVModel(BaseModel):
         raise NotImplementedError
 
     def _pde_impl(self, **kwargs: Any) -> Any:
-        raise NotImplementedError
-
-    def _closed_form_impl(self, **kwargs: Any) -> Any:
         raise NotImplementedError

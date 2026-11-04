@@ -32,6 +32,7 @@ class BSMModel(BaseModel):
     supports_sde: bool = True
     supports_pde: bool = True
     has_closed_form: bool = True
+    vectorized_closed_form: bool = True
 
     default_params = {"sigma": 0.2}
     param_defs = {
@@ -73,12 +74,12 @@ class BSMModel(BaseModel):
         self,
         *,
         spot: float,
-        strike: float,
+        strike: float | np.ndarray,
         r: float,
         q: float,
         t: float,
-        call: bool = True,
-    ) -> float:
+        call: bool | np.ndarray = True,
+    ) -> float | np.ndarray:
         """
         Computes the Black-Scholes-Merton price in closed form.
 
@@ -86,21 +87,22 @@ class BSMModel(BaseModel):
         ----------
         spot : float
             The current price of the underlying asset.
-        strike : float
-            The strike price of the option.
+        strike : float | np.ndarray
+            The strike price(s) of the option.
         r : float
             The continuously compounded risk-free rate.
         q : float
             The continuously compounded dividend yield.
         t : float
             The time to maturity of the option, in years.
-        call : bool, optional
-            True for a call option, False for a put. Defaults to True.
+        call : bool | np.ndarray, optional
+            True for a call option, False for a put; a boolean array prices a
+            mix of calls and puts for array ``strike``. Defaults to True.
 
         Returns
         -------
-        float
-            The price of the European option.
+        float | np.ndarray
+            The price(s) of the European option(s).
         """
         sigma = self.params["sigma"]
         sqrt_t = np.sqrt(t)
@@ -110,6 +112,10 @@ class BSMModel(BaseModel):
         df_div = np.exp(-q * t)
         df_rate = np.exp(-r * t)
 
+        if isinstance(call, np.ndarray):
+            call_px = spot * df_div * ndtr(d1) - strike * df_rate * ndtr(d2)
+            put_px = strike * df_rate * ndtr(-d2) - spot * df_div * ndtr(-d1)
+            return np.where(call, call_px, put_px)
         if call:
             price = spot * df_div * ndtr(d1) - strike * df_rate * ndtr(d2)
         else:

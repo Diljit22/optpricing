@@ -36,6 +36,9 @@ class BaseModel(ABC):
         Flag indicating if the model provides PDE coefficients.
     has_closed_form : bool
         Flag indicating if a closed-form solution is available.
+    vectorized_closed_form : bool
+        Flag indicating that ``price_closed_form`` accepts NumPy arrays for
+        ``strike`` and ``call`` (same maturity), returning an array of prices.
     has_variance_process : bool
         Flag for stochastic volatility models (e.g., Heston, SABR).
     is_pure_levy : bool
@@ -50,6 +53,7 @@ class BaseModel(ABC):
     supports_sde: bool = False
     supports_pde: bool = False
     has_closed_form: bool = False
+    vectorized_closed_form: bool = False
     has_variance_process: bool = False
     is_pure_levy: bool = False
     has_jumps: bool = False
