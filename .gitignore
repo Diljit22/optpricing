@@ -28,6 +28,9 @@ htmlcov/
 site/
 benchmarks/results/
 
+# Live quote recordings (`optpricing data stream`) are local and can be large
+data/live_quotes/
+
 # Ignore my local notes file
 todo/
 notes/
