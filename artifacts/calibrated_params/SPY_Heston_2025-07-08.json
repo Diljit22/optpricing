@@ -1,0 +1,43 @@
+{
+    "model": "Heston",
+    "ticker": "SPY",
+    "date": "2025-07-08",
+    "params": {
+        "v0": 0.0439142919616157,
+        "kappa": 1.9011691304204659,
+        "theta": 0.024233448034015767,
+        "rho": -0.8180063178319931,
+        "vol_of_vol": 0.47424018664551304
+    },
+    "rate": 0.0433234096040174,
+    "dividend_yield": 0.011419326487124702,
+    "calibration_iv_rmse": 0.0446683447216386,
+    "evaluation_iv_rmse": 0.054592143572099995,
+    "evaluation_price_rmse": 2.1852924382842085,
+    "settings": {
+        "liquidity": {
+            "min_maturity_days": 7.0,
+            "max_maturity_years": 2.0,
+            "moneyness": [
+                0.7,
+                1.3
+            ],
+            "max_relative_spread": 0.25,
+            "min_open_interest": 1,
+            "require_bid": true,
+            "otm_only": true,
+            "iv_bounds": [
+                0.02,
+                3.0
+            ]
+        },
+        "objective": "iv",
+        "weighting": "spread",
+        "n_starts": 2,
+        "warm_start": true,
+        "historical_prior": true,
+        "feller_penalty": 0.0,
+        "time_budget": null,
+        "name": "default"
+    }
+}

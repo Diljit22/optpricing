@@ -1,0 +1,41 @@
+{
+    "model": "VG",
+    "ticker": "SPY",
+    "date": "2025-07-08",
+    "params": {
+        "sigma": 0.17844214119039262,
+        "nu": 0.2339362394796965,
+        "theta": -0.21030534312811955
+    },
+    "rate": 0.0433234096040174,
+    "dividend_yield": 0.011419326487124702,
+    "calibration_iv_rmse": 0.039421729999711295,
+    "evaluation_iv_rmse": 0.04452201378903127,
+    "evaluation_price_rmse": 3.312397184063183,
+    "settings": {
+        "liquidity": {
+            "min_maturity_days": 7.0,
+            "max_maturity_years": 2.0,
+            "moneyness": [
+                0.7,
+                1.3
+            ],
+            "max_relative_spread": 0.25,
+            "min_open_interest": 1,
+            "require_bid": true,
+            "otm_only": true,
+            "iv_bounds": [
+                0.02,
+                3.0
+            ]
+        },
+        "objective": "iv",
+        "weighting": "spread",
+        "n_starts": 2,
+        "warm_start": true,
+        "historical_prior": true,
+        "feller_penalty": 0.0,
+        "time_budget": null,
+        "name": "default"
+    }
+}
