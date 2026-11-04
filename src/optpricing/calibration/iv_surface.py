@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
@@ -14,6 +16,8 @@ __doc__ = """
 Defines the VolatilitySurface class, used to compute and store implied
 volatility surfaces from both market and model prices.
 """
+
+logger = logging.getLogger(__name__)
 
 
 class VolatilitySurface:
@@ -91,7 +95,7 @@ class VolatilitySurface:
         VolatilitySurface
             The same instance of the class, allowing for method chaining.
         """
-        print("Calculating market implied volatility surface...")
+        logger.info("Calculating market implied volatility surface...")
         market_ivs = self._calculate_ivs(stock, rate, self.data["marketPrice"])
         self.surface = self.data.copy()
         self.surface["iv"] = market_ivs
@@ -107,13 +111,17 @@ class VolatilitySurface:
         rate: Rate,
         model: BaseModel,
         technique: BaseTechnique = None,
+        *,
+        allow_mc: bool = False,
     ) -> VolatilitySurface:
         """
         Calculates a model's implied volatility surface.
 
         This method first prices every option in the dataset using the provided
-        model and technique. It then inverts the Black-Scholes formula for each
-        of these model prices to generate the model-implied volatility surface.
+        model (vectorised closed form, characteristic function or, with
+        ``allow_mc``, Monte Carlo). It then inverts the Black-Scholes formula
+        for each of these model prices to generate the model-implied
+        volatility surface.
 
         Parameters
         ----------
@@ -124,20 +132,24 @@ class VolatilitySurface:
         model : BaseModel
             The financial model to generate prices from.
         technique : BaseTechnique
-            The pricing technique to use with the model.
+            Unused (kept for backwards compatibility); the chain pricer picks
+            the fastest exact method itself.
+        allow_mc : bool, optional
+            Permit Monte Carlo pricing for simulation-only models.
 
         Returns
         -------
         VolatilitySurface
             The same instance of the class, allowing for method chaining.
         """
-        print(f"Calculating {model.name} implied volatility surface...")
+        logger.info("Calculating %s implied volatility surface...", model.name)
 
         model_prices = price_options_vectorized(
             options_df=self.data,
             stock=stock,
             model=model,
             rate=rate,
+            allow_mc=allow_mc,
             **model.params,
         )
 

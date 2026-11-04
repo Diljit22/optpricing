@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
 __doc__ = """
 Provides a utility function to estimate jump parameters from historical data.
 """
+
+logger = logging.getLogger(__name__)
 
 
 def fit_jump_params_from_history(
@@ -34,7 +38,7 @@ def fit_jump_params_from_history(
         A dictionary containing the estimated parameters: 'sigma', 'lambda',
         'mu_j', and 'sigma_j'.
     """
-    print("Fitting jump parameters from historical returns...")
+    logger.debug("Fitting jump parameters from historical returns...")
 
     std_dev = log_returns.std()
     jump_threshold = threshold_stds * std_dev
@@ -51,16 +55,16 @@ def fit_jump_params_from_history(
         sigma_j_est = jump_returns.std()
     else:
         lambda_est, mu_j_est, sigma_j_est = 0.1, 0.0, 0.0
-        print("  -> Warning: Not enough jumps detected. Using default jump parameters.")
+        logger.debug("Not enough jumps detected; using default jump parameters.")
 
     # Use the key 'sigma' to match the parameter name in the Merton/Kou models.
     fitted_params = {
-        "sigma": sigma_est,
-        "lambda": lambda_est,
-        "mu_j": mu_j_est,
-        "sigma_j": sigma_j_est,
+        "sigma": float(sigma_est),
+        "lambda": float(lambda_est),
+        "mu_j": float(mu_j_est),
+        "sigma_j": float(sigma_j_est),
     }
 
     formatted = ", ".join(f"{k}: {v:.4f}" for k, v in fitted_params.items())
-    print(f"  -> Estimated Historical Params: {{{formatted}}}")
+    logger.debug("Estimated historical params: {%s}", formatted)
     return fitted_params
