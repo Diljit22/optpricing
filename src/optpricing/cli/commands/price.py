@@ -5,10 +5,9 @@ from typing import Annotated, Any
 import pandas as pd
 import typer
 
-from optpricing.atoms import Option, OptionType, Rate, Stock
-from optpricing.calibration import fit_rate_and_dividend
+from optpricing.atoms import Option, OptionType
 from optpricing.calibration.technique_selector import select_fastest_technique
-from optpricing.data import get_live_dividend_yield, get_live_option_chain
+from optpricing.data import get_live_option_chain, snapshot_market_params
 from optpricing.models import BSMModel
 from optpricing.techniques import (
     AmericanMonteCarloTechnique,
@@ -16,7 +15,7 @@ from optpricing.techniques import (
     LeisenReimerTechnique,
     MonteCarloTechnique,
 )
-from optpricing.workflows.configs import ALL_MODEL_CONFIGS
+from optpricing.workflows.configs import get_model_config
 
 __doc__ = """
 CLI command for on-demand option pricing.
@@ -159,18 +158,13 @@ def price(
     if live_chain is None or live_chain.empty:
         _err(f"No live option chain found for {ticker}.")
 
-    q_div = get_live_dividend_yield(ticker)
-    spot = live_chain["spot_price"].iloc[0]
-    calls = live_chain[live_chain["optionType"] == "call"]
-    puts = live_chain[live_chain["optionType"] == "put"]
-    r_rate, _ = fit_rate_and_dividend(calls, puts, spot, q_fixed=q_div)
+    # Spot, T-bill rate and parity-implied dividend yield travel with the chain.
+    stock, rate = snapshot_market_params(live_chain)
+    spot, q_div, r_rate = stock.spot, stock.dividend, rate.get_rate()
     typer.echo(
-        f"Live Data: Spot {spot:.2f} | Dividend {q_div:.4%} | Implied r {r_rate:.4%}"
+        f"Live Data: Spot {spot:.2f} | Implied dividend {q_div:.4%} | r {r_rate:.4%}"
     )
 
-    # Build Atoms & Model
-    stock = Stock(spot=spot, dividend=q_div)
-    rate = Rate(rate=r_rate)
     maturity_years = (
         pd.to_datetime(maturity) - pd.Timestamp.now(tz="UTC").tz_localize(None)
     ).days / 365.25
@@ -184,9 +178,9 @@ def price(
     )
 
     try:
-        model_cls = ALL_MODEL_CONFIGS[model]["model_class"]
-    except KeyError:
-        _err(f"Model '{model}' not recognised in ALL_MODEL_CONFIGS.")
+        model_cls = get_model_config(model)["model_class"]
+    except KeyError as e:
+        _err(str(e.args[0]))
 
     # Merge default params with user-provided params
     full_params = (
