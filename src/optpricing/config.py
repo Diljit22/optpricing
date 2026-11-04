@@ -43,20 +43,24 @@ ARTIFACTS_DIR = PROJECT_ROOT / str(_config.get("artifacts_directory", "artifacts
 # Input Data Directories
 MARKET_SNAPSHOT_DIR = DATA_DIR / "market_data_snapshots"
 HISTORICAL_DIR = DATA_DIR / "historical_data"
+LIVE_QUOTES_DIR = DATA_DIR / "live_quotes"
 
 # Output Artifact Directories
 BACKTEST_LOGS_DIR = ARTIFACTS_DIR / "backtest_logs"
 CALIBRATED_PARAMS_DIR = ARTIFACTS_DIR / "calibrated_params"
 CALIBRATION_LOGS_DIR = ARTIFACTS_DIR / "calibration_logs"
+TUNING_DIR = ARTIFACTS_DIR / "tuning"
 
 ALL_DIRS = [
     DATA_DIR,
     ARTIFACTS_DIR,
     MARKET_SNAPSHOT_DIR,
     HISTORICAL_DIR,
+    LIVE_QUOTES_DIR,
     BACKTEST_LOGS_DIR,
     CALIBRATED_PARAMS_DIR,
     CALIBRATION_LOGS_DIR,
+    TUNING_DIR,
 ]
 
 
