@@ -6,6 +6,67 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Workflows (calibration, backtesting, data)
+
+- **Calibration rebuilt** (`Calibrator.fit` keeps its signature). Residuals are taken in Black-Scholes
+  implied-volatility space (`objective="iv"`, price space optional) with inverse bid-ask-spread weights
+  (`"vega"`/`"none"` optional); parameters are optimised in a unit cube (`log_scale` for wide ranges) with
+  L-BFGS-B from several starting points (recipe guess, warm start from the previous day, Latin-hypercube
+  samples); invalid parameter sets are penalised instead of raising; optional soft Feller penalty; `logging`
+  replaces the per-evaluation prints; `Calibrator.result` (`CalibrationResult`) carries loss, IV/price RMSE,
+  evaluation counts and per-start records.
+- New `LiquidityFilter` / `filter_options` (OTM options with a bid, spread ≤ 25 %, open interest, 7 days–2 years,
+  forward moneyness 0.7–1.3, solvable implied vol) and `CalibrationSettings`; fit metrics (`evaluate_model`,
+  `residual_table`, `bucket_metrics`) by maturity and moneyness bucket.
+- **Every model with a closed form or characteristic function is calibratable** (BSM, Merton, Heston, Bates,
+  SABR, CEV, Kou, NIG, VG, CGMY, Hyperbolic); SABR-with-jumps via Monte Carlo behind `--allow-mc`.
+  `price_options_vectorized` dispatches to vectorised closed forms (BSM, Merton, SABR, **CEV**), the
+  Gauss-Legendre characteristic-function route or Monte Carlo with common random numbers; `ChainLayout` caches
+  the strike groups and Fourier kernels for repeated pricing (Heston objective 13 → 4 ms on a 2,700-option chain).
+- `CEVModel.price_closed_form`: Cox (1975)/Schroder (1989) noncentral-χ² formula, matching the Hull reference
+  values and QuantLib's `AnalyticCEVEngine` to 1e-9 (CEV previously had no closed form).
+- `BSMIVSolver`: safeguarded Newton with bracket tracking and bisection fallback, NaN for prices outside the
+  no-arbitrage band (deep ITM/OTM and short maturities used to return garbage), optional initial guess.
+- **Snapshot schema v2**: `ticker`, `snapshot_date`, `as_of`, `risk_free_rate` (13-week T-bill `^IRX`,
+  continuously compounded) and `dividend_yield` (implied from put-call parity near the money, given the rate)
+  are stored with every chain; v1 files are upgraded on load from the stored `^IRX` history
+  (`optpricing data download --rates`). Workflows no longer call the network.
+- Historical files (v2) store adjusted close, dividends and log returns; `trailing_dividend_yield`,
+  `load_risk_free_rate`, `get_live_risk_free_rate` added.
+- `BacktestWorkflow` is a proper walk-forward test: ascending dates, calibrate on *t*, evaluate on *t+1* with
+  that day's market parameters, out-of-sample IV/price RMSE, bucket metrics, `BSM-ATM` and stale-parameter
+  baselines, warm starts; CSV + bucket CSV + JSON summary.
+- New per-ticker auto-tuning (`optpricing tune`, `workflows.tune_ticker`): walk-forward cross-validation over
+  candidate settings, model leaderboard, cache in `artifacts/tuning/{TICKER}.json` used by `calibrate --auto`,
+  `backtest --auto` and the dashboard.
+- CLI: `calibrate --model all|<names> [--auto] [--allow-mc] [--objective] [--n-starts]` with a leaderboard
+  table and CSV, `backtest --model all`, new `tune`, `data download --rates`, `data snapshot --compact
+  --only-fresh`, new `data stream` (free `yfinance.WebSocket` quotes → parquet, option contracts included).
+  Model names are case-insensitive with aliases (`Variance Gamma` → `VG`).
+- Scheduled GitHub Action (`snapshot.yml`) captures compact liquid-only chains for `snapshot_tickers` every
+  trading day (~25 KB per ticker) and commits them.
+- Dashboard: calibration page offers every calibratable model, tuned settings, objective/start controls, a
+  leaderboard sorted by IV RMSE and error-by-bucket tables; `DashboardService` runs on the offline workflow.
+  Headless `AppTest` smoke tests cover every page.
+
+### Fixed (workflows)
+
+- Backtest paired dates newest-first, calibrating on *t+1* and evaluating on *t* (look-ahead bias).
+- Calibration workflows fetched today's dividend yield from yfinance for historical snapshots (and failed offline).
+- Recipes were ignored when a model had `param_defs`; Bates fitted a non-existent `sigma`; Kou's `frozen` was a
+  list and crashed; Merton froze all four parameters from history and fitted nothing; Heston started from a
+  Feller-violating guess; the VG recipe key (`"Variance Gamma"`) did not match the dashboard's `"VG"`.
+- Implied dividend yields: inferring both `r` and `q` from the strike slope of `C − P` is biased by the early
+  exercise premium of American puts (real SPY chains implied r ≈ 0 and q ≈ −3 %); the rate now comes from the
+  T-bill quote and only near-the-money pairs are used for `q`.
+- yfinance 1.x: `fast_info["last_price"]` → `lastPrice` (every live fetch triggered a second `history()` call);
+  `dividendYield` is reported in percent since 0.2.5x (unit detection added); duplicate contracts dropped.
+- Heston characteristic function at `u = −i` is degenerate when ρξ > κ; the chain pricer falls back to the
+  analytic forward there and silences the resulting warnings during calibration.
+- `calibrate` printed the parameters at every objective evaluation.
+- `pyarrow` (the parquet engine every snapshot needs) was only installed through the `ui` extra; it is now a
+  runtime dependency (`pyarrow>=22`, the first release with Python 3.14 wheels).
+
 ### Performance
 
 - Monte Carlo engine rebuilt: the numba kernels draw their own random numbers from per-chunk

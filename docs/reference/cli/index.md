@@ -10,3 +10,4 @@ the optpricing command-line interface.
 ::: optpricing.cli.commands.demo
 ::: optpricing.cli.commands.price
 ::: optpricing.cli.commands.tools
+::: optpricing.cli.commands.tune
