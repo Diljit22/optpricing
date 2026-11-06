@@ -96,12 +96,14 @@ class BlacksApproxModel(BaseModel):
                 "BlacksApproxModel requires non-empty 'discrete_dividends'."
             )
 
-        # Value of holding until maturity T
-        pv_all_divs = sum(
-            D * math.exp(-r * tD)
+        dividends = [
+            (float(tD), float(D))
             for D, tD in zip(discrete_dividends, ex_div_times)
             if tD < t
-        )
+        ]
+
+        # Value of holding until maturity T
+        pv_all_divs = sum(D * math.exp(-r * tD) for tD, D in dividends)
         S_adj_T = spot - pv_all_divs
         price_hold_to_maturity = self.bsm_solver.price_closed_form(
             spot=S_adj_T, strike=strike, r=r, q=0, t=t, call=True
@@ -109,11 +111,9 @@ class BlacksApproxModel(BaseModel):
 
         # Value of exercising just before each ex-dividend date
         prices_early_exercise = []
-        for i, t_i in enumerate(ex_div_times):
-            if t_i >= t:
-                continue
+        for t_i, _ in dividends:
             pv_divs_before_i = sum(
-                discrete_dividends[j] * math.exp(-r * ex_div_times[j]) for j in range(i)
+                D * math.exp(-r * tD) for tD, D in dividends if tD < t_i
             )
             S_adj_i = spot - pv_divs_before_i
             price_at_t_i = self.bsm_solver.price_closed_form(
