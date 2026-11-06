@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import math
 
+import numba
 import numpy as np
 import pytest
 
@@ -25,6 +26,7 @@ from optpricing import (
 from optpricing.models.base import sample_from_cf
 from optpricing.techniques import (
     AmericanMonteCarloTechnique,
+    COSTechnique,
     IntegrationTechnique,
     MonteCarloTechnique,
 )
@@ -133,7 +135,7 @@ def test_cgmy_mc_matches_characteristic_function(stock, rate, y):
     """
     cgmy = CGMYModel(params={"C": 0.3, "G": 6.0, "M": 9.0, "Y": y})
     option = make_option(100.0, 1.5)
-    ref = IntegrationTechnique().price(option, stock, cgmy, rate).price
+    ref = COSTechnique().price(option, stock, cgmy, rate).price
     mc = (
         MonteCarloTechnique(n_paths=400_000, seed=1)
         .price(option, stock, cgmy, rate)
@@ -239,6 +241,35 @@ def test_lsmc_regression_is_well_conditioned_at_high_degree(stock, rate):
     assert all(np.isfinite(prices))
 
 
+@pytest.mark.parametrize("degree, rel", [(3, 1e-6), (5, 1e-4), (9, 1e-2)])
+def test_lsmc_is_homogeneous_in_spot_and_strike(degree, rel):
+    """
+    The paths scale with the spot, so P(cS, cK) = c P(S, K) path by path.
+    Regression: on raw powers of S the normal equations break down at high
+    spot levels; the pre-fix code gave 287.3 instead of ~318 for S = K = 5000
+    at degree 9 (-10 %), while degrees 2-7 still looked fine. The monomial
+    basis in S/K is itself ill-conditioned from degree ~7 (Hilbert-like Gram
+    matrix): rounding moves the degree-9 price by ~0.1 %, hence the tolerance.
+    """
+    bsm, rate = BSMModel(params={"sigma": 0.2}), Rate(rate=0.05)
+
+    def price(level):
+        return (
+            AmericanMonteCarloTechnique(
+                n_paths=60_000, n_steps=50, seed=4, lsm_degree=degree
+            )
+            .price(
+                make_option(level, 1.0, call=False),
+                Stock(spot=level, dividend=0.01),
+                bsm,
+                rate,
+            )
+            .price
+        )
+
+    assert price(5000.0) / 50.0 == pytest.approx(price(100.0), rel=rel)
+
+
 def test_sabr_kernel_terminal_spots_are_non_negative():
     """
     Regression: only the diffusion coefficient was floored, so a large
@@ -295,6 +326,49 @@ def test_sabr_forward_mc_matches_hagan_black(
     assert mc == pytest.approx(hagan, abs=tol)
 
 
+# QuantLib 1.44 FdSabrVanillaEngine on an 800 x 1600 x 400 grid (400 x 800 x 200
+# differs by <= 6e-4), S = F = 100, r = q = 0. The Euler step with the forward
+# floored at zero biased these by +0.10 to +0.25 at any step count.
+SABR_FD_CASES = [
+    (0.9952679263837431, 0.7, -0.5, 0.6, 1.0, 100.0, 9.976775),
+    (2.0, 0.5, 0.0, 0.8, 3.0, 80.0, 27.197959),
+    (2.0, 0.5, 0.0, 0.8, 3.0, 120.0, 8.560995),
+    (2.0, 0.5, -0.6, 0.8, 3.0, 100.0, 13.494022),
+]
+
+
+@pytest.mark.skipif(
+    numba.config.DISABLE_JIT,
+    reason="50M interpreted steps; the kernel tests cover the scheme without the JIT",
+)
+@pytest.mark.parametrize("case", SABR_FD_CASES)
+def test_sabr_mc_matches_quantlib_finite_differences(case):
+    """
+    Low-bias scheme (Chen, Oosterlee & van der Weide 2012): exact volatility,
+    trapezoidal integrated variance, and the forward drawn from the absorbed CEV
+    law given the volatility path. Unbiased to MC error from 50 steps. The
+    forward must stay a martingale (the old Euler step, floored at zero, drifted
+    up by 0.1 to 0.25); given that, it is a valid control variate for the call.
+    """
+    from optpricing.techniques.kernels import mc_kernels
+
+    alpha, beta, rho, nu, T, K, ref = case
+    n_paths, n_steps = 1_000_000, 50
+    f_t = mc_kernels.sabr_kernel(
+        np.random.default_rng(11), n_paths, n_steps, False,
+        100.0, alpha, nu, beta, rho, T / n_steps,
+    )  # fmt: skip
+    assert f_t.mean() == pytest.approx(100.0, abs=4.0 * f_t.std() / math.sqrt(n_paths))
+    payoff = np.maximum(f_t - K, 0.0)
+    cov = np.cov(payoff, f_t)
+    slope = cov[0, 1] / cov[1, 1]
+    adjusted = payoff - slope * (f_t - 100.0)
+    estimate = adjusted.mean()
+    std_err = adjusted.std() / math.sqrt(n_paths)
+    assert std_err < 0.025
+    assert estimate == pytest.approx(ref, abs=4.0 * std_err + 2e-3)
+
+
 def test_sabr_american_put_dominates_european(stock, rate):
     from optpricing import SABRModel
     from optpricing.techniques import ClosedFormTechnique
@@ -339,11 +413,99 @@ def test_heston_mc_variance_schemes_match_quantlib(
     )
 
 
+def _cev_local_vol(t, s):
+    return 0.2 * (s / 100.0) ** -0.5
+
+
+@pytest.mark.parametrize(
+    "surface, reference_model",
+    [
+        (None, BSMModel(params={"sigma": 0.2})),  # default flat 20 % surface
+        (_cev_local_vol, CEVModel(params={"sigma": 2.0, "gamma": 0.5})),
+    ],
+    ids=["default_lambda", "python_function"],
+)
+def test_dupire_mc_accepts_plain_python_surfaces(stock, rate, surface, reference_model):
+    """Regression: the default model (a lambda) and any plain Python surface
+    crashed the numba kernel with a TypingError. sigma(t, S) = 0.2 (S/100)^-0.5
+    is the CEV local volatility with sigma = 2, gamma = 0.5."""
+    from optpricing import DupireLocalVolModel
+    from optpricing.techniques import ClosedFormTechnique
+
+    option = make_option(100.0, 1.0)
+    model = (
+        DupireLocalVolModel()
+        if surface is None
+        else DupireLocalVolModel(params={"vol_surface": surface})
+    )
+    ref = ClosedFormTechnique().price(option, stock, reference_model, rate).price
+    mc = MonteCarloTechnique(n_paths=200_000, n_steps=200, seed=5)
+    assert mc.price(option, stock, model, rate).price == pytest.approx(ref, abs=0.05)
+
+
+@pytest.mark.skipif(
+    numba.config.DISABLE_JIT, reason="any Python callable runs without the JIT"
+)
+def test_dupire_rejects_surfaces_numba_cannot_compile(stock, rate):
+    from types import SimpleNamespace
+
+    from optpricing import DupireLocalVolModel
+
+    level = SimpleNamespace(vol=0.2)
+    model = DupireLocalVolModel(params={"vol_surface": lambda t, s: level.vol})
+    with pytest.raises(TypeError, match="numba"):
+        MonteCarloTechnique(n_paths=1000, n_steps=10).price(
+            make_option(100.0, 1.0), stock, model, rate
+        )
+
+
+_FT_CASE = {"v0": 0.09, "kappa": 0.8, "theta": 0.06, "rho": -0.9, "vol_of_vol": 1.0}
+
+
+def test_heston_euler_is_full_truncation_not_absorption():
+    """
+    QuantLib AnalyticHestonEngine 16.516325 for S=K=100, T=3, r=5%, q=2% and the
+    Feller-violating set above. Lord, Koekkoek & van Dijk (2010): full truncation
+    keeps the negative variance state and uses only its positive part, bias
+    +0.10 at 400 steps (independent numpy run); flooring the state at zero
+    (absorption) is biased by +2.56 and was what the kernel did.
+    """
+    mc = MonteCarloTechnique(
+        n_paths=400_000, n_steps=400, seed=7, variance_scheme="euler"
+    )
+    price = mc.price(
+        make_option(100.0, 3.0),
+        Stock(spot=100.0, dividend=0.02),
+        HestonModel(params=_FT_CASE),
+        Rate(rate=0.05),
+    ).price
+    assert price == pytest.approx(16.516325, abs=0.25)
+
+
+@pytest.mark.parametrize("kernel", ["heston", "bates"])
+def test_heston_path_kernels_are_full_truncation(kernel):
+    """Same reference as above; Bates with zero jump intensity is Heston."""
+    from optpricing.techniques.kernels.path_kernels import (
+        bates_path_kernel,
+        heston_path_kernel,
+    )
+
+    p = _FT_CASE
+    common = (np.random.default_rng(3), 60_000, 200, True, math.log(100.0), p["v0"])
+    sv = (0.05, 0.02, p["kappa"], p["theta"], p["rho"], p["vol_of_vol"])
+    if kernel == "heston":
+        paths = heston_path_kernel(*common, *sv, 3.0 / 200)
+    else:
+        paths = bates_path_kernel(*common, *sv, 0.0, 0.0, 0.1, 3.0 / 200)
+    price = math.exp(-0.15) * np.maximum(paths[-1] - 100.0, 0.0).mean()
+    assert price == pytest.approx(16.516325, abs=0.5)
+
+
 def test_qe_scheme_handles_long_maturity_high_vol_of_vol():
     """
     QuantLib 29.018273 for S=100, K=120, T=10, r=3%, v0=theta=0.09, kappa=0.5,
-    xi=1, rho=-0.9. Full-truncation Euler is off by +9 even with 252 steps on
-    this case; the QE scheme (Andersen 2008) is within Monte Carlo noise at 20.
+    xi=1, rho=-0.9. The Euler scheme is far off at 252 steps on this case; the
+    QE scheme (Andersen 2008) is within Monte Carlo noise at 20.
     """
     model = HestonModel(
         params={"v0": 0.09, "kappa": 0.5, "theta": 0.09, "rho": -0.9, "vol_of_vol": 1.0}
