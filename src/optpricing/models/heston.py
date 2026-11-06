@@ -13,6 +13,37 @@ Defines the Heston stochastic volatility model.
 """
 
 
+def _heston_variance_exponent(
+    u: np.ndarray | complex,
+    t: float,
+    kappa: float,
+    theta: float,
+    rho: float,
+    vol_of_vol: float,
+    v0: float,
+) -> np.ndarray | complex:
+    """
+    ``C(u) + D(u) v0`` of the Heston characteristic function without the drift
+    and log-spot terms, in the "little trap" form (Albrecher et al. 2007).
+
+    Where ``iu + u^2 = 0`` (``u = 0`` and ``u = -i``) the Riccati equation for D
+    has no forcing, so ``C = D = 0`` exactly; the closed form is 0/0 there when
+    ``rho * vol_of_vol >= kappa``, which made ``phi(-i)`` NaN.
+    """
+    beta = kappa - rho * vol_of_vol * u * 1j
+    forcing = u * 1j + u**2
+    with np.errstate(divide="ignore", invalid="ignore"):
+        d = np.sqrt(beta**2 + vol_of_vol**2 * forcing)
+        g = (beta - d) / (beta + d)
+        e = np.exp(-d * t)
+        C = (kappa * theta / vol_of_vol**2) * (
+            (beta - d) * t - 2 * np.log((1 - g * e) / (1 - g))
+        )
+        D = ((beta - d) / vol_of_vol**2) * ((1 - e) / (1 - g * e))
+        exponent = C + D * v0
+    return np.where(forcing == 0, 0.0, exponent)
+
+
 class HestonModel(BaseModel):
     """
     Heston stochastic volatility model.
@@ -153,21 +184,8 @@ class HestonModel(BaseModel):
         )
 
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
-            d = np.sqrt(
-                (rho * vol_of_vol * u * 1j - kappa) ** 2
-                - (vol_of_vol**2) * (-u * 1j - u**2)
-            )
-            g = (kappa - rho * vol_of_vol * u * 1j - d) / (
-                kappa - rho * vol_of_vol * u * 1j + d
-            )
-            C = (r - q) * u * 1j * t + (kappa * theta / vol_of_vol**2) * (
-                (kappa - rho * vol_of_vol * u * 1j - d) * t
-                - 2 * np.log((1 - g * np.exp(-d * t)) / (1 - g))
-            )
-            D = ((kappa - rho * vol_of_vol * u * 1j - d) / vol_of_vol**2) * (
-                (1 - np.exp(-d * t)) / (1 - g * np.exp(-d * t))
-            )
-            return np.exp(C + D * v0 + 1j * u * np.log(spot))
+            sv = _heston_variance_exponent(u, t, kappa, theta, rho, vol_of_vol, v0)
+            return np.exp(1j * u * (np.log(spot) + (r - q) * t) + sv)
 
         return phi
 
