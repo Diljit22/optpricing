@@ -55,6 +55,11 @@ class NIGModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
+    def moment_strip(self) -> tuple[float, float]:
+        """``|beta + s| < alpha`` (Barndorff-Nielsen 1997)."""
+        alpha, beta = self.params["alpha"], self.params["beta"]
+        return float(-alpha - beta), float(alpha - beta)
+
     def _cf_impl(
         self,
         *,

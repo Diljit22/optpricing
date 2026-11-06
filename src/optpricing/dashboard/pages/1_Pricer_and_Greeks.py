@@ -20,6 +20,7 @@ from optpricing.models import (
 from optpricing.techniques import (
     AmericanMonteCarloTechnique,
     ClosedFormTechnique,
+    COSTechnique,
     CRRTechnique,
     FFTTechnique,
     IntegrationTechnique,
@@ -60,6 +61,7 @@ MODEL_MAP = {
 
 TECHNIQUE_MAP = {
     "Analytic/Closed-Form": ClosedFormTechnique,
+    "COS": COSTechnique,
     "Integration": IntegrationTechnique,
     "FFT": FFTTechnique,
     "Monte Carlo": MonteCarloTechnique,
@@ -86,7 +88,7 @@ with col1:
     if getattr(dummy_model_instance, "has_closed_form", False):
         supported_techs.append("Analytic/Closed-Form")
     if getattr(dummy_model_instance, "supports_cf", False):
-        supported_techs.extend(["Integration", "FFT"])
+        supported_techs.extend(["COS", "Integration", "FFT"])
 
     mc_supported = (
         getattr(dummy_model_instance, "supports_sde", False)

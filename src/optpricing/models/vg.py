@@ -115,6 +115,13 @@ class VarianceGammaModel(BaseModel):
 
         return phi
 
+    def moment_strip(self) -> tuple[float, float]:
+        """Roots of ``1 - theta nu s - sigma^2 nu s^2 / 2`` (Madan, Carr & Chang
+        1998): the moment generating function is that base to ``-t/nu``."""
+        sigma, nu, theta = self.params["sigma"], self.params["nu"], self.params["theta"]
+        root = np.sqrt(theta**2 + 2.0 * sigma**2 / nu)
+        return float((-theta - root) / sigma**2), float((-theta + root) / sigma**2)
+
     def raw_cf(self, *, t: float) -> Callable:
         """
         Returns the raw characteristic function of the VG process itself.

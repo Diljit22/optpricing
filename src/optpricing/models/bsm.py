@@ -212,6 +212,10 @@ class BSMModel(BaseModel):
         df_rate = np.exp(-r * t)
         return strike * t * df_rate * (ndtr(d2) if call else -ndtr(-d2))
 
+    def moment_strip(self) -> tuple[float, float]:
+        """Log-normal: every moment is finite."""
+        return -np.inf, np.inf
+
     def _cf_impl(
         self,
         *,

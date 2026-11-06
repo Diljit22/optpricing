@@ -104,6 +104,11 @@ class HyperbolicModel(BaseModel):
 
         return phi
 
+    def moment_strip(self) -> tuple[float, float]:
+        """``|beta + s| < alpha`` (Eberlein & Keller 1995)."""
+        alpha, beta = self.params["alpha"], self.params["beta"]
+        return float(-alpha - beta), float(alpha - beta)
+
     def raw_cf(self, *, t: float) -> Callable:
         """
         Returns the CF of the raw Hyperbolic process, without drift or spot.

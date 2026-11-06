@@ -107,6 +107,20 @@ class BaseModel(ABC):
         """Internal implementation of the characteristic function."""
         ...
 
+    def moment_strip(self) -> tuple[float, float] | None:
+        """
+        Open interval of ``s`` with ``E[(S_t / S_0)^s] < inf`` for every ``t``,
+        or None if unknown or maturity-dependent (e.g. Heston's moment
+        explosion).
+
+        Fourier techniques use it to stay inside the region where ``cf`` at
+        imaginary arguments is a genuine moment: beyond it the closed forms are
+        continued analytically and can return plausible-looking values (past
+        Kou's pole the "moments" stay positive and log-convex when the jump
+        intensity is small).
+        """
+        return None
+
     def get_sde_sampler(self, **kwargs: Any) -> Callable:
         """
         Return a function that can be used to sample paths from the model's SDE.

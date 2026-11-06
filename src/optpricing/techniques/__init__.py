@@ -8,6 +8,7 @@ methods for pricing options.
 from .american_monte_carlo import AmericanMonteCarloTechnique
 from .base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 from .closed_form import ClosedFormTechnique
+from .cos import COSTechnique
 from .crr import CRRTechnique
 from .fft import FFTTechnique
 from .integration import IntegrationTechnique
@@ -22,6 +23,7 @@ __all__ = [
     "GreekMixin",
     "IVMixin",
     "ClosedFormTechnique",
+    "COSTechnique",
     "FFTTechnique",
     "IntegrationTechnique",
     "CRRTechnique",

@@ -49,6 +49,7 @@ from .parity import ImpliedRateModel, ParityModel
 from .techniques import (
     AmericanMonteCarloTechnique,
     ClosedFormTechnique,
+    COSTechnique,
     CRRTechnique,
     FFTTechnique,
     IntegrationTechnique,
@@ -93,6 +94,7 @@ __all__ = [
     # Techniques
     "AmericanMonteCarloTechnique",
     "ClosedFormTechnique",
+    "COSTechnique",
     "CRRTechnique",
     "FFTTechnique",
     "IntegrationTechnique",
