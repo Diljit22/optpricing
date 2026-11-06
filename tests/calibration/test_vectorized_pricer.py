@@ -111,10 +111,21 @@ def test_closed_form_route_agrees_with_characteristic_function_route(chain):
         vectorized_closed_form = False
 
     via_closed_form = price_options_vectorized(chain, stock, model, rate)
-    via_cf = price_options_vectorized(
-        chain, stock, CFOnly(params=MertonJumpModel.default_params), rate
-    )
-    np.testing.assert_allclose(via_closed_form, via_cf, atol=1e-8)
+    cf_only = CFOnly(params=MertonJumpModel.default_params)
+    for method in ("cos", "gauss"):
+        via_cf = price_options_vectorized(chain, stock, cf_only, rate, method=method)
+        np.testing.assert_allclose(via_closed_form, via_cf, atol=1e-8)
+
+
+def test_unknown_chain_method_is_rejected(chain):
+    with pytest.raises(ValueError, match="method"):
+        price_options_vectorized(
+            chain,
+            Stock(spot=100.0),
+            MertonJumpModel(params=MertonJumpModel.default_params),
+            Rate(rate=0.04),
+            method="fft",
+        )
 
 
 @pytest.mark.parametrize(

@@ -29,7 +29,7 @@ class VectorizedIntegrationIVSolver:
         self,
         max_iter: int = 20,
         tolerance: float = 1e-7,
-        upper_bound: float = 200.0,
+        upper_bound: float = 1000.0,
     ):
         """
         Initializes the vectorized IV solver.
@@ -41,7 +41,7 @@ class VectorizedIntegrationIVSolver:
         tolerance : float, optional
             Error tolerance for convergence, by default 1e-7.
         upper_bound : float, optional
-            The upper limit for the numerical integration, by default 200.0.
+            The upper limit for the numerical integration, by default 1000.0.
         """
         self.max_iter = max_iter
         self.tolerance = tolerance
