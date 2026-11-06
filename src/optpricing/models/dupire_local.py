@@ -16,14 +16,17 @@ class DupireLocalVolModel(BaseModel):
     supports_sde: bool = True
     is_local_vol: bool = True
 
-    default_params = {"vol_surface": lambda T, K: 0.2}
+    default_params = {"vol_surface": lambda t, s: 0.2}
 
     def __init__(self, params: dict[str, Any] | None = None):
         """
         Initializes the Dupire Local Volatility model.
 
-        The key parameter for this model is 'vol_surface', a callable function
-        that takes maturity (T) and strike (K) and returns the local volatility.
+        The key parameter for this model is 'vol_surface', a scalar function
+        ``sigma(t, S)`` of time and spot returning the local volatility (the
+        Dupire surface sigma(T, K) evaluated along the path at T = t, K = S).
+        Monte Carlo compiles it with ``numba.njit``, so it must be
+        nopython-compatible (plain arithmetic, ``math``, NumPy scalars).
 
         Parameters
         ----------

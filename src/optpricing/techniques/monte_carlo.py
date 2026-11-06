@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import math
+import weakref
 from collections.abc import Callable
 from typing import Any
 
+import numba
 import numpy as np
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
@@ -32,6 +34,27 @@ __doc__ = """
 Defines a universal Monte Carlo pricing engine that dispatches to specialized,
 JIT-compiled kernels based on the financial model provided.
 """
+
+_jitted_surfaces: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+
+
+def _jit_vol_surface(func: Callable) -> Callable:
+    """The local-volatility surface ``sigma(t, S)`` as a numba function, compiled
+    once per Python callable."""
+    if numba.config.DISABLE_JIT or isinstance(func, numba.core.registry.CPUDispatcher):
+        return func
+    jitted = _jitted_surfaces.get(func)
+    if jitted is None:
+        jitted = numba.njit(func)
+        try:
+            jitted.compile("float64(float64, float64)")
+        except numba.core.errors.NumbaError as e:
+            raise TypeError(
+                "The Dupire 'vol_surface' must be a scalar function sigma(t, S) "
+                f"that numba can compile in nopython mode: {e}"
+            ) from None
+        _jitted_surfaces[func] = jitted
+    return jitted
 
 
 class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
@@ -174,7 +197,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         kernel_params = {"r": r, "q": q, "dt": dt}
 
         if getattr(model, "is_local_vol", False):  # Dupire
-            kernel_params["vol_surface_func"] = p["vol_surface"]
+            kernel_params["vol_surface_func"] = _jit_vol_surface(p["vol_surface"])
             return dupire_kernel, kernel_params
 
         if model.has_variance_process and model.has_jumps:  # Bates
