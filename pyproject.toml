@@ -77,6 +77,7 @@ test = [
     "optpricing[ui]",
     "pytest>=8.3",
     "pytest-cov>=5",
+    "hypothesis>=6.112",
 ]
 lint = [
     "ruff==0.17.3",

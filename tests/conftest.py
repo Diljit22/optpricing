@@ -9,13 +9,22 @@ offline: any attempt to reach yfinance fails loudly through `no_network`.
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import settings
 
 from optpricing.atoms import Rate, Stock
 from optpricing.calibration.vectorized_pricer import price_options_vectorized
 from optpricing.models import BaseModel, BSMModel
+
+# Property tests: a fixed example set by default (reproducible CI, no flakes);
+# HYPOTHESIS_PROFILE=thorough searches randomly and much harder.
+settings.register_profile("default", derandomize=True, deadline=None, max_examples=60)
+settings.register_profile("thorough", deadline=None, max_examples=2000)
+settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "default"))
 
 
 def make_snapshot(
