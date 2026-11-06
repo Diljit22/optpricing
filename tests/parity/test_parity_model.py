@@ -90,6 +90,35 @@ def test_price_bounds_put(model):
     assert upper == pytest.approx(expected_upper)
 
 
+@pytest.mark.parametrize("call", [True, False])
+@pytest.mark.parametrize("strike", [95.0, 105.0])
+def test_price_bounds_with_dividend_yield(model, call, strike):
+    """
+    Merton (1973) bounds with a dividend yield: the lower bound is the
+    sigma -> 0 limit of BSM, max(S e^{-qT} - K e^{-rT}, 0) for a call, and the
+    call is capped by S e^{-qT}. Regression: q was ignored (call lower bound
+    7.8077 instead of 6.6890 at S=100, K=95, T=0.75, r=4 %, q=1.5 %).
+    """
+    from optpricing import BSMModel
+
+    S, r, q, T = 100.0, 0.04, 0.015, 0.75
+    lower, upper = model.price_bounds(
+        spot=S, strike=strike, r=r, q=q, t=T, call=call, option_price=0.0
+    )
+    zero_vol = BSMModel(params={"sigma": 1e-6}).price_closed_form(
+        spot=S, strike=strike, r=r, q=q, t=T, call=call
+    )
+    assert lower == pytest.approx(zero_vol, abs=1e-9)
+    assert upper == pytest.approx(
+        S * math.exp(-q * T) if call else strike * math.exp(-r * T)
+    )
+    for sigma in (0.05, 0.3, 2.0):
+        price = BSMModel(params={"sigma": sigma}).price_closed_form(
+            spot=S, strike=strike, r=r, q=q, t=T, call=call
+        )
+        assert lower - 1e-12 <= price <= upper + 1e-12
+
+
 def test_lower_bound_rate(model):
     """
     Tests the calculation of the minimum risk-free rate to avoid arbitrage.
