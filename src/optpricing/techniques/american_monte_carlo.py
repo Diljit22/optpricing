@@ -8,7 +8,14 @@ import numba
 import numpy as np
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
-from optpricing.models import BaseModel, SABRJumpModel, SABRModel
+from optpricing.models import (
+    BaseModel,
+    BSMModel,
+    KouModel,
+    MertonJumpModel,
+    SABRJumpModel,
+    SABRModel,
+)
 from optpricing.techniques.base import BaseTechnique, GreekMixin, IVMixin, PricingResult
 from optpricing.techniques.base.random_utils import (
     DEFAULT_CHUNK_SIZE,
@@ -162,7 +169,7 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
                 if self.variance_scheme == "qe"
                 else heston_path_kernel
             ), kernel_params
-        if model.name == "Kou Double-Exponential Jump":
+        if isinstance(model, KouModel):
             kernel_params.update(
                 {
                     "sigma": p["sigma"],
@@ -173,7 +180,7 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
                 }
             )
             return kou_path_kernel, kernel_params
-        if model.has_jumps:
+        if isinstance(model, MertonJumpModel):
             kernel_params.update(
                 {
                     "sigma": p["sigma"],
@@ -183,8 +190,13 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
                 }
             )
             return merton_path_kernel, kernel_params
-        kernel_params["sigma"] = p["sigma"]
-        return bsm_path_kernel, kernel_params
+        if isinstance(model, BSMModel):
+            kernel_params["sigma"] = p["sigma"]
+            return bsm_path_kernel, kernel_params
+        raise TypeError(
+            f"American MC has no path simulation for {type(model).__name__}; "
+            "supported: BSM, Merton, Kou, Heston, Bates, SABR, SABR-jump."
+        )
 
     def _simulate_full_sde_paths(
         self,

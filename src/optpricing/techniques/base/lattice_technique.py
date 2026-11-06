@@ -4,7 +4,7 @@ from abc import abstractmethod
 from typing import Any
 
 from optpricing.atoms import Option, Rate, Stock
-from optpricing.models import BaseModel
+from optpricing.models import BaseModel, BSMModel
 
 from .base_technique import BaseTechnique
 from .greek_mixin import GreekMixin
@@ -66,6 +66,11 @@ class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
         **kwargs: Any,
     ) -> PricingResult:
         """Prices the option and caches the necessary nodes for Greek calculations."""
+        if not isinstance(model, BSMModel):
+            raise TypeError(
+                f"{type(self).__name__} builds a constant-volatility lattice and "
+                f"only supports BSMModel, not {type(model).__name__}."
+            )
         self._cache_key = self._get_cache_key(option, stock, model, rate)
         results = self._price_and_get_nodes(option, stock, model, rate)
         self._cached_nodes = results

@@ -192,13 +192,16 @@ def price(
     # Technique Selection & Pricing
     technique_instance = _select_technique()
 
-    price_result = technique_instance.price(
-        option,
-        stock,
-        model_instance,
-        rate,
-        **full_params,
-    )
+    try:
+        price_result = technique_instance.price(
+            option,
+            stock,
+            model_instance,
+            rate,
+            **full_params,
+        )
+    except TypeError as e:
+        _err(str(e))
 
     typer.secho("\n── Pricing Results " + "─" * 38, fg=typer.colors.CYAN)
     typer.echo(f"Price: {price_result.price:.4f}")
