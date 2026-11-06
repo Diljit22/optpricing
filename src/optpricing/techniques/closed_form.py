@@ -93,10 +93,11 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
             }
         elif isinstance(option, ZeroCouponBond):
             # For rate models, 'spot' is re-interpreted as the initial short rate r0.
+            # The models price a unit discount bond; strike, r and q are passed
+            # to satisfy the signature and are ignored.
             base_params = {
                 "spot": stock.spot,
                 "t": option.maturity,
-                # passed to satisfy the model signature but are ignored.
                 "strike": option.face_value,
                 "r": rate.get_rate(option.maturity),
                 "q": stock.dividend,
@@ -110,7 +111,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         for key in getattr(model, "cf_kwargs", []):
             if key in base_params:
                 continue
-            if hasattr(stock, key):
+            if getattr(stock, key, None) is not None:
                 base_params[key] = getattr(stock, key)
             elif key in kwargs:
                 base_params[key] = kwargs[key]
@@ -130,6 +131,8 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
             base_params["put_price"] = kwargs["put_price"]
 
         price = model.price_closed_form(**base_params)
+        if isinstance(option, ZeroCouponBond):
+            price *= option.face_value
         return PricingResult(price=price)
 
     def delta(

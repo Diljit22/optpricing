@@ -17,15 +17,15 @@ Diljit Singh
 * **Jump-Diffusion**: Merton, Bates, Kou, SABR with Jumps
 * **Pure Levy Processes**: Variance Gamma (VG), Normal Inverse Gaussian (NIG), CGMY, Hyperbolic
 * **Interest Rate Models**: Vasicek, Cox-Ingersoll-Ross (CIR), Put-Call Parity Implied Rate
-* **Local Volatility**: Dupire's Equation
+* **Local Volatility**: CEV, Dupire
 
 **Pricing Engines**: Provides a suite of numerical methods, allowing for technique comparison and validation:
 
 * Analytic closed-form solutions
-* Numerical integration and FFT-based pricing via characteristic functions
+* Characteristic-function pricing: COS (Fang–Oosterlee), numerical integration, and Carr–Madan FFT
 * Finite difference (PDE) solver using a Crank-Nicolson scheme
-* Binomial and trinomial tree methods (CRR, TOPM, Leisen-Reimer) for European and American options
-* High-performance Monte Carlo engine for European and American options, accelerated with `numba`, featuring variance reduction techniques (e.g., antithetic variates, control variates, importance sampling)
+* Binomial and trinomial tree methods (CRR, TOPM, Leisen-Reimer) for European and American Black–Scholes options
+* High-performance Monte Carlo engine for European and American options, accelerated with `numba`, with antithetic variates
 
 **Interfaces**:
 

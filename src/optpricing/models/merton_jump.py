@@ -174,6 +174,10 @@ class MertonJumpModel(BaseModel):
             return float(np.dot(weights, prices))
         return weights @ prices
 
+    def moment_strip(self) -> tuple[float, float]:
+        """Gaussian diffusion and log-normal jumps: every moment is finite."""
+        return -math.inf, math.inf
+
     def _cf_impl(
         self,
         *,

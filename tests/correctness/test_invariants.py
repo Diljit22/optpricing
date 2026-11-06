@@ -14,7 +14,9 @@ import pytest
 from optpricing import (
     BatesModel,
     BSMModel,
+    CEVModel,
     CGMYModel,
+    DupireLocalVolModel,
     HestonModel,
     HyperbolicModel,
     KouModel,
@@ -23,9 +25,15 @@ from optpricing import (
     VarianceGammaModel,
 )
 from optpricing.techniques import (
+    AmericanMonteCarloTechnique,
     ClosedFormTechnique,
+    COSTechnique,
+    CRRTechnique,
     FFTTechnique,
     IntegrationTechnique,
+    LeisenReimerTechnique,
+    PDETechnique,
+    TOPMTechnique,
 )
 from optpricing.techniques.base import GreekMixin
 
@@ -75,11 +83,25 @@ def test_fft_agrees_with_quadrature(cf_models, name, stock, rate, atm_call):
     model, kwargs = cf_models[name]
     p_int = IntegrationTechnique().price(atm_call, stock, model, rate, **kwargs).price
     p_fft = FFTTechnique().price(atm_call, stock, model, rate, **kwargs).price
-    assert p_fft == pytest.approx(p_int, abs=5e-3)
+    assert p_fft == pytest.approx(p_int, abs=1e-10)
 
 
 @pytest.mark.parametrize("name", CF_MODEL_NAMES)
-@pytest.mark.parametrize("technique", [IntegrationTechnique, FFTTechnique])
+def test_cos_agrees_with_quadrature(cf_models, name, stock, rate):
+    """The largest gap, 6e-8 (VG, T=0.25), is the quadrature's: COS on a fixed
+    range ln F -/+ 10 with 2^20 terms agrees with `COSTechnique` to 1e-12."""
+    model, kwargs = cf_models[name]
+    for K, T in ((80.0, 0.25), (100.0, 1.0), (120.0, 2.0)):
+        option = make_option(K, T)
+        p_int = IntegrationTechnique().price(option, stock, model, rate, **kwargs)
+        p_cos = COSTechnique().price(option, stock, model, rate, **kwargs)
+        assert p_cos.price == pytest.approx(p_int.price, abs=2e-7)
+
+
+@pytest.mark.parametrize("name", CF_MODEL_NAMES)
+@pytest.mark.parametrize(
+    "technique", [IntegrationTechnique, FFTTechnique, COSTechnique]
+)
 def test_put_call_parity(cf_models, name, technique, stock, rate):
     model, kwargs = cf_models[name]
     T, K = 1.0, 105.0
@@ -196,6 +218,52 @@ def test_finite_difference_greeks_match_analytic_bsm(stock, rate, atm_call, gree
         IntegrationTechnique(), atm_call, stock, bsm, rate
     )
     assert numeric == pytest.approx(analytic, abs=tol)
+
+
+_CEV = CEVModel(params={"sigma": 2.5, "gamma": 0.5})
+
+
+@pytest.mark.parametrize(
+    "technique, model",
+    [
+        (tech, model)
+        for tech in (CRRTechnique, LeisenReimerTechnique, TOPMTechnique)
+        for model in (_CEV, DupireLocalVolModel(), HestonModel())
+    ]
+    + [(AmericanMonteCarloTechnique, m) for m in (_CEV, DupireLocalVolModel())],
+)
+def test_techniques_reject_models_they_cannot_price(stock, rate, technique, model):
+    """Regression: the trees read `params.get("sigma", stock.volatility)` for any
+    model and the LSMC dispatcher fell through to the BSM path kernel, so a CEV
+    (sigma 2.5, gamma 0.5) American put priced at 75.6 (BSM with sigma = 2.5)
+    against a European CEV value of 7.47."""
+    with pytest.raises(TypeError):
+        technique().price(make_option(100.0, 1.0, call=False), stock, model, rate)
+
+
+@pytest.mark.parametrize(
+    "technique", [lambda: PDETechnique(M=200, N=200), IntegrationTechnique]
+)
+def test_cached_greeks_follow_the_inputs(stock, rate, technique):
+    """Regression: PDE delta/gamma and the quadrature delta were served from the
+    cache of the previous `price` call (or of the bumped re-pricings inside
+    `gamma`), whatever option was asked for."""
+    bsm = BSMModel(params={"sigma": 0.2})
+    first, second = make_option(100.0, 1.0), make_option(130.0, 0.5, call=False)
+    cf, tech = ClosedFormTechnique(), technique()
+    tech.price(first, stock, bsm, rate)
+    assert tech.delta(second, stock, bsm, rate) == pytest.approx(
+        cf.delta(second, stock, bsm, rate), abs=5e-3
+    )
+    tech.gamma(first, stock, bsm, rate)
+    assert tech.delta(first, stock, bsm, rate) == pytest.approx(
+        cf.delta(first, stock, bsm, rate), abs=5e-4
+    )
+    if isinstance(tech, PDETechnique):
+        tech.price(first, stock, bsm, rate)
+        assert tech.gamma(second, stock, bsm, rate) == pytest.approx(
+            cf.gamma(second, stock, bsm, rate), abs=5e-4
+        )
 
 
 @pytest.mark.parametrize(

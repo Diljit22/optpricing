@@ -86,6 +86,7 @@ class ParityModel(BaseModel):
         t: float,
         call: bool,
         option_price: float,  # noqa: F841
+        q: float = 0.0,
     ) -> tuple[float, float]:
         """
         Return absolute (lower, upper) no-arbitrage bounds for an option.
@@ -104,6 +105,8 @@ class ParityModel(BaseModel):
             True if `option_price` is for a call, False if it's for a put.
         option_price : float
             The price of the known option. In this case it is a place holder.
+        q : float, optional
+            The continuous dividend yield, by default 0.0.
 
         Returns
         -------
@@ -111,12 +114,13 @@ class ParityModel(BaseModel):
             A tuple containing the (lower_bound, upper_bound) for the option price.
         """
         discounted_strike = strike * math.exp(-r * t)
+        discounted_spot = spot * math.exp(-q * t)
 
         if call:
-            lower_bound = max(0, spot - discounted_strike)
-            upper_bound = spot
+            lower_bound = max(0, discounted_spot - discounted_strike)
+            upper_bound = discounted_spot
         else:  # Put
-            lower_bound = max(0, discounted_strike - spot)
+            lower_bound = max(0, discounted_strike - discounted_spot)
             upper_bound = discounted_strike
 
         return lower_bound, upper_bound

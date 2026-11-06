@@ -109,6 +109,10 @@ class CGMYModel(BaseModel):
 
         return phi
 
+    def moment_strip(self) -> tuple[float, float]:
+        """``-G < s < M`` (Carr, Geman, Madan & Yor 2002)."""
+        return float(-self.params["G"]), float(self.params["M"])
+
     def raw_cf(self, *, t: float) -> Callable:
         """
         Returns the CF of the raw CGMY process, without drift or spot.

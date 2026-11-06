@@ -49,23 +49,26 @@ print(f"Gamma: {gamma:.4f}")
 The API's flexibility allows you to easily switch to more complex scenarios. Here, we price an American option using the Heston model with the Longstaff-Schwartz Monte Carlo method.
 
 ```python
+from optpricing import ExerciseStyle, Option, OptionType, Rate, Stock
 from optpricing.models import HestonModel
 from optpricing.techniques import AmericanMonteCarloTechnique
 
-# 1. Define an American option Atom
-american_option = Option(strike=105, maturity=1.0, option_type=OptionType.PUT)
+american_option = Option(
+    strike=105,
+    maturity=1.0,
+    option_type=OptionType.PUT,
+    exercise_style=ExerciseStyle.AMERICAN,
+)
+stock = Stock(spot=100.0, dividend=0.01)
+rate = Rate(rate=0.05)
 
-# 2. Instantiate a more complex model and the appropriate technique
 heston_model = HestonModel(
     params={"v0": 0.04, "kappa": 2.0, "theta": 0.05, "rho": -0.7, "vol_of_vol": 0.5}
 )
 lsmc_technique = AmericanMonteCarloTechnique(n_paths=20000, n_steps=100)
 
-# 3. Calculate the price
-# Note: The 'v0' parameter is passed as a keyword argument for the simulation
-result = lsmc_technique.price(
-    american_option, stock, heston_model, rate, v0=heston_model.params["v0"]
-)
+# v0 is optional: the technique reads it from the model when it is omitted.
+result = lsmc_technique.price(american_option, stock, heston_model, rate)
 print(f"The American option price is: {result.price:.4f}")
 ```
 

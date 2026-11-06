@@ -22,14 +22,14 @@ Diljit Singh
   * **Jump-Diffusion**: Merton, Bates, Kou, SABR with Jumps
   * **Pure Levy Processes**: Variance Gamma (VG), Normal Inverse Gaussian (NIG), CGMY, Hyperbolic
   * **Interest Rate Models**: Vasicek, Cox-Ingersoll-Ross (CIR), Put-Call Parity Implied Rate
-  * **Local Volatility**: Dupire's Equation
+  * **Local Volatility**: CEV, Dupire
 
 * **Pricing Engines**: Provides a suite of numerical methods, allowing for technique comparison and validation:
   * Analytic closed-form solutions
-  * Numerical integration and FFT-based pricing via characteristic functions
+  * Characteristic-function pricing: COS (Fang–Oosterlee), numerical integration, and Carr–Madan FFT
   * Finite difference (PDE) solver using a Crank-Nicolson scheme
-  * Binomial and trinomial tree methods (CRR, TOPM, Leisen-Reimer) for European and American options
-  * High-performance Monte Carlo engine for European and American options, accelerated with `numba`, featuring variance reduction techniques (e.g., antithetic variates, control variates, importance sampling)
+  * Binomial and trinomial tree methods (CRR, TOPM, Leisen-Reimer) for European and American Black–Scholes options
+  * High-performance Monte Carlo engine for European and American options, accelerated with `numba`, with antithetic variates
 
 * **Interfaces**:
   * **Programmatic API**: Use the package as a Python library to build custom financial models in your scripts. Define options, stocks, rates, and models programmatically to compute prices and other metrics.
@@ -63,23 +63,23 @@ For more details, see the [Getting Started Guide](https://diljit22.github.io/opt
 
 ### 3. Use the CLI
 
-Price an option directly from the terminal. The command below fetches the live option chain for AAPL, retrieves the current dividend rate, calculates the implied risk-free rate from at-the-money contracts, and prices the contract with Heston’s model using its default pricing technique (FFT):
+Price an option directly from the terminal. The command below fetches the live option chain for AAPL and prices the contract with the spot, the 13-week T-bill rate, and the dividend yield implied by put-call parity. Heston has no closed form, so the default technique is COS (Fang–Oosterlee):
 
 ```bash
-optpricing price --ticker AAPL --strike 630 --maturity 2025-12-19 --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
+optpricing price --ticker AAPL --strike 630 --maturity 2027-06-18 --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
 ```
 
-To price the same contract as an American Option use:
+The same contract as an American option uses Longstaff–Schwartz Monte Carlo. Lattice techniques price American Black–Scholes only:
 
 ```bash
-optpricing price -t AAPL -k 210 -T 2025-12-19 --style american --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
+optpricing price -t AAPL -k 630 -T 2027-06-18 --style american --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
 ```
 
 For more details, see the [CLI Guide](https://diljit22.github.io/optpricing/guide/CLI/).
 
 ### 4. Launch the Dashboard
 
-Visualize option chains and model outputs, and interact with a pricing calculator covering 12 models and 8 techniques (the full library exposes 17 pricing models plus parity/implied-rate models, and 9 techniques). Requires the `ui` extra.
+Visualize option chains and model outputs, and interact with a pricing calculator covering 12 models and 9 techniques (the full library exposes 17 pricing models plus parity/implied-rate models, and 10 techniques, including American Monte Carlo). Requires the `ui` extra.
 
 ```bash
 optpricing dashboard

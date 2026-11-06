@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from optpricing.techniques.cos import cos_prices
 from optpricing.techniques.integration import IntegrationTechnique
 
 if TYPE_CHECKING:
@@ -20,17 +21,27 @@ Every model that can be calibrated prices a whole chain through one function,
 :func:`price_options_vectorized`, which picks the fastest exact method:
 
 1. a vectorized closed form (BSM, Merton, SABR/Hagan, CEV), one call per maturity;
-2. Gil-Pelaez inversion of the characteristic function on a composite
-   Gauss-Legendre rule (Heston, Bates, Kou, VG, NIG, CGMY, Hyperbolic), one
-   characteristic-function evaluation per maturity;
+2. for characteristic-function models (Heston, Bates, Kou, VG, NIG, CGMY,
+   Hyperbolic), one characteristic-function evaluation per maturity with either
+   the COS method (``method="cos"``, default; see
+   :mod:`optpricing.techniques.cos`), whose truncation range and number of terms
+   adapt to the model (series tail bounded by 1e-9 of the strike, against 1e-12
+   for `COSTechnique`: Variance Gamma at T/nu = 1 needs 2^16 terms for 1e-12),
+   or Gil-Pelaez inversion on a fixed composite
+   Gauss-Legendre rule (``method="gauss"``), which is under-resolved when the
+   characteristic function decays slowly (Variance Gamma and CGMY at short
+   maturities, strong Feller violation in Heston);
 3. optionally (``allow_mc=True``) Monte Carlo with common random numbers for
    simulation-only models (SABR with jumps, Dupire): one set of terminal spots
    per maturity prices every strike of that maturity.
 
 Repeated pricing of the same chain (calibration) should build a
-:class:`ChainLayout` once: it caches the per-maturity strike groups and the
-model-independent Fourier kernels ``exp(-i u ln K) / u``.
+:class:`ChainLayout` once: it caches the per-maturity strike groups and, for
+``method="gauss"``, the model-independent Fourier kernels ``exp(-i u ln K) / u``.
 """
+
+_CHAIN_METHODS = ("cos", "gauss")
+_CHAIN_COS_TOL = 1e-9
 
 
 class ChainLayout:
@@ -43,18 +54,25 @@ class ChainLayout:
         Must contain ``strike``, ``maturity`` and ``optionType``; the row order
         defines the output order of the pricers.
     upper_bound : float, optional
-        Truncation of the Gil-Pelaez integrals, by default 200.
+        Truncation of the Gil-Pelaez integrals, by default 1000
+        (``method="gauss"``).
     n_nodes : int, optional
-        Gauss-Legendre nodes per panel, by default 24.
+        Gauss-Legendre nodes per panel, by default 24 (``method="gauss"``).
+    method : {"cos", "gauss"}, optional
+        Characteristic-function pricer, by default ``"cos"``.
     """
 
     def __init__(
         self,
         options_df: pd.DataFrame,
         *,
-        upper_bound: float = 200.0,
+        upper_bound: float = 1000.0,
         n_nodes: int = 24,
+        method: str = "cos",
     ):
+        if method not in _CHAIN_METHODS:
+            raise ValueError(f"method must be one of {_CHAIN_METHODS}.")
+        self.method = method
         self.n_options = len(options_df)
         maturities = options_df["maturity"].to_numpy(dtype=float)
         strikes = options_df["strike"].to_numpy(dtype=float)
@@ -91,6 +109,27 @@ def _closed_form_chain(
         prices[loc] = model.price_closed_form(
             spot=S, strike=K, r=rate.get_rate(T), q=q, t=T, call=is_call
         )
+
+
+def _cos_chain(
+    layout: ChainLayout,
+    stock: Stock,
+    model: BaseModel,
+    rate: Rate,
+    prices: np.ndarray,
+    **kwargs: Any,
+) -> None:
+    S, q = stock.spot, stock.dividend
+    strip = model.moment_strip()
+    for T, loc, K, is_call in layout.groups:
+        r = rate.get_rate(T)
+        with np.errstate(all="ignore"):
+            # Far-from-valid parameter sets give NaNs, which the caller handles
+            # (calibration penalty).
+            phi = model.cf(t=T, spot=S, r=r, q=q, **kwargs)
+            prices[loc] = cos_prices(
+                phi, S, K, is_call, r, q, T, strip=strip, tol=_CHAIN_COS_TOL
+            )[0]
 
 
 def _characteristic_function_chain(
@@ -227,6 +266,8 @@ def price_chain(
         return prices
     if model.has_closed_form and getattr(model, "vectorized_closed_form", False):
         _closed_form_chain(layout, stock, model, rate, prices)
+    elif model.supports_cf and layout.method == "cos":
+        _cos_chain(layout, stock, model, rate, prices, **kwargs)
     elif model.supports_cf:
         _characteristic_function_chain(layout, stock, model, rate, prices, **kwargs)
     elif allow_mc and supports_vectorized_pricing(model, allow_mc=True):
@@ -255,7 +296,8 @@ def price_options_vectorized(
     model: BaseModel,
     rate: Rate,
     *,
-    upper_bound: float = 200.0,
+    upper_bound: float = 1000.0,
+    method: str = "cos",
     allow_mc: bool = False,
     mc_paths: int = 20_000,
     mc_steps: int = 50,
@@ -277,8 +319,10 @@ def price_options_vectorized(
         (with ``allow_mc``) a simulation method.
     rate : Rate
         Continuous zero-curve.
-    upper_bound : float, default 200
-        Integration truncation limit for the characteristic-function route.
+    upper_bound : float, default 1000
+        Integration truncation limit of the ``method="gauss"`` route.
+    method : {"cos", "gauss"}, default "cos"
+        Characteristic-function pricer (see :class:`ChainLayout`).
     allow_mc : bool, default False
         Fall back to Monte Carlo for simulation-only models.
     mc_paths, mc_steps, mc_seed : int
@@ -299,7 +343,7 @@ def price_options_vectorized(
         If the model has neither a vectorized closed form nor a characteristic
         function and ``allow_mc`` is False.
     """
-    layout = ChainLayout(options_df, upper_bound=upper_bound)
+    layout = ChainLayout(options_df, upper_bound=upper_bound, method=method)
     return price_chain(
         layout,
         stock,

@@ -10,6 +10,8 @@ __doc__ = """
 Defines the Constant Elasticity of Variance (CEV) model.
 """
 
+_LOGNORMAL_WINDOW = 1e-3
+
 
 class CEVModel(BaseModel):
     """
@@ -180,9 +182,16 @@ class CEVModel(BaseModel):
         * ``g > 1``: ``S e^{-qT} [1 - X(c; -b, a)] - K e^{-rT} X(a; 2-b, c)``
 
         where ``X(z; k, nc)`` is the noncentral chi-squared CDF with ``k`` degrees
-        of freedom and non-centrality ``nc``. Puts follow from put-call parity on
-        the same terms. ``g`` within 1e-3 of 1 falls back to Black-Scholes with
-        the local volatility ``sigma S^{g-1}``.
+        of freedom and non-centrality ``nc``. For ``g > 1`` the spot is a strict
+        local martingale, ``E[S_T] = S e^{(r-q)T} P(1/(2(g-1)), c/2)`` (``P`` the
+        regularised lower incomplete gamma; inverse-Bessel identity), and the
+        formula above exceeds the expectation ``E[e^{-rT}(S_T-K)^+]`` by
+        ``S e^{-qT} (1 - P)``; prices are the expectations (as QuantLib's
+        ``AnalyticCEVEngine`` and the exact sampler), so put-call parity reads
+        ``C - P = e^{-rT} E[S_T] - K e^{-rT}``. For ``g`` within 1e-3 of 1, where
+        the noncentral chi-squared CDFs lose precision, the price is interpolated
+        quadratically in ``g`` between the formula at ``1 -/+ 1e-3`` and
+        Black-Scholes at ``g = 1`` (within 1e-7 of QuantLib's ``AnalyticCEVEngine``).
 
         Parameters
         ----------
@@ -205,7 +214,7 @@ class CEVModel(BaseModel):
         float | np.ndarray
             The price(s) of the European option(s).
         """
-        from scipy.special import ndtr
+        from scipy.special import gammainc, ndtr
         from scipy.stats import ncx2
 
         p = self.params
@@ -215,16 +224,16 @@ class CEVModel(BaseModel):
         mu = r - q
         df_div, df_rate = np.exp(-q * t), np.exp(-r * t)
 
-        if abs(1.0 - gamma) < 1e-3:
-            vol = sigma * spot ** (gamma - 1.0)
+        def lognormal_call() -> np.ndarray:
             sqrt_t = np.sqrt(t)
-            d1 = (np.log(spot / K) + (mu + 0.5 * vol**2) * t) / (vol * sqrt_t)
-            d2 = d1 - vol * sqrt_t
-            call_px = spot * df_div * ndtr(d1) - K * df_rate * ndtr(d2)
-            put_px = K * df_rate * ndtr(-d2) - spot * df_div * ndtr(-d1)
-        else:
-            one_minus = 1.0 - gamma
-            exponent = 2.0 * mu * (gamma - 1.0) * t
+            d1 = (np.log(spot / K) + (mu + 0.5 * sigma**2) * t) / (sigma * sqrt_t)
+            d2 = d1 - sigma * sqrt_t
+            return spot * df_div * ndtr(d1) - K * df_rate * ndtr(d2)
+
+        def cev_call(g: float) -> tuple[np.ndarray, float]:
+            """Call expectation and the discounted expected terminal spot."""
+            one_minus = 1.0 - g
+            exponent = 2.0 * mu * (g - 1.0) * t
             v = (
                 sigma**2 * t
                 if abs(exponent) < 1e-12
@@ -234,16 +243,35 @@ class CEVModel(BaseModel):
             a = (K * np.exp(-mu * t)) ** (2.0 * one_minus) / scale
             b = 1.0 / one_minus
             c = spot ** (2.0 * one_minus) / scale
-            if gamma < 1.0:
+            if g < 1.0:
                 call_px = spot * df_div * (1.0 - ncx2.cdf(a, b + 2.0, c)) - (
                     K * df_rate * ncx2.cdf(c, b, a)
                 )
-            else:
-                call_px = spot * df_div * (1.0 - ncx2.cdf(c, -b, a)) - (
-                    K * df_rate * ncx2.cdf(a, 2.0 - b, c)
-                )
-            # Put-call parity holds for the absorbed process (S is a martingale).
-            put_px = call_px - spot * df_div + K * df_rate
+                return call_px, spot * df_div
+            pv_spot = spot * df_div * gammainc(0.5 / (g - 1.0), 0.5 * c)
+            call_px = (
+                pv_spot
+                - spot * df_div * ncx2.cdf(c, -b, a)
+                - (K * df_rate * ncx2.cdf(a, 2.0 - b, c))
+            )
+            return call_px, pv_spot
+
+        h = _LOGNORMAL_WINDOW
+        x = gamma - 1.0
+        if x == 0.0:
+            call_px, pv_spot = lognormal_call(), spot * df_div
+        elif abs(x) < h:
+            # ncx2 loses all precision as gamma -> 1 (NaN below ~1e-5): quadratic
+            # interpolation between the exact formula at 1 -/+ h and Black-Scholes
+            # at gamma = 1, error O(h^3).
+            (lo, pv_lo), (hi, pv_hi) = cev_call(1.0 - h), cev_call(1.0 + h)
+            w_lo, w_hi = x * (x - h) / (2.0 * h * h), x * (x + h) / (2.0 * h * h)
+            w_mid = 1.0 - w_lo - w_hi
+            call_px = w_lo * lo + w_mid * lognormal_call() + w_hi * hi
+            pv_spot = w_lo * pv_lo + w_mid * spot * df_div + w_hi * pv_hi
+        else:
+            call_px, pv_spot = cev_call(gamma)
+        put_px = call_px - pv_spot + K * df_rate
 
         if isinstance(call, np.ndarray):
             price = np.where(call, call_px, put_px)

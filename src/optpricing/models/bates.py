@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 
 from optpricing.models.base import CF, BaseModel, ParamValidator
-from optpricing.models.heston import HestonModel
+from optpricing.models.heston import HestonModel, _heston_variance_exponent
 from optpricing.models.merton_jump import MertonJumpModel
 
 __doc__ = """
@@ -129,21 +129,9 @@ class BatesModel(BaseModel):
 
         def phi(u: np.ndarray | complex) -> np.ndarray | complex:
             # Heston part (with drift adjusted for jump compensator)
-            d = np.sqrt(
-                (rho * vol_of_vol * u * 1j - kappa) ** 2
-                - (vol_of_vol**2) * (-u * 1j - u**2)
-            )
-            g = (kappa - rho * vol_of_vol * u * 1j - d) / (
-                kappa - rho * vol_of_vol * u * 1j + d
-            )
-            C = (r - q - compensator) * u * 1j * t + (kappa * theta / vol_of_vol**2) * (
-                (kappa - rho * vol_of_vol * u * 1j - d) * t
-                - 2 * np.log((1 - g * np.exp(-d * t)) / (1 - g))
-            )
-            D = ((kappa - rho * vol_of_vol * u * 1j - d) / vol_of_vol**2) * (
-                (1 - np.exp(-d * t)) / (1 - g * np.exp(-d * t))
-            )
-            heston_part = np.exp(C + D * v0 + 1j * u * np.log(spot))
+            sv = _heston_variance_exponent(u, t, kappa, theta, rho, vol_of_vol, v0)
+            drift = np.log(spot) + (r - q - compensator) * t
+            heston_part = np.exp(1j * u * drift + sv)
 
             # Merton jump part
             jump_part = np.exp(

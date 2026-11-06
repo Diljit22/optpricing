@@ -50,11 +50,17 @@ print(f"Vega:  {vega:.4f}")
 The API supports American options using models like Heston with Monte Carlo techniques, optimized with `numba` for performance.
 
 ```python
+from optpricing import ExerciseStyle
 from optpricing.models import HestonModel
 from optpricing.techniques import AmericanMonteCarloTechnique
 
-# Define components
-option = Option(strike=105, maturity=1.0, option_type=OptionType.CALL, style="american")
+# Define components. AmericanMonteCarloTechnique always allows early exercise.
+option = Option(
+    strike=105,
+    maturity=1.0,
+    option_type=OptionType.CALL,
+    exercise_style=ExerciseStyle.AMERICAN,
+)
 stock = Stock(spot=100.0, dividend=0.01)
 rate = Rate(rate=0.05)
 
@@ -77,16 +83,16 @@ The CLI provides a powerful way to access the library’s features without writi
 
 ### Pricing an Option
 
-Price a European or American option directly from the terminal. The command below fetches the live option chain for AAPL, retrieves the current dividend rate, calculates the implied risk-free rate from at-the-money contracts, and prices the contract with Heston’s model using its default technique (FFT):
+Price a European or American option directly from the terminal. The command below fetches the live option chain for AAPL and prices the contract with the spot, the 13-week T-bill rate, and the dividend yield implied by put-call parity. Heston has no closed form, so the default technique is COS (Fang–Oosterlee):
 
 ```bash
-optpricing price --ticker AAPL --strike 210 --maturity 2025-12-19 --type call --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
+optpricing price --ticker AAPL --strike 210 --maturity 2027-06-18 --type call --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
 ```
 
-For an American option:
+An American Heston option is priced with Longstaff–Schwartz Monte Carlo. Lattice techniques price American Black–Scholes only:
 
 ```bash
-optpricing price --ticker AAPL --strike 210 --maturity 2025-12-19 --type call --style american --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
+optpricing price --ticker AAPL --strike 210 --maturity 2027-06-18 --type call --style american --model Heston --param "rho=-0.7" --param "vol_of_vol=0.5"
 ```
 
 ### Downloading Data
@@ -118,7 +124,7 @@ This command runs the calibration workflow, prints the results, and saves optimi
 
 ## 4. Launching the Dashboard
 
-Visualize option chains and model outputs with an interactive Streamlit dashboard covering 12 models and 8 techniques (install the `ui` extra first: `pip install "optpricing[ui]"`):
+Visualize option chains and model outputs with an interactive Streamlit dashboard covering 12 models and 9 techniques (install the `ui` extra first: `pip install "optpricing[ui]"`):
 
 ```bash
 optpricing dashboard
@@ -130,6 +136,6 @@ optpricing dashboard
 
 Explore the full capabilities of `optpricing` with these guides:
 
-* [Dashboard Guide](https://diljit22.github.io/optpricing/guide/dashboard.md): A visual tour of the interactive UI.
-* [Examples Guide](https://diljit22.github.io/optpricing/guide/examples.md): Advanced benchmarks and use cases.
-* [API Guide](https://diljit22.github.io/optpricing/guide/API.md): Detailed API documentation for custom workflows.
+* [Dashboard Guide](https://diljit22.github.io/optpricing/guide/dashboard/): A visual tour of the interactive UI.
+* [Examples Guide](https://diljit22.github.io/optpricing/guide/examples/): Advanced benchmarks and use cases.
+* [API Guide](https://diljit22.github.io/optpricing/guide/API/): Detailed API documentation for custom workflows.

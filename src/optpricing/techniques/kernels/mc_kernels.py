@@ -55,7 +55,10 @@ def heston_kernel(
     vol_of_vol,
     dt,
 ):
-    """Heston, full-truncation Euler with the variance floored at zero."""
+    """
+    Heston, full-truncation Euler (Lord, Koekkoek & van Dijk 2010): the variance
+    state may go negative and only its positive part enters drift and diffusion.
+    """
     half = n_paths // 2 if antithetic else n_paths
     n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
@@ -75,8 +78,7 @@ def heston_kernel(
                 v_pos = v[k] if v[k] > 0.0 else 0.0
                 sq = math.sqrt(v_pos)
                 log_s[k] += (r - q - 0.5 * v_pos) * dt + sq * dw_s
-                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
-                v[k] = v_new if v_new > 0.0 else 0.0
+                v[k] += kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
     return log_s
 
 
@@ -146,8 +148,7 @@ def bates_kernel(
                 v_pos = v[k] if v[k] > 0.0 else 0.0
                 sq = math.sqrt(v_pos)
                 log_s[k] += (r - q - 0.5 * v_pos - compensator) * dt + sq * dw_s
-                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
-                v[k] = v_new if v_new > 0.0 else 0.0
+                v[k] += kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
                 for _n in range(counts[j]):
                     log_s[k] += gen.normal(mu_j, sigma_j)
     return log_s
@@ -196,36 +197,75 @@ def kou_kernel(
 
 
 @numba.njit(cache=True, nogil=True)
+def _sabr_step(gen, f, v, dz, nu, beta, rho, dt):
+    """
+    One step of the low-bias SABR scheme of Chen, Oosterlee & van der Weide
+    (2012) for the volatility Brownian increment ``dz``; returns ``(f, v)``.
+
+    The volatility is exact, ``A = (v^2 + v_new^2) dt / 2`` is the trapezoidal
+    integrated variance and ``int sigma dZ = (v_new - v) / nu``. ``Y =
+    F^(1-beta) / (1-beta)`` moves by ``rho int sigma dZ - beta rho^2 A /
+    (2 (1-beta) Y)`` (the part of Ito's drift the CEV draw below does not
+    supply) and then by a driftless CEV with clock ``(1 - rho^2) A``, drawn
+    exactly from the absorbed squared-Bessel law (Makarov & Glew 2010).
+    ``beta = 0`` (normal) and ``beta = 1`` (lognormal) use their exact Gaussian
+    conditionals. Zero is absorbing for 0 < beta < 1.
+    """
+    log_move = nu * dz - 0.5 * nu * nu * dt
+    v_new = v * math.exp(log_move)
+    if f <= 0.0 and beta > 0.0:
+        return 0.0, v_new
+    var = 0.5 * (v * v + v_new * v_new) * dt
+    vol_integral = v * math.expm1(log_move) / nu if nu > 0.0 else v * dz
+    shift = rho * vol_integral
+    clock = (1.0 - rho * rho) * var
+    if beta == 1.0:
+        noise = math.sqrt(clock) * gen.standard_normal()
+        return f * math.exp(shift - 0.5 * var + noise), v_new
+    if beta == 0.0:
+        return f + shift + math.sqrt(clock) * gen.standard_normal(), v_new
+    one_m = 1.0 - beta
+    y_power = f**one_m
+    base = y_power + one_m * shift - 0.5 * beta * one_m * rho * rho * var / y_power
+    if base <= 0.0:
+        return 0.0, v_new
+    if clock <= 0.0:
+        return base ** (1.0 / one_m), v_new
+    lam = base * base / (one_m * one_m * 2.0 * clock)
+    if lam > 1e10:
+        # Gaussian limit of the CEV step, relative error O(1 / lam).
+        drift = 0.5 * beta * one_m * clock / base
+        moved = base - drift + one_m * math.sqrt(clock) * gen.standard_normal()
+        return (moved ** (1.0 / one_m) if moved > 0.0 else 0.0), v_new
+    g = gen.gamma(0.5 / one_m, 1.0)
+    if g >= lam:
+        return 0.0, v_new
+    x = gen.gamma(gen.poisson(lam - g) + 1.0, 2.0 * clock)
+    return (one_m * one_m * x) ** (0.5 / one_m), v_new
+
+
+@numba.njit(cache=True, nogil=True)
 def sabr_kernel(gen, n_paths, n_steps, antithetic, f0, v0, nu, beta, rho, dt):
     """
     SABR forward dynamics dF = sigma_t F^beta dW, d sigma_t = nu sigma_t dZ,
-    d<W,Z> = rho dt. `f0` is the (shifted) initial forward; the terminal forward
-    equals the terminal spot. The origin is absorbing for 0 < beta < 1.
+    d<W,Z> = rho dt, simulated with the low-bias scheme of `_sabr_forward_step`.
+    `f0` is the (shifted) initial forward; the terminal forward equals the
+    terminal spot. Antithetic pairs share the negated volatility path.
     """
     half = n_paths // 2 if antithetic else n_paths
     n_signs = 2 if antithetic else 1
     f = np.full(n_paths, f0)
     v = np.full(n_paths, v0)
-    rho_bar = math.sqrt(1.0 - rho * rho)
     sdt = math.sqrt(dt)
-    vol_drift = -0.5 * nu * nu * dt
     for _ in range(n_steps):
-        z1 = gen.standard_normal(half)
-        z2 = gen.standard_normal(half)
+        z = gen.standard_normal(half)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
             off = s_idx * half
             for j in range(half):
                 k = off + j
-                dw_f = sign * z1[j] * sdt
-                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
-                f_pos = f[k] if f[k] > 1e-8 else 1e-8
-                v_pos = v[k] if v[k] > 0.0 else 0.0
-                f_new = f[k] + v_pos * f_pos**beta * dw_f
-                if beta > 0.0 and f_new < 0.0:
-                    f_new = 0.0
-                f[k] = f_new
-                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
+                dz = sign * z[j] * sdt
+                f[k], v[k] = _sabr_step(gen, f[k], v[k], dz, nu, beta, rho, dt)
     return f
 
 
@@ -233,35 +273,31 @@ def sabr_kernel(gen, n_paths, n_steps, antithetic, f0, v0, nu, beta, rho, dt):
 def sabr_jump_kernel(
     gen, n_paths, n_steps, antithetic, f0, v0, nu, beta, rho, lambda_, mu_j, sigma_j, dt
 ):
-    """SABR forward dynamics with compensated log-normal jumps on the forward."""
+    """
+    SABR forward dynamics with compensated log-normal jumps on the forward: the
+    diffusion step of `sabr_kernel`, then the compensator and the jumps.
+    """
     half = n_paths // 2 if antithetic else n_paths
     n_signs = 2 if antithetic else 1
     f = np.full(n_paths, f0)
     v = np.full(n_paths, v0)
-    rho_bar = math.sqrt(1.0 - rho * rho)
     sdt = math.sqrt(dt)
-    vol_drift = -0.5 * nu * nu * dt
     compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    jump_drift = math.exp(-compensator * dt)
     for _ in range(n_steps):
-        z1 = gen.standard_normal(half)
-        z2 = gen.standard_normal(half)
+        z = gen.standard_normal(half)
         counts = gen.poisson(lambda_ * dt, half)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
             off = s_idx * half
             for j in range(half):
                 k = off + j
-                dw_f = sign * z1[j] * sdt
-                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
-                f_pos = f[k] if f[k] > 1e-8 else 1e-8
-                v_pos = v[k] if v[k] > 0.0 else 0.0
-                f_new = f[k] - compensator * f_pos * dt + v_pos * f_pos**beta * dw_f
-                if beta > 0.0 and f_new < 0.0:
-                    f_new = 0.0
+                dz = sign * z[j] * sdt
+                f_new, v[k] = _sabr_step(gen, f[k], v[k], dz, nu, beta, rho, dt)
+                f_new *= jump_drift
                 for _n in range(counts[j]):
                     f_new *= math.exp(gen.normal(mu_j, sigma_j))
                 f[k] = f_new
-                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
     return f
 
 

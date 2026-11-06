@@ -121,6 +121,7 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         self.N = int(N)
         self.rannacher_steps = int(rannacher_steps)
         self._cached_results: dict[str, Any] = {}
+        self._cache_key: tuple | None = None
 
     def _price_and_greeks(
         self,
@@ -218,7 +219,14 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
             An object containing the calculated price.
         """
         self._cached_results = self._price_and_greeks(option, stock, model, rate)
+        self._cache_key = (option, stock, model, rate)
         return PricingResult(price=self._cached_results["price"])
+
+    def _ensure_cached(
+        self, option: Option, stock: Stock, model: BaseModel, rate: Rate
+    ) -> None:
+        if self._cache_key != (option, stock, model, rate):
+            self.price(option, stock, model, rate)
 
     def delta(
         self,
@@ -229,12 +237,12 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         **kwargs,
     ) -> float:
         """
-        Returns the cached delta from the PDE grid.
+        Returns the delta from the PDE grid.
 
-        If the cache is empty, it first runs the pricing calculation.
+        The grid of the last `price` call is reused if it was built for the
+        same inputs; otherwise the option is priced first.
         """
-        if not self._cached_results:
-            self.price(option, stock, model, rate)
+        self._ensure_cached(option, stock, model, rate)
         return self._cached_results["delta"]
 
     def gamma(
@@ -246,10 +254,10 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         **kwargs,
     ) -> float:
         """
-        Returns the cached gamma from the PDE grid.
+        Returns the gamma from the PDE grid.
 
-        If the cache is empty, it first runs the pricing calculation.
+        The grid of the last `price` call is reused if it was built for the
+        same inputs; otherwise the option is priced first.
         """
-        if not self._cached_results:
-            self.price(option, stock, model, rate)
+        self._ensure_cached(option, stock, model, rate)
         return self._cached_results["gamma"]

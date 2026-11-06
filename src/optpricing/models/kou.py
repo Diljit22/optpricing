@@ -98,6 +98,10 @@ class KouModel(BaseModel):
     def __hash__(self) -> int:
         return hash((self.__class__, tuple(sorted(self.params.items()))))
 
+    def moment_strip(self) -> tuple[float, float]:
+        """``-eta2 < s < eta1`` (Kou 2002): the double-exponential jumps."""
+        return float(-self.params["eta2"]), float(self.params["eta1"])
+
     def _cf_impl(self, *, t: float, spot: float, r: float, q: float, **_: Any) -> CF:
         """
         Kou characteristic function for the log-spot price log(S_t).

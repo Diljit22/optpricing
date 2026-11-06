@@ -6,6 +6,86 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+Phase 5 (verification): every model × technique re-checked against QuantLib 1.44, published tables and an
+independent COS pricer; property-based and convergence-order tests.
+
+### Fixed
+
+- `PDETechnique.delta/gamma` and `IntegrationTechnique.delta` returned Greeks cached by the previous `price`
+  call even for a different option, stock, model or rate; the cache is now keyed on the inputs.
+- Heston/Bates `variance_scheme="euler"` floored the variance state each step (the biased "absorption" scheme of
+  Lord et al. 2010) instead of the documented full truncation; at ξ = 1, T = 3 the bias drops from +2.6 to +0.1.
+- Heston and Bates characteristic functions returned NaN at u = −i when ρξ ≥ κ, so `IntegrationTechnique`
+  returned NaN prices there; both are now exact at u ∈ {0, −i}.
+- `IntegrationTechnique` and the chain pricer truncated the Gil–Pelaez integrals at u = 200, losing up to 6e-3
+  at short maturities; the default `upper_bound` is now 1000.
+- CRR/Leisen–Reimer/TOPM trees and `AmericanMonteCarloTechnique` silently priced unsupported models (CEV,
+  Dupire, Heston on trees) as Black–Scholes; they now raise `TypeError` (the CLI reports it).
+- Dupire Monte Carlo crashed for the default model and any plain-Python `vol_surface`; plain scalar
+  callables are compiled with numba, uncompilable ones raise a clear `TypeError`.
+- CEV closed form near γ = 1 had an O(|γ − 1|) error (4.6e-4) and NaNs from `ncx2` below |γ − 1| = 1e-5; it now
+  interpolates to within 1e-7 of QuantLib.
+- Vasicek/CIR zero-coupon bonds ignored `face_value`.
+- Black's approximation assumed sorted ex-dividend times; model kwargs (`discrete_dividends`,
+  `ex_div_times`) were ignored when the `Stock` field existed but was `None`.
+- The Hyperbolic calibration recipe fitted the location μ, which the risk-neutral drift makes unidentifiable;
+  μ is frozen at 0.
+- `IntegrationTechnique` and the chain pricer were under-resolved for slowly decaying characteristic functions
+  (VG/CGMY at short maturities: errors up to 1.1; Heston with a strongly violated Feller condition: 0.25, with a
+  K = 70 call priced below intrinsic). The chain pricer now uses COS (below); `IntegrationTechnique` checks the
+  decay of φ, extends the cut-off and doubles the nodes until two rules agree, and warns when they cannot.
+- `FFTTechnique` used a fixed damping α = 1.75 for models without a volatility proxy, which can lie outside
+  the moment strip (CGMY, Fang–Oosterlee 2008: 2.8e+99 for a 99.9999 call; Kou η₁ = 1.5: 0.4 for a 37.65
+  call). α now follows Lord & Kahl (2007) inside the strip, with puts or C − S e^{−qT} transforms where better.
+- `FFTTechnique` stopped the frequency grid at u = 512 and interpolated in log-strike, which left 4.4e-2 at one
+  day (σ = 10 %), 6e-4 at T = 0.1 and 2e-5 at T = 1 on Black–Scholes. The grid now extends until φ has decayed
+  (up to 2^18 points, with a warning beyond) and is centred on the strike: ≤ 1e-12 vs COS for all CF models
+  outside near-degenerate laws, ≤ 5e-10 vs QuantLib for Heston.
+- SABR and SABR-with-jumps Monte Carlo used an Euler step floored at zero, which biased the forward upwards
+  (β .5, ν .8, T 3: E[F_T] = 100.24 ± 0.04, calls +0.2 vs QuantLib's finite differences). The kernels now use
+  the low-bias scheme of Chen, Oosterlee & van der Weide (2012): exact lognormal volatility, then an absorbed
+  CEV step drawn exactly (Makarov–Glew Poisson–Gamma mixture). Martingale within 4 SE and calls within
+  4 SE + 2e-3 of QuantLib `FdSabrVanillaEngine` on four sets including β .5, ν .8, T 3.
+
+### Changed
+
+- `CEVModel` calls for γ > 1 are now the expectation E[e^{−rT}(S_T − K)^+] (QuantLib `AnalyticCEVEngine`, the
+  exact sampler) instead of the Hull/Schroder formula, which includes the strict-local-martingale defect (up
+  to 1.98 at γ = 2, T = 2.76). Puts are unchanged; parity reads C − P = e^{−rT} E[S_T] − K e^{−rT}.
+- `price_options_vectorized` / `ChainLayout` price characteristic-function models with COS by default
+  (`method="cos"`; `"gauss"` keeps the Gauss–Legendre route).
+- `select_fastest_technique` (CLI `price` without `--technique`, dashboard IV surfaces, `Calibrator.technique`)
+  returns `COSTechnique` instead of `FFTTechnique(n=12)` for characteristic-function models: the same accuracy,
+  0.1–0.5 ms per option against 0.4–55 ms.
+
+### Added
+
+- `COSTechnique` (Fang & Oosterlee 2008): puts expanded on a Chernoff-bound truncation range inside the
+  model's moment strip, calls by parity, delta from the same series; terms until the series tail is bounded
+  by 1e-12 of the strike (1e-9 in the chain pricer), up to 2^16, with a warning when the bound still exceeds
+  1e-6. Selectable in the dashboard; FFT, quadrature and the other techniques remain available.
+- `BaseModel.moment_strip()`: the open interval of p with E[S_T^p] < ∞ where known in closed form (BSM, Merton,
+  Kou, VG, NIG, Hyperbolic, CGMY); used by COS to keep the truncation off poles such as Kou's.
+- `IntegrationTechnique(adaptive=True)`: the decay check and node doubling above (`adaptive=False` keeps the
+  fixed grid).
+- `ParityModel.price_bounds(..., q=0.0)`: no-arbitrage bounds with a dividend yield.
+- Property-based tests (`hypothesis` in the `test` group): CF martingale and normalisation, no-arbitrage
+  bounds, slopes and convexity in strike, put–call parity, IV round trips for random valid parameters.
+- Convergence-order tests (CRR/TOPM order 1, Leisen–Reimer odd N and Crank–Nicolson order 2, Gauss–Legendre
+  exponential, Monte Carlo 1/√N) and golden values for Kou, VG, NIG, CGMY, Hyperbolic, CEV γ > 1, Black's
+  approximation and the perpetual put.
+
+### Known limitations
+
+- Near-degenerate laws (VG with T/ν ≪ 1, e.g. one day; CGMY with tiny C·T): φ barely decays, so COS stops at
+  2^16 terms and FFT at 2^18 points with errors up to ~1e-3 on S = 100, and Gil–Pelaez quadrature cannot
+  converge at all. All three warn.
+- `FFTTechnique` on such laws costs 25–55 ms per option (was 0.35 ms, but wrong); COS is the fast route.
+
+## [2.7.0] - 2026-11-04
+
+Workflows: offline data layer, calibration, backtesting, tuning.
+
 ### Workflows (calibration, backtesting, data)
 
 - **Calibration rebuilt** (`Calibrator.fit` keeps its signature). Residuals are taken in Black-Scholes
@@ -66,6 +146,10 @@ All notable changes to this project are documented here. The format follows
 - `calibrate` printed the parameters at every objective evaluation.
 - `pyarrow` (the parquet engine every snapshot needs) was only installed through the `ui` extra; it is now a
   runtime dependency (`pyarrow>=22`, the first release with Python 3.14 wheels).
+- `typer>=0.16`: Typer 0.15.x fails on Click ≥ 8.2 (`make_metavar()`), which only the
+  minimum-versions CI job exercised.
+
+## [2.6.0] - 2026-11-03
 
 ### Performance
 
@@ -89,6 +173,39 @@ All notable changes to this project are documented here. The format follows
 - Kernel signatures changed: SDE kernels take `(gen, n_paths, n_steps, antithetic, ...)`, path kernels return
   `(n_steps + 1, n_paths)` arrays, and `longstaff_schwartz_pricer` takes `n_threads`.
 
+## [2.5.0] - 2026-11-03
+
+Correctness audit against QuantLib 1.44 and the literature.
+
+### Fixed
+
+- **European Monte Carlo for Heston, Bates, SABR and SABR-jump applied the spot/variance correlation twice** (once in `MonteCarloTechnique`, once in the kernels), biasing prices by up to 2 % at ρ = −0.7. Heston MC now agrees with QuantLib's analytic engine within Monte Carlo error.
+- NIG exact sampler drew the inverse-Gaussian subordinator with shape 1 instead of (δT)²; prices were ~3 % low.
+- CEV exact sampler used an incorrect noncentral-χ² parametrisation (terminal mean 100.6 for a forward of 105.1), ignored the dividend yield and the seeded generator, and divided by zero at r = 0. It now samples the absorbed squared-Bessel law exactly (Makarov & Glew 2010) and matches the Cox/Schroder closed form.
+- CGMY: the Lévy exponent was singular at Y = 0 and Y = 1 (Γ(−Y) poles) and the only Monte Carlo path was guarded on Y = 1 while implementing the Y = 0 law. Both limits are closed-form now; other Y sample by characteristic-function inversion.
+- Hyperbolic model: characteristic function was neither the Lévy-process law nor the horizon-T hyperbolic law (so the drift was not a martingale correction for T ≠ 1), and the sampler passed α, β where scipy expects αδ, βδ. It is now the hyperbolic Lévy motion (φₜ = φ₁ᵗ) with exact sampling at T = 1 and CF inversion otherwise.
+- PDE (Crank–Nicolson) Greeks were read at the grid node below the spot (delta off by ≈ 0.02); the spot now sits on a node, boundary values track the time level (with the dividend discount), and a Rannacher start-up is used.
+- Longstaff–Schwartz regressed on raw powers of S through an explicit inverse of XᵀX (ill-conditioned beyond degree 2) and swallowed failures with a bare `except`; it now uses moneyness-scaled regressors and least squares.
+- SABR kernels could leave the spot negative after a large down-move (puts paid more than the strike); zero is absorbing for 0 < β < 1.
+- Parameter validation now rejects parameter sets without a risk-neutral measure: Kou η₁ ≤ 1, VG θν + σ²ν/2 ≥ 1, NIG/Hyperbolic |β+1| ≥ α, CGMY M ≤ 1.
+- `optpricing.config` no longer writes `config.yaml` and data directories at import time (previously into `site-packages/lib` for installed packages); the root is `$OPTPRICING_HOME` or the working directory and folders are created when first written to.
+- Heston and Bates read `v0` from the model parameters when it is not passed as a pricing kwarg.
+- Feller-condition messages are `UserWarning`s instead of prints; pandas 3 (`inplace`, `Timestamp.utcnow`) and `importlib.resources.path` deprecations removed; `fastmath` dropped from the numba kernels (≤ 5 % measured cost, bit-identical results).
+
+### Changed
+
+- SABR is now the four-parameter model of Hagan et al. (2002) on the forward: `alpha` is the initial volatility and the new `nu` the volatility of volatility (previously `alpha` played both roles). The old three-parameter form is still accepted with a `DeprecationWarning` (`nu = alpha`). Monte Carlo simulates the forward dynamics (prices move by O((r−q)T(1−β)) relative to the old spot-with-drift kernel) and the SABR kernels' `alpha` argument is renamed `nu`.
+- Heston and Bates default parameters now satisfy the Feller condition (`vol_of_vol` 0.5 → 0.3).
+
+### Added
+
+- `SABRModel.implied_volatility` (Hagan's lognormal expansion, bit-identical to QuantLib's `sabrVolatility`), an optional `shift` parameter for shifted SABR, and a Black-76 closed form so `ClosedFormTechnique`, the CLI and calibration price SABR analytically.
+- `benchmarks/run_benchmarks.py` with recorded before/after results, and a reference-value test suite (`tests/correctness/`) pinned to QuantLib 1.44 and textbook closed forms.
+
+## [2.4.0] - 2026-11-03
+
+Packaging and CI.
+
 ### Changed
 
 - Python 3.10 support dropped (end of life); supported versions are 3.11–3.14, with 3.15 tested as experimental.
@@ -105,26 +222,6 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 
 - `test_price_command` relied on a hard-coded maturity date that is now in the past.
-- **European Monte Carlo for Heston, Bates, SABR and SABR-jump applied the spot/variance correlation twice** (once in `MonteCarloTechnique`, once in the kernels), biasing prices by up to 2 % at ρ = −0.7. Heston MC now agrees with QuantLib's analytic engine within Monte Carlo error.
-- NIG exact sampler drew the inverse-Gaussian subordinator with shape 1 instead of (δT)²; prices were ~3 % low.
-- CEV exact sampler used an incorrect noncentral-χ² parametrisation (terminal mean 100.6 for a forward of 105.1), ignored the dividend yield and the seeded generator, and divided by zero at r = 0. It now samples the absorbed squared-Bessel law exactly (Makarov & Glew 2010) and matches the Cox/Schroder closed form.
-- CGMY: the Lévy exponent was singular at Y = 0 and Y = 1 (Γ(−Y) poles) and the only Monte Carlo path was guarded on Y = 1 while implementing the Y = 0 law. Both limits are closed-form now; other Y sample by characteristic-function inversion.
-- Hyperbolic model: characteristic function was neither the Lévy-process law nor the horizon-T hyperbolic law (so the drift was not a martingale correction for T ≠ 1), and the sampler passed α, β where scipy expects αδ, βδ. It is now the hyperbolic Lévy motion (φₜ = φ₁ᵗ) with exact sampling at T = 1 and CF inversion otherwise.
-- PDE (Crank–Nicolson) Greeks were read at the grid node below the spot (delta off by ≈ 0.02); the spot now sits on a node, boundary values track the time level (with the dividend discount), and a Rannacher start-up is used.
-- Longstaff–Schwartz regressed on raw powers of S through an explicit inverse of XᵀX (ill-conditioned beyond degree 2) and swallowed failures with a bare `except`; it now uses moneyness-scaled regressors and least squares.
-- SABR kernels could leave the spot negative after a large down-move (puts paid more than the strike); zero is absorbing for 0 < β < 1.
-- Parameter validation now rejects parameter sets without a risk-neutral measure: Kou η₁ ≤ 1, VG θν + σ²ν/2 ≥ 1, NIG/Hyperbolic |β+1| ≥ α, CGMY M ≤ 1.
-- `optpricing.config` no longer writes `config.yaml` and data directories at import time (previously into `site-packages/lib` for installed packages); the root is `$OPTPRICING_HOME` or the working directory and folders are created when first written to.
-- Heston and Bates read `v0` from the model parameters when it is not passed as a pricing kwarg.
-- Feller-condition messages are `UserWarning`s instead of prints; pandas 3 (`inplace`, `Timestamp.utcnow`) and `importlib.resources.path` deprecations removed; `fastmath` dropped from the numba kernels (≤ 5 % measured cost, bit-identical results).
-
-- SABR is now the four-parameter model of Hagan et al. (2002) on the forward: `alpha` is the initial volatility and the new `nu` the volatility of volatility (previously `alpha` played both roles). The old three-parameter form is still accepted with a `DeprecationWarning` (`nu = alpha`). Monte Carlo simulates the forward dynamics (prices move by O((r−q)T(1−β)) relative to the old spot-with-drift kernel) and the SABR kernels' `alpha` argument is renamed `nu`.
-- Heston and Bates default parameters now satisfy the Feller condition (`vol_of_vol` 0.5 → 0.3).
-
-### Added
-
-- `SABRModel.implied_volatility` (Hagan's lognormal expansion, bit-identical to QuantLib's `sabrVolatility`), an optional `shift` parameter for shifted SABR, and a Black-76 closed form so `ClosedFormTechnique`, the CLI and calibration price SABR analytically.
-- `benchmarks/run_benchmarks.py` with recorded before/after results, and a reference-value test suite (`tests/correctness/`) pinned to QuantLib 1.44 and textbook closed forms.
 
 ## [2.0.0] - 2025-06-26
 

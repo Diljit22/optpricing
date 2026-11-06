@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
@@ -13,6 +14,11 @@ __doc__ = """
 Defines a pricing technique based on the Gil-Pelaez inversion formula,
 solved using numerical quadrature.
 """
+
+_DECAY_TOL = 1e-12
+_RESOLVE_TOL = 1e-8
+_AGREE_TOL = 1e-10
+_MAX_UPPER_FACTOR = 256.0
 
 
 class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
@@ -31,12 +37,13 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
     def __init__(
         self,
         *,
-        upper_bound: float = 200.0,
+        upper_bound: float = 1000.0,
         limit: int = 200,
         epsabs: float = 1e-9,
         epsrel: float = 1e-9,
         method: str = "gauss",
         n_nodes: int = 24,
+        adaptive: bool = True,
     ):
         """
         Initializes the numerical integration solver.
@@ -44,7 +51,9 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         Parameters
         ----------
         upper_bound : float, optional
-            The upper limit of the integration, by default 200.0.
+            The upper limit of the integration, by default 1000.0. Short
+            maturities need the long tail: 200 left errors of 1e-5 (Heston,
+            10 days) to 5e-4 (NIG, T = 0.1).
         limit : int, optional
             Maximum number of sub-intervals for the adaptive method, by default 200.
         epsabs : float, optional
@@ -53,13 +62,21 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
             Relative error tolerance of the adaptive method, by default 1e-9.
         method : {"gauss", "quad"}, optional
             ``"gauss"`` (default) evaluates the characteristic function once on a
-            fixed composite Gauss-Legendre rule (geometric panels
+            composite Gauss-Legendre rule (geometric panels
             ``[0,1],[1,2],[2,4],...`` up to ``upper_bound``, ``n_nodes`` per
-            panel), which agrees with the adaptive rule to ~1e-13 for the
-            library's models at a fraction of the cost. ``"quad"`` uses
-            ``scipy.integrate.quad`` with a Python callback per node.
+            panel). Where the characteristic function has decayed by
+            ``upper_bound`` this matches ``quad`` to about 1e-12 and is much
+            cheaper; slowly decaying characteristic functions need ``adaptive``.
+            ``"quad"`` uses ``scipy.integrate.quad`` with a Python callback per node.
         n_nodes : int, optional
             Gauss-Legendre nodes per panel, by default 24.
+        adaptive : bool, optional
+            For ``"gauss"``: extend ``upper_bound`` until the characteristic
+            function has decayed and refine ``n_nodes`` while it is still
+            significant in the outer panels, by default True. Slowly decaying
+            characteristic functions (Variance Gamma and CGMY at short
+            maturities, strong Feller violation in Heston) otherwise leave the
+            fixed rule under-resolved; `COSTechnique` handles them at lower cost.
         """
         if method not in ("gauss", "quad"):
             raise ValueError("method must be 'gauss' or 'quad'.")
@@ -69,7 +86,9 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         self.epsrel = epsrel
         self.method = method
         self.n_nodes = int(n_nodes)
+        self.adaptive = adaptive
         self._cached_results: dict[str, Any] = {}
+        self._cache_key: tuple | None = None
 
     @classmethod
     def gauss_nodes(
@@ -94,6 +113,76 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
                 np.concatenate(weights),
             )
         return cached
+
+    def _gauss_integrals(
+        self, phi: Any, k_log: float, phi_minus_i: complex
+    ) -> tuple[float, float]:
+        """
+        The Gil-Pelaez integrals of P2 and P1 on the composite rule.
+
+        With ``adaptive``, the upper bound is extended (by factors of 4, up to
+        ``_MAX_UPPER_FACTOR`` times ``upper_bound``) until ``|phi|`` has decayed
+        to ``_DECAY_TOL`` there, and, if ``phi`` is still above
+        ``_RESOLVE_TOL`` at an eighth of the bound (the wide outer panels carry
+        weight), the nodes per panel are doubled (up to 32-fold) until two
+        successive rules agree to ``_AGREE_TOL`` (in probability units: the P1
+        integral is scaled by ``phi(-i)`` as in the price). A ``RuntimeWarning``
+        is issued if the result is still not converged.
+        """
+        finite = np.isfinite(phi_minus_i) and abs(phi_minus_i) > 0
+        norm = abs(phi_minus_i) if finite else 1.0
+        scale = np.array([1.0, norm])
+
+        def size(u: np.ndarray) -> np.ndarray:
+            with np.errstate(all="ignore"):
+                vals = np.abs(phi(np.concatenate([u, u - 1j])))
+            return np.maximum(vals[: u.size], vals[u.size :] / norm)
+
+        def integrals(upper: float, n_nodes: int) -> np.ndarray:
+            u, w = self.gauss_nodes(upper, n_nodes)
+            twist = np.exp(-1j * u * k_log) / u
+            with np.errstate(all="ignore"):
+                values = phi(np.concatenate([u, u - 1j]))
+            return np.array(
+                [
+                    np.dot(w, (twist * values[: u.size]).imag),
+                    np.dot(w, (twist * values[u.size :]).imag),
+                ]
+            )
+
+        upper, n_nodes = float(self.upper_bound), self.n_nodes
+        if not self.adaptive:
+            return tuple(integrals(upper, n_nodes))
+        probe = size(np.array([upper, upper / 8.0]))
+        while probe[0] > _DECAY_TOL and upper < _MAX_UPPER_FACTOR * self.upper_bound:
+            upper *= 4.0
+            probe = size(np.array([upper, upper / 8.0]))
+        result = integrals(upper, n_nodes)
+        resolved = bool(probe[0] <= _DECAY_TOL)
+        if not resolved:
+            # Slow but integrable decay: accept if the last extension was inert.
+            shorter = integrals(upper / 4.0, n_nodes)
+            resolved = bool(np.max(np.abs(result - shorter) / scale) < _AGREE_TOL)
+        if probe[1] > _RESOLVE_TOL:
+            converged = False
+            while n_nodes < 32 * self.n_nodes:
+                n_nodes *= 2
+                refined = integrals(upper, n_nodes)
+                converged = bool(np.max(np.abs(refined - result) / scale) < _AGREE_TOL)
+                result = refined
+                if converged:
+                    break
+            resolved = resolved and converged
+        if not resolved:
+            warnings.warn(
+                "The characteristic function decays too slowly for the Gil-Pelaez "
+                "quadrature to converge (e.g. Variance Gamma or CGMY at short "
+                "maturities); the price may be inaccurate. COSTechnique handles "
+                "this case.",
+                RuntimeWarning,
+                stacklevel=4,
+            )
+        return tuple(result)
 
     def _price_and_delta(
         self,
@@ -128,13 +217,10 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         phi_minus_i = phi(-1j)
         if self.method == "gauss":
-            u, w = self.gauss_nodes(self.upper_bound, self.n_nodes)
-            twist = np.exp(-1j * u * k_log) / u
-            integral_p2 = float(np.dot(w, (twist * phi(u)).imag))
+            integral_p2, integral_p1 = self._gauss_integrals(phi, k_log, phi_minus_i)
             if np.abs(phi_minus_i) < 1e-12:
                 P1 = np.nan
             else:
-                integral_p1 = float(np.dot(w, (twist * phi(u - 1j)).imag))
                 P1 = 0.5 + integral_p1 / (np.pi * np.real(phi_minus_i))
         else:
 
@@ -213,7 +299,21 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         self._cached_results = self._price_and_delta(
             option, stock, model, rate, **kwargs
         )
+        self._cache_key = (option, stock, model, rate, kwargs)
         return PricingResult(price=self._cached_results["price"])
+
+    def _is_cached(
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        kwargs: dict[str, Any],
+    ) -> bool:
+        try:
+            return bool(self._cache_key == (option, stock, model, rate, kwargs))
+        except ValueError:  # array-valued kwargs have no truth value
+            return False
 
     def delta(
         self,
@@ -226,8 +326,10 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         """
         Returns the 'free' delta calculated during the pricing call.
 
-        If the cache is empty or the analytic delta calculation failed, it
-        falls back to the numerical finite difference method from `GreekMixin`.
+        The delta of the last `price` call is reused if it was computed for the
+        same inputs; otherwise the option is priced first. If the analytic delta
+        is unavailable, it falls back to the finite difference method from
+        `GreekMixin`.
 
         Parameters
         ----------
@@ -245,7 +347,7 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         float
             Delta of the option.
         """
-        if not self._cached_results:
+        if not self._is_cached(option, stock, model, rate, kwargs):
             self.price(option, stock, model, rate, **kwargs)
 
         delta_val = self._cached_results.get("delta")

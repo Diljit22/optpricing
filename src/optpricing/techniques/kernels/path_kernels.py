@@ -5,7 +5,7 @@ import math
 import numba
 import numpy as np
 
-from .mc_kernels import _qe_constants, _qe_step
+from .mc_kernels import _qe_constants, _qe_step, _sabr_step
 
 __doc__ = """
 JIT-compiled (`numba`) kernels that return the full matrix of simulated spot
@@ -78,8 +78,7 @@ def heston_path_kernel(
                 v_pos = v[k] if v[k] > 0.0 else 0.0
                 sq = math.sqrt(v_pos)
                 log_s[k] += (r - q - 0.5 * v_pos) * dt + sq * dw_s
-                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
-                v[k] = v_new if v_new > 0.0 else 0.0
+                v[k] += kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
                 paths[i + 1, k] = math.exp(log_s[k])
     return paths
 
@@ -153,8 +152,7 @@ def bates_path_kernel(
                 v_pos = v[k] if v[k] > 0.0 else 0.0
                 sq = math.sqrt(v_pos)
                 log_s[k] += (r - q - 0.5 * v_pos - compensator) * dt + sq * dw_s
-                v_new = v[k] + kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
-                v[k] = v_new if v_new > 0.0 else 0.0
+                v[k] += kappa * (theta - v_pos) * dt + vol_of_vol * sq * dw_v
                 for _n in range(counts[j]):
                     log_s[k] += gen.normal(mu_j, sigma_j)
                 paths[i + 1, k] = math.exp(log_s[k])
@@ -221,28 +219,18 @@ def sabr_path_kernel(
     paths[0, :] = f0 * math.exp(-(r - q) * horizon)
     f = np.full(n_paths, f0)
     v = np.full(n_paths, v0)
-    rho_bar = math.sqrt(1.0 - rho * rho)
     sdt = math.sqrt(dt)
-    vol_drift = -0.5 * nu * nu * dt
     for i in range(n_steps):
-        z1 = gen.standard_normal(half)
-        z2 = gen.standard_normal(half)
+        z = gen.standard_normal(half)
         discount = math.exp(-(r - q) * (horizon - (i + 1) * dt))
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
             off = s_idx * half
             for j in range(half):
                 k = off + j
-                dw_f = sign * z1[j] * sdt
-                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
-                f_pos = f[k] if f[k] > 1e-8 else 1e-8
-                v_pos = v[k] if v[k] > 0.0 else 0.0
-                f_new = f[k] + v_pos * f_pos**beta * dw_f
-                if beta > 0.0 and f_new < 0.0:
-                    f_new = 0.0
-                f[k] = f_new
-                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
-                paths[i + 1, k] = f_new * discount
+                dz = sign * z[j] * sdt
+                f[k], v[k] = _sabr_step(gen, f[k], v[k], dz, nu, beta, rho, dt)
+                paths[i + 1, k] = f[k] * discount
     return paths
 
 
@@ -273,13 +261,11 @@ def sabr_jump_path_kernel(
     paths[0, :] = f0 * math.exp(-(r - q) * horizon)
     f = np.full(n_paths, f0)
     v = np.full(n_paths, v0)
-    rho_bar = math.sqrt(1.0 - rho * rho)
     sdt = math.sqrt(dt)
-    vol_drift = -0.5 * nu * nu * dt
     compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
+    jump_drift = math.exp(-compensator * dt)
     for i in range(n_steps):
-        z1 = gen.standard_normal(half)
-        z2 = gen.standard_normal(half)
+        z = gen.standard_normal(half)
         counts = gen.poisson(lambda_ * dt, half)
         discount = math.exp(-(r - q) * (horizon - (i + 1) * dt))
         for s_idx in range(n_signs):
@@ -287,17 +273,12 @@ def sabr_jump_path_kernel(
             off = s_idx * half
             for j in range(half):
                 k = off + j
-                dw_f = sign * z1[j] * sdt
-                dw_v = sign * (rho * z1[j] + rho_bar * z2[j]) * sdt
-                f_pos = f[k] if f[k] > 1e-8 else 1e-8
-                v_pos = v[k] if v[k] > 0.0 else 0.0
-                f_new = f[k] - compensator * f_pos * dt + v_pos * f_pos**beta * dw_f
-                if beta > 0.0 and f_new < 0.0:
-                    f_new = 0.0
+                dz = sign * z[j] * sdt
+                f_new, v[k] = _sabr_step(gen, f[k], v[k], dz, nu, beta, rho, dt)
+                f_new *= jump_drift
                 for _n in range(counts[j]):
                     f_new *= math.exp(gen.normal(mu_j, sigma_j))
                 f[k] = f_new
-                v[k] = v[k] * math.exp(vol_drift + nu * dw_v)
                 paths[i + 1, k] = f_new * discount
     return paths
 

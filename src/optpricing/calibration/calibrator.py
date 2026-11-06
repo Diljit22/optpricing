@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
@@ -210,14 +211,20 @@ class Calibrator:
 
     # -- objective -----------------------------------------------------------------
     def _prices(self, model: BaseModel) -> np.ndarray:
-        return price_chain(
-            self.layout,
-            self.stock,
-            model,
-            self.rate,
-            allow_mc=self.allow_mc,
-            **self.mc_kwargs,
-        )
+        # The optimiser probes near-degenerate corners of the parameter space;
+        # a fitted model that is one still warns when it is evaluated.
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="COS series truncated", category=RuntimeWarning
+            )
+            return price_chain(
+                self.layout,
+                self.stock,
+                model,
+                self.rate,
+                allow_mc=self.allow_mc,
+                **self.mc_kwargs,
+            )
 
     def _residuals(self, model: BaseModel) -> np.ndarray:
         prices = self._prices(model)
