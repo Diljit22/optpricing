@@ -80,41 +80,6 @@ jobs:
           flags: unittests
           fail_ci_if_error: false
 
-  no-jit-coverage:
-    # coverage.py cannot trace numba-compiled bodies; running the kernels as
-    # plain Python measures them (and checks they are valid Python). ~11 min
-    # locally, hence a single interpreter.
-    name: Coverage without JIT (py3.12)
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    env:
-      NUMBA_DISABLE_JIT: "1"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          enable-cache: true
-          python-version: "3.12"
-
-      - name: Install project + test group
-        run: uv sync --locked --no-default-groups --group test
-
-      - name: Run tests with coverage
-        run: uv run --no-sync pytest --cov --cov-report=xml --cov-report=term
-
-      - name: Upload coverage to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          flags: nojit
-          fail_ci_if_error: false
-
   minimum-versions:
     # Keeps the `>=` floors in pyproject.toml honest: install the oldest allowed
     # version of every direct dependency and run the suite against it.

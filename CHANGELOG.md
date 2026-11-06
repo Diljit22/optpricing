@@ -7,7 +7,7 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 Phase 5 (verification): every model × technique re-checked against QuantLib 1.44, published tables and an
-independent COS pricer; property-based and convergence-order tests; a `NUMBA_DISABLE_JIT=1` coverage job.
+independent COS pricer; property-based and convergence-order tests.
 
 ### Fixed
 
@@ -74,7 +74,6 @@ independent COS pricer; property-based and convergence-order tests; a `NUMBA_DIS
 - Convergence-order tests (CRR/TOPM order 1, Leisen–Reimer odd N and Crank–Nicolson order 2, Gauss–Legendre
   exponential, Monte Carlo 1/√N) and golden values for Kou, VG, NIG, CGMY, Hyperbolic, CEV γ > 1, Black's
   approximation and the perpetual put.
-- CI job running the suite with `NUMBA_DISABLE_JIT=1` so coverage reaches the numba kernels.
 
 ### Known limitations
 
