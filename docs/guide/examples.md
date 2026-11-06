@@ -10,14 +10,14 @@ The easiest way to run these benchmarks is through the `demo` command group in t
 
 ### European Options Benchmark
 
-This is the most comprehensive benchmark, designed to compare a wide array of pricing techniques across the full suite of European option models. For each model, it generates a detailed table comparing:
+This benchmark compares closed form, quadrature, and FFT, plus PDE, trees, and Monte Carlo where the model supports them, across the equity models in the script. It does not call `COSTechnique` (the library default for characteristic-function models) and it does not include Dupire. For each model, it generates a detailed table comparing:
 
 - Price
 - All primary Greeks (Delta, Gamma, Vega, Theta, Rho)
 - Implied Volatility
 - Calculation time for each metric
 
-It also calculates the put-call parity error for each technique, serving as a powerful validation of the implementation's correctness.
+Monte Carlo Greeks are left blank for jump models. The script also prints the put-call parity error for each technique.
 
 **To run the full benchmark suite:**
 
@@ -35,12 +35,7 @@ This benchmark is an excellent tool for understanding the trade-offs between spe
 
 ### American Options Benchmark
 
-This benchmark focuses specifically on techniques suitable for pricing American-style options, which allow for early exercise. It compares the results of:
-
-- **Longstaff-Schwartz Monte Carlo**: A flexible, simulation-based approach.
-- **Lattice/Tree Methods**: Including CRR, Leisen-Reimer, and Trinomial trees.
-
-The script prices a standard American put option across all supported models and presents a comparison of the calculated price and performance.
+This benchmark prices American puts on the models Longstaff–Schwartz can simulate (Black–Scholes, Merton, Kou, Heston, Bates, SABR, SABR with jumps). CRR, Leisen–Reimer, and trinomial trees are compared only on Black–Scholes; they reject every other model.
 
 **To run the American options benchmark:**
 

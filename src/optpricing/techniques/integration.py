@@ -62,11 +62,12 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
             Relative error tolerance of the adaptive method, by default 1e-9.
         method : {"gauss", "quad"}, optional
             ``"gauss"`` (default) evaluates the characteristic function once on a
-            fixed composite Gauss-Legendre rule (geometric panels
+            composite Gauss-Legendre rule (geometric panels
             ``[0,1],[1,2],[2,4],...`` up to ``upper_bound``, ``n_nodes`` per
-            panel), which agrees with the adaptive rule to ~1e-13 for the
-            library's models at a fraction of the cost. ``"quad"`` uses
-            ``scipy.integrate.quad`` with a Python callback per node.
+            panel). Where the characteristic function has decayed by
+            ``upper_bound`` this matches ``quad`` to about 1e-12 and is much
+            cheaper; slowly decaying characteristic functions need ``adaptive``.
+            ``"quad"`` uses ``scipy.integrate.quad`` with a Python callback per node.
         n_nodes : int, optional
             Gauss-Legendre nodes per panel, by default 24.
         adaptive : bool, optional

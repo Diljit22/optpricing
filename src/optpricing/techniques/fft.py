@@ -125,8 +125,7 @@ def _lord_kahl_alpha(phi: Any, log_strike: float) -> tuple[float, float]:
 
 class FFTTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
-    Fast Fourier Transform (FFT) pricer based on the Carr-Madan formula,
-    preserving the original tuned logic for grid and parameter selection.
+    Fast Fourier Transform (FFT) pricer based on the Carr-Madan formula.
     """
 
     def __init__(

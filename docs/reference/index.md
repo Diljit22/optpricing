@@ -64,7 +64,7 @@ Put-call parity utilities and **implied-rate** models.
 
 ## Techniques
 
-Pricing engines: closed-form, FFT, PDE, lattices, Monte Carlo (with Greek calculation mixins).
+Pricing engines: closed-form, COS, integration, FFT, PDE, lattices, Monte Carlo (with Greek calculation mixins).
 
 - [Techniques Reference](techniques/index.md)
 

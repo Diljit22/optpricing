@@ -23,13 +23,14 @@ Prices a single option using live market data. The live chain brings its own spo
 - `--type TEXT`: 'call' or 'put'. [default: call]
 - `--style TEXT`: 'european' or 'american'. [default: european]
 - `--model, -m TEXT`: Model to use (e.g., 'BSM', 'Heston', 'VG'; aliases such as 'Variance Gamma' are accepted). [default: BSM]
+- `--technique, -x TEXT`: Force `mc`, `american_mc`, `crr`, or `lr` (`crr` and `lr` price Black–Scholes only). If omitted, a European option uses a closed form, otherwise COS for characteristic-function models (Heston included), otherwise Monte Carlo. American Black–Scholes uses Leisen–Reimer; any other American model uses Longstaff–Schwartz.
 - `--param TEXT`: Set a model parameter (e.g., `sigma=0.2`). Can be used multiple times.
 
 **Example:**
 
 ```bash
-# Price an American put on TSLA using the Heston model
-optpricing price -t TSLA -k 290 -T 2026-01-16 --style american --model Heston
+# American Heston uses Longstaff-Schwartz. Trees price Black-Scholes only.
+optpricing price -t TSLA -k 290 -T 2027-06-18 --type put --style american --model Heston
 ```
 
 ### `calibrate`
@@ -195,8 +196,8 @@ Miscellaneous financial utility tools.
 
 **Commands:**
 
-- `implied-rate`: Calculates the implied risk-free rate from a live call-put pair using put-call parity.
+- `implied-rate`: Calculates the implied risk-free rate from a live call-put pair using put-call parity. The maturity has to be an expiry on that chain; this is separate from the T-bill rate used by `price`.
 
   ```bash
-  optpricing tools implied-rate --ticker SPY --strike 630 --maturity 2025-12-19
+  optpricing tools implied-rate --ticker SPY --strike 630 --maturity 2027-06-18
   ```
