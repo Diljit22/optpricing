@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- The daily snapshot named chains with the runner's UTC date. A job that started after midnight UTC, which is still the previous evening in New York, treated every contract as stale and committed only `IRX_risk_free_rates.parquet`. The file date and the freshness check are the New York session.
+
+### Changed
+
+- The scheduled snapshot runs at 19:45 UTC (inside the cash session in both winter and summer) for the 25 `snapshot_tickers`, refreshes their 10-year stock history used as a jump-model prior, and commits `data/` to the `data` branch. The option spot stays `spot_price` on the chain.
+- When Yahoo has cleared the bid/ask book but the contract traded in the session, the stored price is that last trade (`price_source=last`) with bid and ask set equal to it, so the liquidity filters and the calibrator still see a price.
+
 ## [3.0.0] - 2026-11-07
 
 Phase 5 (verification): every model × technique re-checked against QuantLib 1.44, published tables and an

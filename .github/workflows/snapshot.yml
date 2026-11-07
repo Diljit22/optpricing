@@ -1,17 +1,26 @@
 name: Market snapshot
 
-# Grows the snapshot corpus: once per US trading day the liquid part of each
-# configured option chain is captured (schema v2: spot, T-bill rate and
-# parity-implied dividend yield included), compressed and committed.
+# Grows the offline corpus the calibrator and the walk-forward read.
 #
-# 20:45 UTC is 16:45 ET in summer (after the close, closing quotes) and
-# 15:45 ET in winter (live quotes, 15 minutes before the close). Market
-# holidays leave no trades for the day, `--only-fresh` then writes nothing and
-# the commit step is skipped. Footprint: ~25 KB per ticker and day (zstd).
+# One compact chain per snapshot ticker per New York session, plus a refresh
+# of the 10y stock history (close, dividends, log returns) that jump models
+# use as a prior. The option spot is the chain's own spot_price, not that
+# adjusted close. The rate is the 13-week T-bill (^IRX), and the dividend
+# yield is implied from put-call parity. Both are columns on the chain.
+#
+# 19:45 UTC is 15:45 EDT and 14:45 EST, so an on-time run is inside the cash
+# session in both seasons and Yahoo still has a bid/ask book. GitHub often
+# starts the job hours late. The file date is the New York session, not the
+# runner's UTC date, and a cleared book falls back to that session's last
+# trade (price_source=last). A holiday writes nothing.
+#
+# The commit lands on the `data` branch, not main. A checkout of main does
+# not move; overlay the corpus with:
+#   git fetch origin data && git checkout origin/data -- data/
 
 on:
   schedule:
-    - cron: "45 20 * * 1-5"
+    - cron: "45 19 * * 1-5"
   workflow_dispatch:
     inputs:
       tickers:
@@ -34,7 +43,7 @@ jobs:
   snapshot:
     name: Capture and commit
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -49,53 +58,135 @@ jobs:
       - name: Install runtime dependencies
         run: uv sync --locked --no-default-groups
 
-      - name: Refresh risk-free rate history (^IRX)
-        run: uv run --no-sync optpricing data download --rates
+      - name: Resolve snapshot tickers
+        env:
+          INPUT_TICKERS: ${{ inputs.tickers }}
+        run: |
+          if [ -n "$INPUT_TICKERS" ]; then
+            tickers="$INPUT_TICKERS"
+          else
+            tickers=$(uv run --no-sync python -c "
+          import yaml
+          c = yaml.safe_load(open('config.yaml')) or {}
+          print(' '.join(c.get('snapshot_tickers') or c.get('default_tickers') or []))
+          ")
+          fi
+          if [ -z "$tickers" ]; then
+            echo "::error::snapshot_tickers is empty"
+            exit 1
+          fi
+          echo "SNAPSHOT_TICKERS=${tickers}" >> "$GITHUB_ENV"
+          echo "Tickers: ${tickers}"
+
+      - name: Refresh rate and stock history
+        run: |
+          args=(data download --rates --period 10y)
+          for t in ${SNAPSHOT_TICKERS}; do args+=(--ticker "$t"); done
+          uv run --no-sync optpricing "${args[@]}"
 
       - name: Capture option chains
         id: capture
         env:
-          INPUT_TICKERS: ${{ inputs.tickers }}
           INPUT_FULL: ${{ inputs.full }}
         run: |
           set -u
-          args=()
-          if [ -n "${INPUT_TICKERS}" ]; then
-            for t in ${INPUT_TICKERS}; do args+=(--ticker "$t"); done
-          else
-            # snapshot_tickers from config.yaml (falls back to default_tickers)
-            mapfile -t tickers < <(uv run --no-sync python -c "
-          import yaml; c = yaml.safe_load(open('config.yaml')) or {}
-          print('\n'.join(c.get('snapshot_tickers') or c.get('default_tickers') or []))")
-            for t in "${tickers[@]}"; do args+=(--ticker "$t"); done
-          fi
+          args=(data snapshot --only-fresh)
           if [ "${INPUT_FULL}" != "true" ]; then args+=(--compact); fi
-          # exit code 1 means nothing fresh was written (holiday); that is fine
-          uv run --no-sync optpricing data snapshot "${args[@]}" --only-fresh || true
+          for t in ${SNAPSHOT_TICKERS}; do args+=(--ticker "$t"); done
+          set +e
+          uv run --no-sync optpricing "${args[@]}"
+          snap_status=$?
+          set -e
+          if [ "$snap_status" -gt 1 ]; then
+            exit "$snap_status"
+          fi
+          uv run --no-sync python - <<'PY'
+          from optpricing.config import MARKET_SNAPSHOT_DIR
+          from optpricing.data.historical_manager import history_covers_session
+          from optpricing.data.market_data_manager import session_date
+
+          session = session_date()
+          written = sorted(MARKET_SNAPSHOT_DIR.glob(f"*_{session.isoformat()}.parquet"))
+          print(f"session={session} chains={len(written)}")
+          if written or session.weekday() >= 5 or not history_covers_session(session):
+              if not written:
+                  print("No chain for this session (market closed or weekend).")
+              raise SystemExit(0)
+          raise SystemExit(
+              f"session {session} is in the stock history but no option chain was stored"
+          )
+          PY
           if [ -n "$(git status --porcelain data/)" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No new snapshot (market closed or feed stale)."
+            echo "No data change."
           fi
 
-      - name: Commit and push
+      - name: Commit and push to the data branch
         if: steps.capture.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
-          git commit -m "data: market snapshot $(date -u +%F) [skip ci]"
-          # Retry once on a concurrent push to the same branch.
+          git fetch origin data || true
+          if git rev-parse --verify --quiet refs/remotes/origin/data >/dev/null; then
+            parent=$(git rev-parse refs/remotes/origin/data)
+          else
+            parent=""
+          fi
+          stamp=$(date -u +%F)
+          msg="data: market snapshot ${stamp} [skip ci]"
+          # Sets $commit. Exit 2 means the data branch already has this tree.
+          # Does not enable errexit: the caller inspects the status, and a
+          # non-zero return must not abort the step before that check.
+          publish() {
+            if [ -n "$parent" ]; then
+              git read-tree "$parent" || return 1
+            else
+              git read-tree --empty || return 1
+            fi
+            git add -A -- data || return 1
+            tree=$(git write-tree) || return 1
+            if [ -n "$parent" ] && git diff-tree --quiet "$parent" "$tree"; then
+              echo "Data branch already has this tree." >&2
+              return 2
+            fi
+            if [ -n "$parent" ]; then
+              commit=$(git commit-tree "$tree" -p "$parent" -m "$msg") || return 1
+            else
+              commit=$(git commit-tree "$tree" -m "$msg") || return 1
+            fi
+          }
+          set +e
+          publish
+          status=$?
+          set -e
+          if [ "$status" -eq 2 ]; then
+            exit 0
+          fi
+          if [ "$status" -ne 0 ]; then
+            exit "$status"
+          fi
           for attempt in 1 2 3; do
-            if git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "HEAD:${BRANCH}"; then
+            if git push "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" \
+              "${commit}:refs/heads/data"; then
               exit 0
             fi
-            git pull --rebase "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" "${BRANCH}"
+            git fetch origin data
+            parent=$(git rev-parse refs/remotes/origin/data)
+            set +e
+            publish
+            status=$?
+            set -e
+            if [ "$status" -eq 2 ]; then
+              exit 0
+            fi
+            if [ "$status" -ne 0 ]; then
+              exit "$status"
+            fi
           done
           exit 1

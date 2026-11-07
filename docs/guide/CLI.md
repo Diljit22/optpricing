@@ -138,14 +138,14 @@ Tools for downloading and managing market data.
   optpricing data download --rates
   ```
 
-- `snapshot`: Fetches and saves a live market data snapshot of the option chain (spot, rate and implied dividend yield included). `--compact` keeps only liquid options in a compressed file (~25 KB per ticker and day); `--only-fresh` skips tickers without trades today (market holidays).
+- `snapshot`: Fetches and saves a live market data snapshot of the option chain. The file carries the spot (`spot_price`), the T-bill rate and the parity-implied dividend yield, which is what calibration and the backtest use. `--compact` keeps only liquid options and compresses the file (~25 KB per ticker and day); `--only-fresh` skips a chain with no trade on the New York session (a holiday, or a clock past midnight UTC that still belongs to the previous evening). When the live book has been cleared but the contract traded in that session, the stored price is the last trade (`price_source` is `last`; otherwise `mid`).
 
   ```bash
   optpricing data snapshot --ticker TSLA
   optpricing data snapshot --all --compact --only-fresh
   ```
 
-  The repository's scheduled GitHub Action (`.github/workflows/snapshot.yml`) runs the compact form every trading day for the `snapshot_tickers` listed in `config.yaml` and commits the files.
+  The scheduled GitHub Action (`.github/workflows/snapshot.yml`) runs at 19:45 UTC, Monday to Friday, for the `snapshot_tickers` in `config.yaml`. It also refreshes `data download` for those tickers (adjusted close, dividends and log returns — the jump-model prior, not the option spot) and the `^IRX` history, and commits `data/` to the `data` branch. Overlay a main checkout with `git fetch origin data && git checkout origin/data -- data/`.
 
 - `stream`: Records live quotes from Yahoo Finance's free streaming endpoint into a parquet file (`data/live_quotes/` by default). Underlyings, indices and option contracts can be mixed; `--contracts N` adds the N most active contracts of each ticker.
 
