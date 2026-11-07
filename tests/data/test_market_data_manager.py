@@ -1,5 +1,5 @@
 import logging
-from datetime import date
+from datetime import UTC, date, datetime
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -127,7 +127,8 @@ def test_fetch_from_yfinance_builds_v2_schema(monkeypatch, mock_yfinance_ticker)
     assert market_data_manager.is_v2_snapshot(df)
     assert set(df["optionType"]) == {"call", "put"}
     assert (df["ticker"] == "SPY").all()
-    assert df["snapshot_date"].iloc[0] == date.today().strftime("%Y-%m-%d")
+    assert df["snapshot_date"].iloc[0] == market_data_manager.session_date().isoformat()
+    assert (df["price_source"] == "mid").all()
     assert df["risk_free_rate"].iloc[0] == pytest.approx(0.045)
     assert (df["spot_price"] == 100.0).all()  # fast_info["lastPrice"] was used
     mock_yfinance_ticker.history.assert_not_called()
@@ -167,8 +168,8 @@ def test_save_market_snapshot(monkeypatch, tmp_path, mock_option_chain_df):
 
     written = market_data_manager.save_market_snapshot(["TEST"])
 
-    today_str = date.today().strftime("%Y-%m-%d")
-    expected_file = tmp_path / f"TEST_{today_str}.parquet"
+    session = market_data_manager.session_date().isoformat()
+    expected_file = tmp_path / f"TEST_{session}.parquet"
     assert expected_file.exists()
     assert written == [expected_file]
 
@@ -305,6 +306,82 @@ def test_snapshot_market_params_v1_frame_is_offline():
     stock, rate = market_data_manager.snapshot_market_params(chain)
     assert rate.get_rate() == market_data_manager.DEFAULT_RISK_FREE_RATE
     assert stock.dividend == pytest.approx(0.01, abs=1e-4)
+
+
+def test_session_date_is_new_york_not_utc():
+    # 00:30 UTC Saturday is still Friday evening in New York, winter and summer.
+    assert market_data_manager.session_date(
+        datetime(2026, 11, 7, 0, 30, tzinfo=UTC)
+    ) == date(2026, 11, 6)
+    assert market_data_manager.session_date(
+        datetime(2026, 7, 7, 0, 30, tzinfo=UTC)
+    ) == date(2026, 7, 6)
+    # An on-time 19:45 UTC run is the same calendar day in both seasons.
+    assert market_data_manager.session_date(
+        datetime(2026, 11, 6, 19, 45, tzinfo=UTC)
+    ) == date(2026, 11, 6)
+    assert market_data_manager.session_date(
+        datetime(2026, 7, 6, 19, 45, tzinfo=UTC)
+    ) == date(2026, 7, 6)
+
+
+def test_apply_quote_prices_uses_last_trade_when_the_book_is_gone():
+    session = date(2026, 11, 6)
+    chain = pd.DataFrame(
+        {
+            "bid": [1.0, 0.0, 0.0],
+            "ask": [1.2, 0.0, 0.0],
+            "lastPrice": [1.05, 2.5, 3.0],
+            "lastTradeDate": [
+                pd.Timestamp("2026-11-06 15:00", tz="UTC"),
+                pd.Timestamp("2026-11-06 21:00", tz="UTC"),  # 16:00 ET
+                pd.Timestamp("2026-11-05 21:00", tz="UTC"),  # previous session
+            ],
+            "strike": [100.0, 101.0, 102.0],
+        }
+    )
+    out = market_data_manager.apply_quote_prices(chain, session)
+    assert out["price_source"].tolist() == ["mid", "last"]
+    assert out["bid"].iloc[0] == 1.0
+    assert out["ask"].iloc[0] == 1.2
+    assert out["marketPrice"].iloc[0] == pytest.approx(1.1)
+    assert out["bid"].iloc[1] == pytest.approx(2.5)
+    assert out["ask"].iloc[1] == pytest.approx(2.5)
+    assert out["marketPrice"].iloc[1] == pytest.approx(2.5)
+    assert 102.0 not in out["strike"].to_numpy()
+
+
+def test_compact_keeps_last_trade_marks_for_the_calibrator():
+    """A cleared book still produces a compact chain the liquidity filter accepts."""
+    session = date(2026, 11, 6)
+    chain = make_parity_chain()
+    chain["bid"] = 0.0
+    chain["ask"] = 0.0
+    chain["lastPrice"] = chain["marketPrice"]
+    chain["lastTradeDate"] = pd.Timestamp("2026-11-06 21:00", tz="UTC")
+    priced = market_data_manager.apply_quote_prices(chain, session)
+    compact = market_data_manager.compact_snapshot(priced)
+    assert not compact.empty
+    assert (compact["price_source"] == "last").all()
+    assert (compact["bid"] > 0).all()
+    assert "lastPrice" not in compact.columns
+
+
+def test_save_snapshot_uses_new_york_session_date(monkeypatch, tmp_path):
+    """A run after midnight UTC still files the chain under the NY session."""
+    chain = make_parity_chain()
+    chain["lastTradeDate"] = pd.Timestamp("2026-11-06 23:00", tz="UTC")
+    monkeypatch.setattr(
+        market_data_manager, "session_date", lambda now=None: date(2026, 11, 6)
+    )
+    monkeypatch.setattr(
+        market_data_manager, "get_live_option_chain", lambda ticker: chain
+    )
+    monkeypatch.setattr(market_data_manager, "MARKET_SNAPSHOT_DIR", tmp_path)
+
+    written = market_data_manager.save_market_snapshot(["T"], only_fresh=True)
+
+    assert written == [tmp_path / "T_2026-11-06.parquet"]
 
 
 def test_is_fresh_snapshot():

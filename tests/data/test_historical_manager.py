@@ -1,4 +1,5 @@
 import math
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -107,6 +108,17 @@ def test_risk_free_history_roundtrip(monkeypatch, tmp_path):
 def test_load_risk_free_rate_without_file(monkeypatch, tmp_path):
     monkeypatch.setattr(historical_manager, "HISTORICAL_DIR", tmp_path)
     assert historical_manager.load_risk_free_rate("2025-06-11") is None
+
+
+def test_history_covers_session(monkeypatch, tmp_path):
+    idx = pd.to_datetime(["2026-11-05", "2026-11-06"]).tz_localize("America/New_York")
+    pd.DataFrame({"close": [1.0, 1.0]}, index=idx).to_parquet(
+        tmp_path / "SPY_10y_returns.parquet"
+    )
+    monkeypatch.setattr(historical_manager, "HISTORICAL_DIR", tmp_path)
+    assert historical_manager.history_covers_session(date(2026, 11, 6))
+    assert not historical_manager.history_covers_session(date(2026, 11, 7))
+    assert not historical_manager.history_covers_session(date(2026, 11, 6), period="5y")
 
 
 def test_get_live_risk_free_rate(monkeypatch):

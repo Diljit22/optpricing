@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -26,7 +27,14 @@ Snapshot schema
 A snapshot is one parquet file per ticker and day holding the full option
 chain as returned by yfinance (``contractSymbol``, ``strike``, ``bid``, ``ask``,
 ``volume``, ``openInterest``, ``impliedVolatility``, ``expiry`` ...) plus the
-derived columns ``maturity`` (years), ``marketPrice`` (mid) and ``spot_price``.
+derived columns ``maturity`` (years), ``marketPrice`` and ``spot_price``.
+
+``spot_price`` is the underlying print at capture. Calibration and the
+backtest read it from the chain. The adjusted close in the returns file is a
+different series, used only as a jump-model prior, and is not this spot.
+
+``price_source`` is ``mid`` when the bid and ask were quoted and ``last`` when
+the book was empty and the price is that session's last trade.
 
 Version 2 (Phase 4) adds the market parameters needed to price the chain
 without any network access, constant over the file:
@@ -42,6 +50,7 @@ without any network access, constant over the file:
 
 logger = logging.getLogger(__name__)
 
+_NY = ZoneInfo("America/New_York")
 SNAPSHOT_SCHEMA_VERSION = 2
 V2_COLUMNS = ("ticker", "snapshot_date", "as_of", "risk_free_rate", "dividend_yield")
 DEFAULT_RISK_FREE_RATE = 0.04
@@ -94,6 +103,93 @@ def _normalise_dividend_yield(value: float | None) -> float:
     return value / 100.0 if value > 0.5 else value
 
 
+def session_date(now: datetime | None = None) -> date:
+    """
+    US cash-session date of ``now`` in America/New_York.
+
+    GitHub's runners are UTC. A job that starts just after midnight UTC is
+    still the previous evening in New York, so filenames and the freshness
+    check follow the exchange date rather than the runner clock.
+
+    Parameters
+    ----------
+    now : datetime | None, optional
+        Instant to classify. Naive values are read as UTC. Defaults to now.
+
+    Returns
+    -------
+    date
+        The New York calendar date.
+    """
+    if now is None:
+        now = datetime.now(UTC)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    return now.astimezone(_NY).date()
+
+
+def apply_quote_prices(chain: pd.DataFrame, session: date) -> pd.DataFrame:
+    """
+    Price each row from the live bid/ask mid, or that session's last trade.
+
+    Yahoo clears the book after the close, and a delayed snapshot job then
+    sees ``bid == ask == 0`` on contracts that did trade. Those rows are kept
+    with ``price_source == "last"`` and ``bid == ask == lastPrice``, so the
+    liquidity filters (positive bid, finite spread) still accept them. A
+    quoted book is left as ``price_source == "mid"``. Rows with neither a
+    book nor a last trade on ``session`` are dropped.
+
+    Parameters
+    ----------
+    chain : pd.DataFrame
+        Raw chain, one row per contract.
+    session : date
+        New York session the snapshot belongs to.
+
+    Returns
+    -------
+    pd.DataFrame
+        The priced rows.
+    """
+    out = chain.copy()
+    index = out.index
+    if "bid" in out.columns:
+        bid = pd.to_numeric(out["bid"], errors="coerce")
+    else:
+        bid = pd.Series(np.nan, index=index)
+    if "ask" in out.columns:
+        ask = pd.to_numeric(out["ask"], errors="coerce")
+    else:
+        ask = pd.Series(np.nan, index=index)
+    mid = (bid + ask) / 2.0
+    has_book = (bid > 0) & (ask >= bid) & (mid > 0.01)
+
+    if "lastPrice" in out.columns:
+        last = pd.to_numeric(out["lastPrice"], errors="coerce")
+    else:
+        last = pd.Series(np.nan, index=index)
+    if "lastTradeDate" in out.columns:
+        traded = pd.to_datetime(out["lastTradeDate"], utc=True, errors="coerce")
+        traded_ny = traded.dt.tz_convert(_NY)
+        traded_on_session = pd.Series(traded_ny.dt.date == session, index=index)
+        traded_on_session = traded_on_session.fillna(False)
+    else:
+        traded_on_session = pd.Series(False, index=index)
+    has_last = ~has_book & traded_on_session & (last > 0.01)
+
+    keep = has_book | has_last
+    out = out.loc[keep].copy()
+    has_book = has_book.loc[keep]
+    has_last = has_last.loc[keep]
+    mid = mid.loc[keep]
+    last = last.loc[keep]
+    out["marketPrice"] = np.where(has_book.to_numpy(), mid.to_numpy(), last.to_numpy())
+    out["price_source"] = np.where(has_book.to_numpy(), "mid", "last")
+    out.loc[has_last, "bid"] = last.loc[has_last].to_numpy()
+    out.loc[has_last, "ask"] = last.loc[has_last].to_numpy()
+    return out
+
+
 def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
     """Fetches a live option chain (schema v2) using yfinance."""
     logger.info("Fetching live option chain for %s from yfinance...", ticker)
@@ -125,28 +221,33 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
             chain_df = chain_df.drop_duplicates(subset=["contractSymbol"])
         chain_df = chain_df.drop_duplicates(subset=["strike", "expiry", "optionType"])
 
-        today = date.today()
-        today_ts = datetime.combine(today, datetime.min.time())
-        chain_df["maturity"] = (chain_df["expiry"] - today_ts).dt.days / 365.25
-        chain_df["marketPrice"] = (chain_df["bid"] + chain_df["ask"]) / 2.0
+        session = session_date()
+        session_ts = datetime.combine(session, datetime.min.time())
+        chain_df["maturity"] = (chain_df["expiry"] - session_ts).dt.days / 365.25
         chain_df["spot_price"] = _spot_from_ticker(ticker_obj)
 
         n_raw = len(chain_df)
+        chain_df = apply_quote_prices(chain_df, session)
         chain_df = chain_df.dropna(
             subset=["marketPrice", "strike", "maturity", "impliedVolatility"],
         )
-        chain_df = chain_df[
-            (chain_df["marketPrice"] > 0.01) & (chain_df["maturity"] > 1 / 365.25)
-        ].copy()
+        chain_df = chain_df[chain_df["maturity"] > 1 / 365.25].copy()
         if chain_df.empty:
             return None
-        # Outside market hours Yahoo reports bid = ask = 0 for most contracts;
-        # the share of quoted rows lets `is_fresh_snapshot` detect that.
+        # Share of the raw chain that still has a usable price. A cleared book
+        # with no last trade from this session falls through `is_fresh_snapshot`.
         chain_df.attrs["n_raw_quotes"] = n_raw
+        n_last = int((chain_df["price_source"] == "last").sum())
+        if n_last:
+            logger.info(
+                "%s: %d contract(s) priced from the session's last trade",
+                ticker,
+                n_last,
+            )
 
         rate = get_live_risk_free_rate()
         if rate is None:
-            rate = load_risk_free_rate(today)
+            rate = load_risk_free_rate(session)
         if rate is None:
             rate = DEFAULT_RISK_FREE_RATE
         yf_yield = np.nan
@@ -157,7 +258,7 @@ def _fetch_from_yfinance(ticker: str) -> pd.DataFrame | None:
         return _attach_market_params(
             chain_df,
             ticker=ticker,
-            snapshot_date=today.strftime("%Y-%m-%d"),
+            snapshot_date=session.strftime("%Y-%m-%d"),
             rate=rate,
             yf_dividend_yield=yf_yield,
             as_of=pd.Timestamp.now(tz="UTC"),
@@ -384,11 +485,11 @@ def compact_snapshot(df: pd.DataFrame) -> pd.DataFrame:
     GitHub Action that grows the corpus): about 25 KB per ticker and day with
     zstd, versus ~130 KB for a full snapshot.
 
-    Keeps the rows selected by :func:`liquid_option_mask`, drops columns that
-    are constant, informational or reconstructible (``marketPrice`` is the
-    bid-ask mid, ``contractSymbol`` the OCC code; both are restored by
-    :func:`load_market_snapshot`) and stores quotes in float32 (cent precision
-    for strikes below ~80,000) and counts in int32.
+    Keeps the rows selected by :func:`liquid_option_mask` and ``price_source``,
+    drops columns that are constant, informational or reconstructible
+    (``marketPrice`` is the bid-ask mid, ``contractSymbol`` the OCC code; both
+    are restored by :func:`load_market_snapshot`) and stores quotes in float32
+    (cent precision for strikes below ~80,000) and counts in int32.
 
     Parameters
     ----------
@@ -488,7 +589,7 @@ def save_market_snapshot(
 
     For each ticker, it fetches the live option chain using
     `get_live_option_chain` and saves it to a parquet file named with the
-    ticker and the current date.
+    ticker and the New York session date (see :func:`session_date`).
 
     Parameters
     ----------
@@ -506,9 +607,9 @@ def save_market_snapshot(
     list[Path]
         Paths of the files written.
     """
-    today = date.today()
-    today_str = today.strftime("%Y-%m-%d")
-    logger.info("Saving market data snapshot for %s", today_str)
+    session = session_date()
+    session_str = session.strftime("%Y-%m-%d")
+    logger.info("Saving market data snapshot for %s", session_str)
     written: list[Path] = []
     for ticker in tickers:
         chain_df = get_live_option_chain(ticker)
@@ -516,7 +617,7 @@ def save_market_snapshot(
         if chain_df is None or chain_df.empty:
             logger.warning("No valid option data found for %s. Skipping.", ticker)
             continue
-        if only_fresh and not is_fresh_snapshot(chain_df, today):
+        if only_fresh and not is_fresh_snapshot(chain_df, session):
             logger.warning(
                 "Chain for %s is not live (no trades today or quotes missing). "
                 "Skipping.",
@@ -529,7 +630,7 @@ def save_market_snapshot(
                 logger.warning("No liquid options for %s. Skipping.", ticker)
                 continue
 
-        filename = MARKET_SNAPSHOT_DIR / f"{ticker}_{today_str}.parquet"
+        filename = MARKET_SNAPSHOT_DIR / f"{ticker}_{session_str}.parquet"
         filename.parent.mkdir(parents=True, exist_ok=True)
         if compact:
             chain_df.to_parquet(filename, compression="zstd", index=False)

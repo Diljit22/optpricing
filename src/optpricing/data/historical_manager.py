@@ -279,6 +279,43 @@ def load_risk_free_rate(
     return float(frame["rate"].to_numpy()[np.flatnonzero(mask)[-1]])
 
 
+def history_covers_session(
+    session: date | str | pd.Timestamp,
+    *,
+    period: str = "10y",
+) -> bool:
+    """
+    True when a stored returns file contains this New York session.
+
+    Used offline, after the history refresh, to tell a market holiday (no
+    close) from a failed option-chain fetch (the close is present).
+
+    Parameters
+    ----------
+    session : date | str | pd.Timestamp
+        Session date.
+    period : str, optional
+        History period of the files, by default "10y".
+
+    Returns
+    -------
+    bool
+        True if any ``{ticker}_{period}_returns.parquet`` includes the date.
+    """
+    if not HISTORICAL_DIR.exists():
+        return False
+    session_day = pd.Timestamp(session).date()
+    for path in HISTORICAL_DIR.glob(f"*_{period}_returns.parquet"):
+        idx = pd.DatetimeIndex(pd.read_parquet(path).index)
+        if idx.tz is not None:
+            days = idx.tz_convert("America/New_York").date
+        else:
+            days = idx.date
+        if session_day in set(days):
+            return True
+    return False
+
+
 def get_live_risk_free_rate() -> float | None:
     """
     Current risk-free rate from the live ``^IRX`` quote.
