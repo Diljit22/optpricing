@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-07
+
 Phase 5 (verification): every model × technique re-checked against QuantLib 1.44, published tables and an
 independent COS pricer; property-based and convergence-order tests.
 
