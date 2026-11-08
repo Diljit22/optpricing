@@ -61,6 +61,7 @@ ui = [
 [project.urls]
 Homepage = "https://diljit22.github.io/optpricing/"
 Documentation = "https://diljit22.github.io/optpricing/"
+Dashboard = "https://optpricing.streamlit.app/"
 Repository = "https://github.com/Diljit22/optpricing"
 Issues = "https://github.com/Diljit22/optpricing/issues"
 Changelog = "https://github.com/Diljit22/optpricing/blob/main/CHANGELOG.md"

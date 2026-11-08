@@ -89,5 +89,10 @@ def build_sidebar() -> tuple[str, str, str]:
         st.markdown(f"  **Ticker:** `{ticker}`")
         st.markdown(f"  **Date:** `{snapshot_date}`")
         st.markdown(f"  **Model:** `{model_name}`")
+        st.link_button(
+            "Documentation",
+            "https://diljit22.github.io/optpricing/",
+            use_container_width=True,
+        )
 
     return ticker, snapshot_date, model_name

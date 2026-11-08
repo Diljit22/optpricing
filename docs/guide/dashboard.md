@@ -2,6 +2,8 @@
 
 The `optpricing` dashboard provides a rich, interactive user interface for visual analysis and pricing. It is built with Streamlit and is the easiest way to explore the library's features without writing code.
 
+The hosted app is [optpricing.streamlit.app](https://optpricing.streamlit.app/). The same app runs locally with the command below.
+
 ## Launching the Dashboard
 
 To start the application, simply run the following command in your terminal:

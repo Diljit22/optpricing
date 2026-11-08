@@ -8,6 +8,8 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+**[Live dashboard](https://optpricing.streamlit.app/)** · **[Documentation](https://diljit22.github.io/optpricing/)**
+
 `optpricing` is a Python library for pricing, calibrating, and analyzing financial derivatives. It is built with a focus on architectural clarity, model breadth, and practical usability through a robust API, command-line interface, and an interactive dashboard.
 
 Diljit Singh
@@ -34,7 +36,7 @@ Diljit Singh
 * **Interfaces**:
   * **Programmatic API**: Use the package as a Python library to build custom financial models in your scripts. Define options, stocks, rates, and models programmatically to compute prices and other metrics.
   * **Command-Line Interface (CLI)**: A robust CLI for live pricing, data management, model calibration, and historical backtesting.
-  * **Interactive Dashboard (UI)**: A Streamlit application for visual analysis of option chains, implied volatility surfaces, and model calibrations.
+  * **Interactive Dashboard (UI)**: A [Streamlit application](https://optpricing.streamlit.app/) for visual analysis of option chains, implied volatility surfaces, and model calibrations.
 
 * **Workflow Automation**: High-level classes that orchestrate complex tasks like daily calibration runs and out-of-sample performance evaluation.
 
@@ -147,7 +149,8 @@ For more details, see the [API Guide](https://diljit22.github.io/optpricing/guid
 
 The full documentation includes installation instructions, user guides, examples, and a complete API reference.
 
-* **[View the Official Documentation](https://diljit22.github.io/optpricing/)**
+* **[Live dashboard](https://optpricing.streamlit.app/)**
+* **[Documentation](https://diljit22.github.io/optpricing/)**
 
 ### Guides
 

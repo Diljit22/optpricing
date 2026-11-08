@@ -66,6 +66,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Live dashboard: https://optpricing.streamlit.app/
   - User Guide:
       - Introduction: guide/introduction.md
       - Installation: guide/installation.md

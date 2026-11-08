@@ -15,6 +15,11 @@ st.set_page_config(
 
 st.title("Welcome to the `optpricing` Library Showcase!")
 st.sidebar.success("Select a tool from the sidebar to begin.")
+st.sidebar.link_button(
+    "Documentation",
+    "https://diljit22.github.io/optpricing/",
+    use_container_width=True,
+)
 # noqa E501
 st.markdown(
     """
