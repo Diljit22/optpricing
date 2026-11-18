@@ -33,8 +33,10 @@ from optpricing import BSMModel, HestonModel, Option, OptionType, Rate, Stock
 from optpricing.techniques import (
     AmericanMonteCarloTechnique,
     ClosedFormTechnique,
+    CRRTechnique,
     FFTTechnique,
     IntegrationTechnique,
+    LeisenReimerTechnique,
     MonteCarloTechnique,
     PDETechnique,
 )
@@ -68,7 +70,26 @@ def _cn_pde() -> float:
     return PDETechnique(M=200, N=200).price(OPTION, STOCK, BSM, RATE).price
 
 
+def _crr_am_1000() -> float:
+    return CRRTechnique(steps=1000, is_american=True).price(PUT, STOCK, BSM, RATE).price
+
+
+def _crr_am_5000() -> float:
+    return CRRTechnique(steps=5000, is_american=True).price(PUT, STOCK, BSM, RATE).price
+
+
+def _lr_am_5000() -> float:
+    # Even step counts are bumped to the next odd number inside the kernel.
+    return (
+        LeisenReimerTechnique(steps=5000, is_american=True)
+        .price(PUT, STOCK, BSM, RATE)
+        .price
+    )
+
+
 def _mc_bsm_100k() -> float:
+    # Black-Scholes has no exact terminal sampler here: this is Euler on log S,
+    # one draw per step, so the 100 steps are real work.
     mc = MonteCarloTechnique(n_paths=100_000, n_steps=100, seed=1)
     return mc.price(OPTION, STOCK, BSM, RATE).price
 
@@ -104,12 +125,24 @@ CASES: dict[str, tuple[Callable[[], float], str]] = {
     "heston_fft": (_heston_fft, "Carr-Madan FFT, N=4096"),
     "heston_integration": (_heston_integration, "Gil-Pelaez quadrature"),
     "cn_pde_200x200": (_cn_pde, "Crank-Nicolson, 200 x 200 grid"),
-    "mc_bsm_100k": (_mc_bsm_100k, "100k paths x 100 steps, antithetic"),
-    "mc_heston_100k": (_mc_heston_100k, "100k paths x 100 steps, antithetic"),
+    "crr_am_1000": (_crr_am_1000, "American put, CRR, 1000 steps"),
+    "crr_am_5000": (_crr_am_5000, "American put, CRR, 5000 steps"),
+    "lr_am_5000": (
+        _lr_am_5000,
+        "American put, Leisen-Reimer, 5000 steps (run as 5001)",
+    ),
+    "mc_bsm_100k": (
+        _mc_bsm_100k,
+        "Euler GBM, 100k paths x 100 steps, antithetic",
+    ),
+    "mc_heston_100k": (
+        _mc_heston_100k,
+        "Andersen QE, 100k paths x 100 steps, antithetic",
+    ),
     "lsmc_bsm_20k": (_lsmc_bsm_20k, "Longstaff-Schwartz, 20k paths x 50 steps"),
     "heston_chain_400": (
         _heston_chain_400,
-        "vectorised chain pricer, 400 options x 5 maturities",
+        "vectorised COS chain, 400 options (5 maturities x 40 strikes x call/put)",
     ),
 }
 
@@ -151,6 +184,19 @@ def run(repeats: int, only: list[str] | None) -> dict:
     return results
 
 
+def markdown_table(payload: dict) -> str:
+    """README rows: case, median milliseconds, machine, git revision."""
+    machine = payload["platform"]
+    git = payload["git"]
+    lines = [
+        "| Case | Median (ms) | Machine | git |",
+        "| --- | ---: | --- | --- |",
+    ]
+    for name, row in payload["results"].items():
+        lines.append(f"| `{name}` | {row['median_ms']:.2f} | {machine} | `{git}` |")
+    return "\n".join(lines)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--repeats", type=int, default=5)
@@ -174,6 +220,8 @@ def main() -> None:
     print(f"{'case':26s}{'median ms':>12s}{'min ms':>10s}   value")
     for name, r in results.items():
         print(f"{name:26s}{r['median_ms']:12.3f}{r['min_ms']:10.3f}   {r['value']:.6f}")
+    print()
+    print(markdown_table(payload))
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(payload, indent=2) + "\n")

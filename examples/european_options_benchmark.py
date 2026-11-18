@@ -27,6 +27,7 @@ from optpricing.models.base.base_model import BaseModel
 from optpricing.parity.parity_model import ParityModel
 from optpricing.techniques import (
     ClosedFormTechnique,
+    COSTechnique,
     CRRTechnique,
     FFTTechnique,
     IntegrationTechnique,
@@ -206,6 +207,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "rate": rate,
             "techniques": {
                 "Analytic": ClosedFormTechnique(),
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "PDE": PDETechnique(M=500, N=500),
@@ -230,6 +232,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "rate": rate,
             "techniques": {
                 "Closed-Form": ClosedFormTechnique(),
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "MC": mc_technique,
@@ -250,6 +253,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "rate": rate,
             "kwargs": {"v0": 0.04},
             "techniques": {
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "MC": mc_technique,
@@ -273,6 +277,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "rate": rate,
             "kwargs": {"v0": 0.04},
             "techniques": {
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "MC": mc_technique,
@@ -292,6 +297,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "stock": stock,
             "rate": rate,
             "techniques": {
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "MC": mc_technique,
@@ -305,6 +311,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "stock": stock,
             "rate": rate,
             "techniques": {
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "MC": mc_exact_technique,
@@ -318,6 +325,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "stock": stock,
             "rate": rate,
             "techniques": {
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
             },
@@ -330,6 +338,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "stock": stock,
             "rate": rate,
             "techniques": {
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "MC": mc_exact_technique,
@@ -348,6 +357,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "stock": stock,
             "rate": rate,
             "techniques": {
+                "COS": COSTechnique(),
                 "Integration": IntegrationTechnique(),
                 "FFT": FFTTechnique(),
                 "MC": mc_exact_technique,

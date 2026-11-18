@@ -10,7 +10,7 @@ The easiest way to run these benchmarks is through the `demo` command group in t
 
 ### European Options Benchmark
 
-This benchmark compares closed form, quadrature, and FFT, plus PDE, trees, and Monte Carlo where the model supports them, across the equity models in the script. It does not call `COSTechnique` (the library default for characteristic-function models) and it does not include Dupire. For each model, it generates a detailed table comparing:
+This benchmark compares closed form, COS (the characteristic-function default), quadrature, and FFT, plus PDE, trees, and Monte Carlo where the model supports them, across the equity models in the script. It does not include Dupire. For each model, it generates a detailed table comparing:
 
 - Price
 - All primary Greeks (Delta, Gamma, Vega, Theta, Rho)

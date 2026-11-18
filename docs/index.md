@@ -1,6 +1,8 @@
 # OptPricing: A Quantitative Finance Library for Derivative Pricing and Analysis
 
-`optpricing` is a Python library for pricing, calibrating, and analyzing financial derivatives. It is built with a focus on architectural clarity, model breadth, and practical usability through a robust API, command-line interface, and an interactive dashboard.
+17 pricing models and 10 techniques. Heston matches QuantLib 1.44 to 5e-10, and a 400-option Heston chain prices in 1.55 ms on Apple Silicon. The model is the distribution and the technique is the algorithm: `technique.price(option, stock, model, rate)`.
+
+The formulas are on the [Methods](guide/methods.md) page and the measured errors are on [Validation](guide/validation.md).
 
 [Open the live dashboard](https://optpricing.streamlit.app/){ .md-button }
 
