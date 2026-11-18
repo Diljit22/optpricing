@@ -10,15 +10,26 @@ JIT-compiled (`numba`) kernels that simulate the terminal value of an SDE for a
 chunk of Monte Carlo paths.
 
 Every kernel draws its own random numbers from the ``numpy.random.Generator``
-it receives, so no increment arrays are materialised and the work can be split
-into independent chunks (one generator each, spawned from a single seed) that
-run concurrently: the kernels release the GIL. Results are reproducible for a
-given seed and chunk size, independently of the number of threads.
+it receives. Diffusion normals go into a buffer allocated once per call, not
+once per time step (Numba's generator has no ``out`` argument, and a scalar
+``standard_normal()`` is the same ziggurat step as the vector call, so the
+stream matches). The full increment tensor is not materialised. The work can
+be split into independent chunks (one generator each, spawned from a single
+seed) that run concurrently: the kernels release the GIL. Results are
+reproducible for a given seed and chunk size, independently of the number of
+threads.
 
 With ``antithetic=True`` the first ``n_paths // 2`` paths use the drawn
 increments and the second half their negatives; ``n_paths`` must then be even.
 Jump counts are shared by an antithetic pair, jump sizes are drawn per path.
 """
+
+
+@numba.njit(cache=True, nogil=True)
+def _fill_standard_normal(gen, out):
+    """Write ``out.size`` standard normals into ``out`` without allocating."""
+    for i in range(out.size):
+        out[i] = gen.standard_normal()
 
 
 @numba.njit(cache=True, nogil=True)
@@ -29,8 +40,9 @@ def bsm_kernel(gen, n_paths, n_steps, antithetic, log_s0, r, q, sigma, dt):
     log_s = np.full(n_paths, log_s0)
     drift = (r - q - 0.5 * sigma * sigma) * dt
     vol = sigma * math.sqrt(dt)
+    z = np.empty(half)
     for _ in range(n_steps):
-        z = gen.standard_normal(half)
+        _fill_standard_normal(gen, z)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
             off = s_idx * half
@@ -65,9 +77,11 @@ def heston_kernel(
     v = np.full(n_paths, v0)
     rho_bar = math.sqrt(1.0 - rho * rho)
     sdt = math.sqrt(dt)
+    z1 = np.empty(half)
+    z2 = np.empty(half)
     for _ in range(n_steps):
-        z1 = gen.standard_normal(half)
-        z2 = gen.standard_normal(half)
+        _fill_standard_normal(gen, z1)
+        _fill_standard_normal(gen, z2)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
             off = s_idx * half
@@ -93,8 +107,9 @@ def merton_kernel(
     compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
     drift = (r - q - 0.5 * sigma * sigma - compensator) * dt
     vol = sigma * math.sqrt(dt)
+    z = np.empty(half)
     for _ in range(n_steps):
-        z = gen.standard_normal(half)
+        _fill_standard_normal(gen, z)
         counts = gen.poisson(lambda_ * dt, half)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
@@ -134,9 +149,11 @@ def bates_kernel(
     compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
     rho_bar = math.sqrt(1.0 - rho * rho)
     sdt = math.sqrt(dt)
+    z1 = np.empty(half)
+    z2 = np.empty(half)
     for _ in range(n_steps):
-        z1 = gen.standard_normal(half)
-        z2 = gen.standard_normal(half)
+        _fill_standard_normal(gen, z1)
+        _fill_standard_normal(gen, z2)
         counts = gen.poisson(lambda_ * dt, half)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
@@ -179,8 +196,9 @@ def kou_kernel(
     )
     drift = (r - q - 0.5 * sigma * sigma - compensator) * dt
     vol = sigma * math.sqrt(dt)
+    z = np.empty(half)
     for _ in range(n_steps):
-        z = gen.standard_normal(half)
+        _fill_standard_normal(gen, z)
         counts = gen.poisson(lambda_ * dt, half)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
@@ -257,8 +275,9 @@ def sabr_kernel(gen, n_paths, n_steps, antithetic, f0, v0, nu, beta, rho, dt):
     f = np.full(n_paths, f0)
     v = np.full(n_paths, v0)
     sdt = math.sqrt(dt)
+    z = np.empty(half)
     for _ in range(n_steps):
-        z = gen.standard_normal(half)
+        _fill_standard_normal(gen, z)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
             off = s_idx * half
@@ -284,8 +303,9 @@ def sabr_jump_kernel(
     sdt = math.sqrt(dt)
     compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
     jump_drift = math.exp(-compensator * dt)
+    z = np.empty(half)
     for _ in range(n_steps):
-        z = gen.standard_normal(half)
+        _fill_standard_normal(gen, z)
         counts = gen.poisson(lambda_ * dt, half)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
@@ -313,9 +333,10 @@ def dupire_kernel(
     n_signs = 2 if antithetic else 1
     log_s = np.full(n_paths, log_s0)
     sdt = math.sqrt(dt)
+    z = np.empty(half)
     for i in range(n_steps):
         t = i * dt
-        z = gen.standard_normal(half)
+        _fill_standard_normal(gen, z)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
             off = s_idx * half
@@ -414,9 +435,11 @@ def heston_qe_kernel(
         kappa, theta, rho, vol_of_vol, dt
     )
     drift = (r - q) * dt
+    z_s = np.empty(half)
+    z_v = np.empty(half)
     for _ in range(n_steps):
-        z_s = gen.standard_normal(half)
-        z_v = gen.standard_normal(half)
+        _fill_standard_normal(gen, z_s)
+        _fill_standard_normal(gen, z_v)
         u = gen.random(half)
         for s_idx in range(n_signs):
             sign = 1.0 if s_idx == 0 else -1.0
@@ -473,9 +496,11 @@ def bates_qe_kernel(
     )
     compensator = lambda_ * (math.exp(mu_j + 0.5 * sigma_j * sigma_j) - 1.0)
     drift = (r - q - compensator) * dt
+    z_s = np.empty(half)
+    z_v = np.empty(half)
     for _ in range(n_steps):
-        z_s = gen.standard_normal(half)
-        z_v = gen.standard_normal(half)
+        _fill_standard_normal(gen, z_s)
+        _fill_standard_normal(gen, z_v)
         u = gen.random(half)
         counts = gen.poisson(lambda_ * dt, half)
         for s_idx in range(n_signs):
