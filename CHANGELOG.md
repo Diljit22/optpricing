@@ -18,7 +18,6 @@ All notable changes to this project are documented here. The format follows
 
 - The README quickstart is one offline snippet: a Black–Scholes price and a Heston option priced with COS, FFT and Monte Carlo. The dashboard gif is the same demo, compressed from 3.9 MB to 535 KB.
 - Project description is "17 pricing models and 10 techniques. Heston matches QuantLib to 5e-10." Classifiers are Production/Stable and Typing :: Typed. The Heston figure is the measured maximum against QuantLib 1.44 (5e-10 on the scalar engines, 7e-10 on the chain); the largest analytic gap elsewhere is CEV near γ = 1, at 6e-8.
-- Monte Carlo kernels fill a preallocated buffer of standard normals each time step instead of allocating a new array. The Heston QE case (`mc_heston_100k`) is unchanged at 23.3 ms: the normals were not the cost, and the QE uniforms are still allocated inside the step.
 
 ## [3.0.1] - 2026-11-18
 
