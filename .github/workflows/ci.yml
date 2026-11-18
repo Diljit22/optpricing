@@ -18,7 +18,7 @@ env:
 
 jobs:
   lint:
-    name: Lint (ruff)
+    name: Lint (ruff, mypy)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -31,14 +31,17 @@ jobs:
           enable-cache: true
           python-version: "3.12"
 
-      - name: Install lint group
-        run: uv sync --locked --only-group lint
+      - name: Install project + lint group
+        run: uv sync --locked --no-default-groups --group lint
 
       - name: ruff check
         run: uv run --no-sync ruff check . --output-format github
 
       - name: ruff format --check
         run: uv run --no-sync ruff format --check .
+
+      - name: mypy
+        run: uv run --no-sync mypy
 
   test:
     name: Test (py${{ matrix.python-version }}${{ matrix.experimental && ', experimental' || '' }})
@@ -143,6 +146,7 @@ jobs:
           uv pip install --python /tmp/smoke/bin/python "$(ls dist/*.whl)[ui]"
           /tmp/smoke/bin/optpricing --help
           /tmp/smoke/bin/python -c "import optpricing; print(optpricing.__version__)"
+          /tmp/smoke/bin/python -c "import optpricing, pathlib; root = pathlib.Path(optpricing.__file__).parent; assert (root / 'py.typed').is_file(), 'wheel is missing py.typed'"
 
   accuracy:
     # Reprices tests/correctness and compares to benchmarks/accuracy.json.

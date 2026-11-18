@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from optpricing.atoms import Option, OptionType, Rate, Stock, ZeroCouponBond
 from optpricing.models import BaseModel
@@ -130,7 +130,8 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         if "put_price" in kwargs:
             base_params["put_price"] = kwargs["put_price"]
 
-        price = model.price_closed_form(**base_params)
+        # One contract, so a vectorized closed form returns a scalar here.
+        price = cast(float, model.price_closed_form(**base_params))
         if isinstance(option, ZeroCouponBond):
             price *= option.face_value
         return PricingResult(price=price)
@@ -141,6 +142,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h_frac: float = 1e-3,
         **kwargs: Any,
     ) -> float:
         """Overrides GreekMixin to use analytic delta if available.
@@ -166,7 +168,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
                 t=option.maturity,
                 call=(option.option_type is OptionType.CALL),
             )
-        return super().delta(option, stock, model, rate, **kwargs)
+        return super().delta(option, stock, model, rate, h_frac=h_frac, **kwargs)
 
     def gamma(
         self,
@@ -174,6 +176,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h_frac: float = 1e-3,
         **kwargs: Any,
     ) -> float:
         """Overrides GreekMixin to use analytic gamma if available.
@@ -198,7 +201,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
                 q=stock.dividend,
                 t=option.maturity,
             )
-        return super().gamma(option, stock, model, rate, **kwargs)
+        return super().gamma(option, stock, model, rate, h_frac=h_frac, **kwargs)
 
     def vega(
         self,
@@ -206,6 +209,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h: float = 1e-4,
         **kwargs: Any,
     ) -> float:
         """Overrides GreekMixin to use analytic vega if available.
@@ -230,7 +234,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
                 q=stock.dividend,
                 t=option.maturity,
             )
-        return super().vega(option, stock, model, rate, **kwargs)
+        return super().vega(option, stock, model, rate, h=h, **kwargs)
 
     def theta(
         self,
@@ -238,6 +242,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h: float = 1e-5,
         **kwargs: Any,
     ) -> float:
         """Overrides GreekMixin to use analytic theta if available.
@@ -263,7 +268,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
                 t=option.maturity,
                 call=(option.option_type is OptionType.CALL),
             )
-        return super().theta(option, stock, model, rate, **kwargs)
+        return super().theta(option, stock, model, rate, h=h, **kwargs)
 
     def rho(
         self,
@@ -271,6 +276,7 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h: float = 1e-4,
         **kwargs: Any,
     ) -> float:
         """Overrides GreekMixin to use analytic rho if available.
@@ -296,4 +302,4 @@ class ClosedFormTechnique(BaseTechnique, GreekMixin, IVMixin):
                 t=option.maturity,
                 call=(option.option_type is OptionType.CALL),
             )
-        return super().rho(option, stock, model, rate, **kwargs)
+        return super().rho(option, stock, model, rate, h=h, **kwargs)

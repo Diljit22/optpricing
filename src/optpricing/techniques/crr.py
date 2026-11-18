@@ -4,7 +4,10 @@ from typing import Any
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.models import BaseModel
-from optpricing.techniques.base import LatticeTechnique
+from optpricing.techniques.base.lattice_technique import (
+    LatticeTechnique,
+    _required_volatility,
+)
 
 from .kernels.lattice_kernels import _crr_pricer
 
@@ -45,7 +48,7 @@ class CRRTechnique(LatticeTechnique):
         dict[str, Any]
             A dictionary from the kernel containing the price and node values.
         """
-        sigma = model.params.get("sigma", stock.volatility)
+        sigma = _required_volatility(model, stock)
         return _crr_pricer(
             S0=stock.spot,
             K=option.strike,

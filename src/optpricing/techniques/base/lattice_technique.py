@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numbers
 from abc import abstractmethod
 from typing import Any
 
@@ -14,6 +15,17 @@ from .pricing_result import PricingResult
 __doc__ = """
 Provides a base class for lattice-based pricing techniques.
 """
+
+
+def _required_volatility(model: BaseModel, stock: Stock) -> float:
+    """Model ``sigma``, or the stock's volatility when the model has none."""
+    sigma = model.params.get("sigma", stock.volatility)
+    if isinstance(sigma, bool) or not isinstance(sigma, numbers.Real):
+        raise ValueError(
+            "A lattice needs a volatility: set the model parameter 'sigma' "
+            "or stock.volatility."
+        )
+    return float(sigma)
 
 
 class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
@@ -82,6 +94,7 @@ class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h_frac: float = 1e-3,
         **kwargs: Any,
     ) -> float:
         """Calculates delta, using cached nodes if available and valid."""
@@ -99,6 +112,7 @@ class LatticeTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h_frac: float = 1e-3,
         **kwargs: Any,
     ) -> float:
         """Calculates gamma, using cached nodes if available and valid."""

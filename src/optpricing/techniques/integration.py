@@ -215,7 +215,9 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         phi = model.cf(t=T, spot=S, r=r, q=q, **kwargs)
         k_log = np.log(K)
 
-        phi_minus_i = phi(-1j)
+        # Scalar characteristic value at u = -i. Array-valued phi returns a
+        # 0-d array; the probabilities below need a Python complex.
+        phi_minus_i = complex(np.asarray(phi(-1j)).item())
         if self.method == "gauss":
             integral_p2, integral_p1 = self._gauss_integrals(phi, k_log, phi_minus_i)
             if np.abs(phi_minus_i) < 1e-12:
@@ -321,6 +323,7 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
+        h_frac: float = 1e-3,
         **kwargs: Any,
     ) -> float:
         """
@@ -355,4 +358,4 @@ class IntegrationTechnique(BaseTechnique, GreekMixin, IVMixin):
             return delta_val
         else:
             # Fallback to finite difference if analytic delta failed
-            return super().delta(option, stock, model, rate, **kwargs)
+            return super().delta(option, stock, model, rate, h_frac=h_frac, **kwargs)
