@@ -22,6 +22,15 @@ def gen(seed=0):
     return np.random.default_rng(seed)
 
 
+def test_fill_standard_normal_matches_vector_draw():
+    """The reused buffer must consume the generator exactly as standard_normal(n)."""
+    n = 4096
+    out = np.empty(n)
+    mc_kernels._fill_standard_normal(gen(7), out)
+    expected = gen(7).standard_normal(n)
+    np.testing.assert_array_equal(out, expected)
+
+
 def _forward_check(terminal_spot, label, rel=3e-3):
     assert terminal_spot.mean() == pytest.approx(FORWARD, rel=rel), label
 

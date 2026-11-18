@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Monte Carlo kernels fill a preallocated buffer of standard normals each time step instead of allocating a new array. The Heston QE case (`mc_heston_100k`) is unchanged at 23.3 ms: the normals were not the cost, and the QE uniforms are still allocated inside the step.
+
 ## [3.0.1] - 2026-11-18
 
 Publishes the Phase 5 library. `v3.0.0` points at a snapshot commit whose message
