@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import weakref
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import numba
 import numpy as np
@@ -41,7 +41,10 @@ _jitted_surfaces: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 def _jit_vol_surface(func: Callable) -> Callable:
     """The local-volatility surface ``sigma(t, S)`` as a numba function, compiled
     once per Python callable."""
-    if numba.config.DISABLE_JIT or isinstance(func, numba.core.registry.CPUDispatcher):
+    # numba's stubs omit DISABLE_JIT; it is set when the jit is turned off.
+    if getattr(numba.config, "DISABLE_JIT", False) or isinstance(
+        func, numba.core.registry.CPUDispatcher
+    ):
         return func
     jitted = _jitted_surfaces.get(func)
     if jitted is None:
@@ -151,7 +154,9 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
 
         # Dispatch to the correct simulation method
         if getattr(model, "has_exact_sampler", False):
-            ST = model.sample_terminal_spot(S0, r, T, self.n_paths, q=q, rng=self.rng)
+            ST = getattr(model, "sample_terminal_spot")(
+                S0, r, T, self.n_paths, q=q, rng=self.rng
+            )
         elif getattr(model, "is_pure_levy", False):
             ST = self._simulate_levy_terminal(model, S0, r, q, T)
         else:
@@ -175,6 +180,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
     ) -> tuple[Callable, dict[str, Any]]:
         """Selects the appropriate JIT-compiled kernel and prepares its parameters."""
         p = model.params
+        kernel_params: dict[str, Any]
 
         if getattr(model, "is_sabr", False):
             # alpha = initial volatility sigma_0 (overridable via the legacy
@@ -197,7 +203,10 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
         kernel_params = {"r": r, "q": q, "dt": dt}
 
         if getattr(model, "is_local_vol", False):  # Dupire
-            kernel_params["vol_surface_func"] = _jit_vol_surface(p["vol_surface"])
+            # Dupire stores a callable in params; the base annotation is float.
+            kernel_params["vol_surface_func"] = _jit_vol_surface(
+                cast(Callable[..., Any], p["vol_surface"])
+            )
             return dupire_kernel, kernel_params
 
         if model.has_variance_process and model.has_jumps:  # Bates
@@ -275,10 +284,11 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             model, r, q, dt, **kwargs
         )
         is_sabr = getattr(model, "is_sabr", False)
+        shift = float(model.params.get("shift", 0.0)) if is_sabr else 0.0
         if is_sabr:
             # SABR is specified on the (shifted) forward; the kernel returns the
             # terminal forward, which is the terminal spot.
-            kernel_params["f0"] = S0 * math.exp((r - q) * T) + model.shift
+            kernel_params["f0"] = S0 * math.exp((r - q) * T) + shift
         else:
             kernel_params["log_s0"] = math.log(S0)
 
@@ -297,7 +307,7 @@ class MonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             antithetic=self.antithetic,
             **kernel_params,
         )
-        return terminal - model.shift if is_sabr else np.exp(terminal)
+        return terminal - shift if is_sabr else np.exp(terminal)
 
     def _simulate_levy_terminal(
         self,

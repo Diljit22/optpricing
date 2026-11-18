@@ -57,8 +57,7 @@ def heston_base() -> HestonModel:
     )
 
 
-@pytest.fixture
-def cf_models() -> dict[str, tuple]:
+def cf_model_cases() -> dict[str, tuple]:
     """Every model with a characteristic function, with its extra pricing kwargs."""
     return {
         "BSM": (BSMModel(params={"sigma": 0.2}), {}),
@@ -126,3 +125,8 @@ def cf_models() -> dict[str, tuple]:
             {},
         ),
     }
+
+
+@pytest.fixture
+def cf_models() -> dict[str, tuple]:
+    return cf_model_cases()

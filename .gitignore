@@ -26,7 +26,9 @@ htmlcov/
 
 # Documentation artifacts
 site/
-benchmarks/results/
+# Ad-hoc benchmark runs stay local. The README baseline is the one tracked file.
+benchmarks/results/*
+!benchmarks/results/2026-11-18-arm64.json
 
 # Live quote recordings (`optpricing data stream`) are local and can be large
 data/live_quotes/

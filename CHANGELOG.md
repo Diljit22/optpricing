@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `benchmarks/accuracy.py` reprints the model × technique errors behind the README. `uv run python benchmarks/accuracy.py` rewrites `benchmarks/accuracy.json` and the tables in `README.md` and `docs/guide/validation.md`; `--check` reprices and fails if a published error moves. The `workflow_dispatch` CI job runs `--check`.
+- A Performance section in the README, filled from `benchmarks/results/2026-11-18-arm64.json`. The machine and git revision are stated once. Each row says what it prices, and a QuantLib 1.44 column times that contract with QuantLib's own engine. The Black–Scholes cell calls `recalculate()` before each of the 1,000 prices, because `NPV()` caches an unchanged option. A note under the table records where QuantLib is faster, the one-core Monte Carlo time, and that the chain is five COS expansions. American lattice cases `crr_am_1000`, `crr_am_5000` and `lr_am_5000` are in the suite. `tests/test_published_numbers.py` checks both tables against the JSON.
+- `docs/guide/methods.md` (BSM, the Heston little-trap characteristic function, COS, Carr–Madan with Lord–Kahl damping, Crank–Nicolson with Rannacher startup, Leisen–Reimer, LSMC, Andersen QE) and `ARCHITECTURE.md`.
+- `examples/european_options_benchmark.py` prices characteristic-function models with `COSTechnique`.
+- `src/optpricing/py.typed`. CI runs mypy 2.4.1 on `atoms`, `models`, `techniques` and `calibration` (not the dashboard) and the wheel build checks that `py.typed` is packaged.
+
+### Changed
+
+- The README quickstart is one offline snippet: a Black–Scholes price and a Heston option priced with COS, FFT and Monte Carlo. The dashboard gif is the same demo, compressed from 3.9 MB to 535 KB.
+- Project description is "17 pricing models and 10 techniques. Heston's absolute price error against QuantLib is at most 5e-10." Classifiers are Production/Stable and Typing :: Typed. The Heston figure is the measured maximum absolute price error against QuantLib 1.44 (5e-10 on the scalar engines, 7e-10 on the chain); the largest analytic gap elsewhere is CEV near γ = 1, at 6e-8.
+
 ## [3.0.1] - 2026-11-18
 
 Publishes the Phase 5 library. `v3.0.0` points at a snapshot commit whose message

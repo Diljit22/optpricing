@@ -1,0 +1,682 @@
+{
+  "rows": [
+    {
+      "model": "Heston",
+      "technique": "COS",
+      "reference": "QuantLib 1.44 AnalyticHestonEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 18,
+      "max_abs_error": 4.983542467584812e-10,
+      "worst_label": "atm_put"
+    },
+    {
+      "model": "Heston",
+      "technique": "Gauss-Legendre",
+      "reference": "QuantLib 1.44 AnalyticHestonEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 18,
+      "max_abs_error": 4.983187196216932e-10,
+      "worst_label": "atm_put"
+    },
+    {
+      "model": "Heston",
+      "technique": "FFT",
+      "reference": "QuantLib 1.44 AnalyticHestonEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 5,
+      "max_abs_error": 4.983098378374962e-10,
+      "worst_label": "atm_put"
+    },
+    {
+      "model": "Heston",
+      "technique": "chain COS",
+      "reference": "QuantLib 1.44 AnalyticHestonEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 4,
+      "max_abs_error": 7.013398525129722e-10,
+      "worst_label": "T=0.0273973 K=110"
+    },
+    {
+      "model": "Heston",
+      "technique": "chain Gauss-Legendre",
+      "reference": "QuantLib 1.44 AnalyticHestonEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 4,
+      "max_abs_error": 4.076045057033184e-11,
+      "worst_label": "T=0.10137 K=110"
+    },
+    {
+      "model": "NIG",
+      "technique": "COS",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 8.15756351357777e-11,
+      "worst_label": "T=0.1 K=90"
+    },
+    {
+      "model": "NIG",
+      "technique": "Gauss-Legendre",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 8.16040568452081e-11,
+      "worst_label": "T=0.1 K=90"
+    },
+    {
+      "model": "NIG",
+      "technique": "chain COS",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 5.217013487879285e-10,
+      "worst_label": "T=0.1 K=100"
+    },
+    {
+      "model": "NIG",
+      "technique": "chain Gauss-Legendre",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 8.15756351357777e-11,
+      "worst_label": "T=0.1 K=90"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "COS",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 1,
+      "max_abs_error": 1.638023050531956e-11,
+      "worst_label": "T=0.1 K=100"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "Gauss-Legendre",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 1,
+      "max_abs_error": 1.6408652214749964e-11,
+      "worst_label": "T=0.1 K=100"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "chain COS",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 1,
+      "max_abs_error": 3.526645642182302e-11,
+      "worst_label": "T=0.1 K=100"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "chain Gauss-Legendre",
+      "reference": "COS, N=2^18 (Fang and Oosterlee truncation)",
+      "family": "literature",
+      "n_cases": 1,
+      "max_abs_error": 1.6415757642107565e-11,
+      "worst_label": "T=0.1 K=100"
+    },
+    {
+      "model": "Kou",
+      "technique": "COS",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 2.2733814830644405e-11,
+      "worst_label": "K=80 put"
+    },
+    {
+      "model": "Kou",
+      "technique": "Gauss-Legendre",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 2.269517906938745e-11,
+      "worst_label": "K=80 put"
+    },
+    {
+      "model": "NIG",
+      "technique": "COS",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 4.529887576154579e-11,
+      "worst_label": "K=100 call"
+    },
+    {
+      "model": "NIG",
+      "technique": "Gauss-Legendre",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 4.5355719180406595e-11,
+      "worst_label": "K=100 call"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "COS",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 4.289724131467665e-11,
+      "worst_label": "K=100 call"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "Gauss-Legendre",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 4.296119016089506e-11,
+      "worst_label": "K=100 call"
+    },
+    {
+      "model": "VG",
+      "technique": "COS",
+      "reference": "Fang and Oosterlee (2008)",
+      "family": "literature",
+      "n_cases": 1,
+      "max_abs_error": 2.0187229665680206e-10,
+      "worst_label": "VG"
+    },
+    {
+      "model": "VG",
+      "technique": "Gauss-Legendre",
+      "reference": "Fang and Oosterlee (2008)",
+      "family": "literature",
+      "n_cases": 1,
+      "max_abs_error": 2.020854594775301e-10,
+      "worst_label": "VG"
+    },
+    {
+      "model": "CGMY",
+      "technique": "COS",
+      "reference": "Fang and Oosterlee (2008)",
+      "family": "literature",
+      "n_cases": 2,
+      "max_abs_error": 4.768239136865304e-10,
+      "worst_label": "CGMY Y=1.5"
+    },
+    {
+      "model": "CGMY",
+      "technique": "Gauss-Legendre",
+      "reference": "Fang and Oosterlee (2008)",
+      "family": "literature",
+      "n_cases": 2,
+      "max_abs_error": 4.763833771903592e-10,
+      "worst_label": "CGMY Y=1.5"
+    },
+    {
+      "model": "Kou",
+      "technique": "FFT",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 6,
+      "max_abs_error": 2.6986413104168605e-11,
+      "worst_label": "kou_eta1_2.5 K=100"
+    },
+    {
+      "model": "CGMY",
+      "technique": "FFT",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 4,
+      "max_abs_error": 5.332339014785248e-10,
+      "worst_label": "cgmy_fo_y1.98 K=100"
+    },
+    {
+      "model": "NIG",
+      "technique": "FFT",
+      "reference": "COS, N=2^18, on the paper characteristic function",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 4.4998671455687145e-11,
+      "worst_label": "nig_skewed K=80"
+    },
+    {
+      "model": "VG",
+      "technique": "COS",
+      "reference": "COS, N=2^22, fixed range",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 1.1034116054187137e-07,
+      "worst_label": "T=0.05 K=100"
+    },
+    {
+      "model": "CGMY",
+      "technique": "COS",
+      "reference": "COS, N=2^22, fixed range",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 5.265881852789533e-07,
+      "worst_label": "T=0.05 K=100"
+    },
+    {
+      "model": "Bates",
+      "technique": "COS",
+      "reference": "QuantLib 1.44 BatesEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 6,
+      "max_abs_error": 4.4224179873708636e-11,
+      "worst_label": "kappa=0.3 K=100"
+    },
+    {
+      "model": "Bates",
+      "technique": "Gauss-Legendre",
+      "reference": "QuantLib 1.44 BatesEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 8,
+      "max_abs_error": 3.623430444577025e-10,
+      "worst_label": "otm_put"
+    },
+    {
+      "model": "Merton",
+      "technique": "closed form",
+      "reference": "Merton (1976) series, 80 terms",
+      "family": "literature",
+      "n_cases": 2,
+      "max_abs_error": 4.590519075975408e-10,
+      "worst_label": "otm_put"
+    },
+    {
+      "model": "Merton",
+      "technique": "Gauss-Legendre",
+      "reference": "Merton (1976) series, 80 terms",
+      "family": "literature",
+      "n_cases": 2,
+      "max_abs_error": 4.797979791248963e-10,
+      "worst_label": "otm_put"
+    },
+    {
+      "model": "Merton",
+      "technique": "closed form",
+      "reference": "Gil-Pelaez quadrature",
+      "family": "internal",
+      "n_cases": 1,
+      "max_abs_error": 1.0158984764530032e-11,
+      "worst_label": "lambda T = 240"
+    },
+    {
+      "model": "Vasicek",
+      "technique": "closed form",
+      "reference": "QuantLib 1.44 discount bond",
+      "family": "quantlib-analytic",
+      "n_cases": 4,
+      "max_abs_error": 4.9063753060352155e-11,
+      "worst_label": "vasicek_10y face=100"
+    },
+    {
+      "model": "CIR",
+      "technique": "closed form",
+      "reference": "QuantLib 1.44 discount bond",
+      "family": "quantlib-analytic",
+      "n_cases": 4,
+      "max_abs_error": 4.092004513012171e-11,
+      "worst_label": "cir_10y face=100"
+    },
+    {
+      "model": "Black's approximation",
+      "technique": "closed form",
+      "reference": "Hull, Black's approximation",
+      "family": "literature",
+      "n_cases": 4,
+      "max_abs_error": 4.767786165871257e-11,
+      "worst_label": "kwargs order=-1"
+    },
+    {
+      "model": "Perpetual put",
+      "technique": "closed form",
+      "reference": "Merton (1973) perpetual put",
+      "family": "literature",
+      "n_cases": 8,
+      "max_abs_error": 7.105427357601002e-15,
+      "worst_label": "sigma=0.4 S=120"
+    },
+    {
+      "model": "CEV",
+      "technique": "closed form",
+      "reference": "Hull CEV formula (zero rates also QuantLib 1.44)",
+      "family": "literature",
+      "n_cases": 3,
+      "max_abs_error": 4.227098671094609e-10,
+      "worst_label": "gamma_0.5_zero_rates"
+    },
+    {
+      "model": "CEV",
+      "technique": "Monte Carlo",
+      "reference": "Hull CEV formula (zero rates also QuantLib 1.44)",
+      "family": "monte-carlo",
+      "n_cases": 3,
+      "max_abs_error": 0.00860713820524417,
+      "worst_label": "gamma_0.8_with_dividend"
+    },
+    {
+      "model": "CEV",
+      "technique": "closed form",
+      "reference": "QuantLib 1.44 AnalyticCEVEngine",
+      "family": "quantlib-analytic",
+      "n_cases": 27,
+      "max_abs_error": 6.005593533586762e-08,
+      "worst_label": "gamma=0.9995 K=120"
+    },
+    {
+      "model": "BSM",
+      "technique": "CRR",
+      "reference": "BSM closed form",
+      "family": "internal",
+      "n_cases": 1,
+      "max_abs_error": 0.0019695301621407424,
+      "worst_label": "S=K=100"
+    },
+    {
+      "model": "BSM",
+      "technique": "Leisen-Reimer",
+      "reference": "BSM closed form",
+      "family": "internal",
+      "n_cases": 1,
+      "max_abs_error": 1.4600141149401225e-06,
+      "worst_label": "S=K=100"
+    },
+    {
+      "model": "BSM",
+      "technique": "TOPM",
+      "reference": "BSM closed form",
+      "family": "internal",
+      "n_cases": 1,
+      "max_abs_error": 0.0009781751964421659,
+      "worst_label": "S=K=100"
+    },
+    {
+      "model": "BSM",
+      "technique": "Crank-Nicolson",
+      "reference": "BSM closed form",
+      "family": "internal",
+      "n_cases": 1,
+      "max_abs_error": 0.005443525734209587,
+      "worst_label": "S=K=100"
+    },
+    {
+      "model": "BSM American",
+      "technique": "CRR",
+      "reference": "QuantLib 1.44 FdBlackScholesVanillaEngine",
+      "family": "quantlib-fd",
+      "n_cases": 2,
+      "max_abs_error": 0.0004783552220466447,
+      "worst_label": "atm"
+    },
+    {
+      "model": "BSM American",
+      "technique": "Leisen-Reimer",
+      "reference": "QuantLib 1.44 FdBlackScholesVanillaEngine",
+      "family": "quantlib-fd",
+      "n_cases": 2,
+      "max_abs_error": 0.0002890112191389349,
+      "worst_label": "atm"
+    },
+    {
+      "model": "BSM American",
+      "technique": "TOPM",
+      "reference": "QuantLib 1.44 FdBlackScholesVanillaEngine",
+      "family": "quantlib-fd",
+      "n_cases": 2,
+      "max_abs_error": 0.0005643588980799308,
+      "worst_label": "itm_with_dividend"
+    },
+    {
+      "model": "BSM American",
+      "technique": "LSMC",
+      "reference": "QuantLib 1.44 FdBlackScholesVanillaEngine",
+      "family": "monte-carlo",
+      "n_cases": 2,
+      "max_abs_error": 0.021148953393481662,
+      "worst_label": "atm"
+    },
+    {
+      "model": "BSM",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.7763568394002505e-13,
+      "worst_label": "K=80 T=0.25"
+    },
+    {
+      "model": "BSM",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 4.263256414560601e-14,
+      "worst_label": "K=120 T=2"
+    },
+    {
+      "model": "BSM",
+      "technique": "COS",
+      "reference": "BSM closed form",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 6.394884621840902e-14,
+      "worst_label": "K=120 T=2"
+    },
+    {
+      "model": "Heston",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 7.815970093361102e-14,
+      "worst_label": "K=80 T=0.25"
+    },
+    {
+      "model": "Heston",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 4.263256414560601e-14,
+      "worst_label": "K=100 T=1"
+    },
+    {
+      "model": "Merton",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.6342482922482304e-13,
+      "worst_label": "K=80 T=0.25"
+    },
+    {
+      "model": "Merton",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 6.394884621840902e-14,
+      "worst_label": "K=100 T=1"
+    },
+    {
+      "model": "Bates",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.1901590823981678e-13,
+      "worst_label": "K=100 T=1"
+    },
+    {
+      "model": "Bates",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 4.263256414560601e-14,
+      "worst_label": "K=120 T=2"
+    },
+    {
+      "model": "Kou",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.1736744909285335e-10,
+      "worst_label": "K=80 T=0.25"
+    },
+    {
+      "model": "Kou",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.4210854715202004e-14,
+      "worst_label": "K=120 T=2"
+    },
+    {
+      "model": "VG",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.5365486660812167e-13,
+      "worst_label": "K=120 T=2"
+    },
+    {
+      "model": "VG",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 6.218596126927878e-08,
+      "worst_label": "K=80 T=0.25"
+    },
+    {
+      "model": "NIG",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.0125233984581428e-13,
+      "worst_label": "K=100 T=1"
+    },
+    {
+      "model": "NIG",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 7.105427357601002e-14,
+      "worst_label": "K=100 T=1"
+    },
+    {
+      "model": "CGMY",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.7053025658242404e-13,
+      "worst_label": "K=100 T=1"
+    },
+    {
+      "model": "CGMY",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 4.263256414560601e-14,
+      "worst_label": "K=100 T=1"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "FFT",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 1.7763568394002505e-13,
+      "worst_label": "K=80 T=0.25"
+    },
+    {
+      "model": "Hyperbolic",
+      "technique": "Gauss-Legendre",
+      "reference": "COSTechnique",
+      "family": "internal",
+      "n_cases": 3,
+      "max_abs_error": 6.394884621840902e-14,
+      "worst_label": "K=120 T=2"
+    }
+  ],
+  "convergence": [
+    {
+      "scheme": "CRR",
+      "resolutions": [
+        200,
+        400,
+        800
+      ],
+      "slopes": [
+        -0.9995449363538448,
+        -0.9997735769417131
+      ],
+      "mean_slope": -0.9996592566477789,
+      "theory": -1.0
+    },
+    {
+      "scheme": "TOPM",
+      "resolutions": [
+        200,
+        400,
+        800
+      ],
+      "slopes": [
+        -0.9997713526880101,
+        -0.9998859537744509
+      ],
+      "mean_slope": -0.9998286532312305,
+      "theory": -1.0
+    },
+    {
+      "scheme": "Leisen-Reimer",
+      "resolutions": [
+        101,
+        201,
+        401
+      ],
+      "slopes": [
+        -1.9888469048470758,
+        -1.9943584393345297
+      ],
+      "mean_slope": -1.9916026720908029,
+      "theory": -2.0
+    },
+    {
+      "scheme": "Crank-Nicolson",
+      "resolutions": [
+        100,
+        200,
+        400
+      ],
+      "slopes": [
+        -2.046046877815875,
+        -1.9792112943710656
+      ],
+      "mean_slope": -2.0126290860934706,
+      "theory": -2.0
+    },
+    {
+      "scheme": "Monte Carlo",
+      "resolutions": [
+        2048,
+        32768
+      ],
+      "slopes": [
+        -0.4503379313826418
+      ],
+      "mean_slope": -0.4503379313826418,
+      "theory": -0.5
+    }
+  ],
+  "headlines": {
+    "quantlib_analytic_max_abs_error": 6.005593533586762e-08,
+    "heston_quantlib_max_abs_error": 7.013398525129722e-10,
+    "fft_vs_cos_max_abs_error": 1.1736744909285335e-10
+  }
+}

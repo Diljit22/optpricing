@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -122,7 +122,8 @@ class BlacksApproxModel(BaseModel):
             prices_early_exercise.append(price_at_t_i)
 
         max_early_price = max(prices_early_exercise) if prices_early_exercise else 0.0
-        return max(price_hold_to_maturity, max_early_price)
+        # Scalar strikes: the BSM solver's array return type is a float here.
+        return cast(float, max(price_hold_to_maturity, max_early_price))
 
     #  Abstract Method Implementations
     def _cf_impl(self, *args: Any, **kwargs: Any) -> Any:

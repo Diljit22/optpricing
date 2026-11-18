@@ -255,7 +255,12 @@ def fit_rate_and_dividend(
 
     def parity_error(x: np.ndarray) -> float:
         r = x[0]
-        q = q_fixed if 1 not in free_param_indices else x[1]
+        if 1 in free_param_indices:
+            q = float(x[1])
+        elif q_fixed is None:
+            raise RuntimeError("q_fixed is required when dividend yield is held fixed")
+        else:
+            q = float(q_fixed)
         parity_rhs = spot * np.exp(-q * atm_pairs["maturity"]) - atm_pairs[
             "strike"
         ] * np.exp(-r * atm_pairs["maturity"])

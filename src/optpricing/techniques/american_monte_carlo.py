@@ -118,7 +118,7 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
     ) -> tuple[Callable, dict[str, Any]]:
         """Selects the JIT-compiled path kernel and prepares its parameters."""
         p = model.params
-        kernel_params = {"r": r, "q": q, "dt": dt}
+        kernel_params: dict[str, Any] = {"r": r, "q": q, "dt": dt}
 
         if isinstance(model, SABRModel | SABRJumpModel):
             kernel_params.update(
@@ -214,10 +214,11 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             model, r, q, dt, **kwargs
         )
         is_sabr = isinstance(model, SABRModel | SABRJumpModel)
+        shift = float(model.params.get("shift", 0.0)) if is_sabr else 0.0
         if is_sabr:
             # SABR evolves the (shifted) forward; the path kernels convert the
             # forward paths back to spot paths for the exercise decision.
-            kernel_params["f0"] = S0 * math.exp((r - q) * T) + model.shift
+            kernel_params["f0"] = S0 * math.exp((r - q) * T) + shift
         else:
             kernel_params["log_s0"] = math.log(S0)
 
@@ -238,13 +239,11 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             **kernel_params,
         )
 
-        if is_sabr and model.shift:
+        if is_sabr and shift:
             # The kernels discount the shifted forward; remove the shift so the
             # exercise decision sees spot prices.
             horizon = self.n_steps * dt
             times = np.arange(self.n_steps + 1) * dt
-            paths = (
-                paths - (model.shift * np.exp(-(r - q) * (horizon - times)))[:, None]
-            )
+            paths = paths - (shift * np.exp(-(r - q) * (horizon - times)))[:, None]
 
         return paths

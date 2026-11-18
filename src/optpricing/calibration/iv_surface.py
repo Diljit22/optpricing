@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -110,7 +111,7 @@ class VolatilitySurface:
         stock: Stock,
         rate: Rate,
         model: BaseModel,
-        technique: BaseTechnique = None,
+        technique: BaseTechnique | None = None,
         *,
         allow_mc: bool = False,
     ) -> VolatilitySurface:
@@ -150,7 +151,7 @@ class VolatilitySurface:
             model=model,
             rate=rate,
             allow_mc=allow_mc,
-            **model.params,
+            **cast("dict[str, Any]", model.params),
         )
 
         model_ivs = self._calculate_ivs(

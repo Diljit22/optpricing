@@ -4,7 +4,10 @@ from typing import Any
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
 from optpricing.models import BaseModel
-from optpricing.techniques.base import LatticeTechnique
+from optpricing.techniques.base.lattice_technique import (
+    LatticeTechnique,
+    _required_volatility,
+)
 
 from .kernels.lattice_kernels import _topm_pricer
 
@@ -45,14 +48,14 @@ class TOPMTechnique(LatticeTechnique):
         dict[str, Any]
             A dictionary from the kernel containing the price and node values.
         """
-        sigma = model.params.get("sigma", stock.volatility)
+        vol = _required_volatility(model, stock)
         return _topm_pricer(
             S0=stock.spot,
             K=option.strike,
             T=option.maturity,
             r=rate.get_rate(option.maturity),
             q=stock.dividend,
-            vol=sigma,
+            vol=vol,
             N=self.steps,
             is_call=(option.option_type is OptionType.CALL),
             is_am=self.is_american,

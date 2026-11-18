@@ -10,8 +10,13 @@ __doc__ = """
 Defines the abstract base class for all option pricing models.
 """
 
-CF = Callable[[np.ndarray], np.ndarray]
-PDECoeffs = Callable[[np.ndarray, float], tuple[np.ndarray, np.ndarray, np.ndarray]]
+# Characteristic functions are evaluated at real frequencies and at the
+# imaginary shifts u - i that Gil-Pelaez and Carr-Madan need.
+CF = Callable[[np.ndarray | complex], np.ndarray | complex]
+# Spot grid, risk-free rate, dividend yield -> (diffusion, convection, discount).
+PDECoeffs = Callable[
+    [np.ndarray, float, float], tuple[np.ndarray, np.ndarray, np.ndarray]
+]
 
 
 class BaseModel(ABC):
@@ -103,7 +108,7 @@ class BaseModel(ABC):
         return self._cf_impl(**kwargs)
 
     @abstractmethod
-    def _cf_impl(self, **kwargs: Any) -> CF:
+    def _cf_impl(self, *args: Any, **kwargs: Any) -> CF:
         """Internal implementation of the characteristic function."""
         ...
 
@@ -135,7 +140,7 @@ class BaseModel(ABC):
         return self._sde_impl(**kwargs)
 
     @abstractmethod
-    def _sde_impl(self, **kwargs: Any) -> Callable:
+    def _sde_impl(self, *args: Any, **kwargs: Any) -> Callable[..., Any]:
         """Internal implementation for returning an SDE sampler."""
         ...
 
@@ -153,13 +158,15 @@ class BaseModel(ABC):
         return self._pde_impl(**kwargs)
 
     @abstractmethod
-    def _pde_impl(self, **kwargs: Any) -> PDECoeffs:
+    def _pde_impl(self, *args: Any, **kwargs: Any) -> PDECoeffs:
         """Internal implementation for returning PDE coefficients."""
         ...
 
-    def price_closed_form(self, *args, **kwargs) -> float:
+    def price_closed_form(self, *args: Any, **kwargs: Any) -> float | np.ndarray:
         """
         Compute the option price using a closed-form solution, if available.
+
+        Array inputs for strike (and, where supported, call/put) return an array.
 
         Raises
         ------
@@ -173,7 +180,7 @@ class BaseModel(ABC):
         return self._closed_form_impl(*args, **kwargs)
 
     @abstractmethod
-    def _closed_form_impl(self, *args, **kwargs) -> float:
+    def _closed_form_impl(self, *args: Any, **kwargs: Any) -> float | np.ndarray:
         """Internal implementation of the closed-form pricing formula."""
         ...
 

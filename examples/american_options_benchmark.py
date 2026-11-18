@@ -152,7 +152,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             "techniques": {"American MC (LSMC)": american_mc},
         },
         {
-            "model_name": "KOU",
+            "model_name": "Kou",
             "model_instance": KouModel(
                 params={
                     "sigma": 0.15,
