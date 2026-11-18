@@ -40,7 +40,7 @@ the markdown no longer matches the JSON.
 | VG | Gauss-Legendre | Fang and Oosterlee (2008) | 1 | 2.0e-10 | VG |
 | CGMY | COS | Fang and Oosterlee (2008) | 2 | 4.8e-10 | CGMY Y=1.5 |
 | CGMY | Gauss-Legendre | Fang and Oosterlee (2008) | 2 | 4.8e-10 | CGMY Y=1.5 |
-| KOU | FFT | COS, N=2^18, on the paper characteristic function | 6 | 2.7e-11 | kou_eta1_2.5 K=100 |
+| Kou | FFT | COS, N=2^18, on the paper characteristic function | 6 | 2.7e-11 | kou_eta1_2.5 K=100 |
 | CGMY | FFT | COS, N=2^18, on the paper characteristic function | 4 | 5.3e-10 | cgmy_fo_y1.98 K=100 |
 | NIG | FFT | COS, N=2^18, on the paper characteristic function | 3 | 4.5e-11 | nig_skewed K=80 |
 | VG | COS | COS, N=2^22, fixed range | 3 | 1.1e-07 | T=0.05 K=100 |

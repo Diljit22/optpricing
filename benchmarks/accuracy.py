@@ -305,9 +305,12 @@ def collect() -> tuple[list[Obs], list[dict]]:
         got = _price(
             fft, make_option(k, 1.0), Stock(spot=100.0, dividend=q), model, Rate(rate=r)
         )
-        model_name = name.split("_", 1)[0].upper()
-        if model_name == "CGMY":
-            model_name = "CGMY"
+        model_name = {
+            "kou": "Kou",
+            "cgmy": "CGMY",
+            "nig": "NIG",
+            "vg": "VG",
+        }.get(name.split("_", 1)[0], name.split("_", 1)[0])
         _observe(
             rows,
             model=model_name,

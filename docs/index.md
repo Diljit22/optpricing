@@ -1,6 +1,6 @@
 # OptPricing: A Quantitative Finance Library for Derivative Pricing and Analysis
 
-17 pricing models and 10 techniques. Heston matches QuantLib 1.44 to 5e-10, and a 400-option Heston chain prices in 1.55 ms on Apple Silicon. The model is the distribution and the technique is the algorithm: `technique.price(option, stock, model, rate)`.
+Python library for pricing, calibrating, and analyzing derivatives. 17 pricing models and 10 techniques. On the test contracts, Heston's absolute price error against QuantLib 1.44 is at most 5e-10, and a 400-option Heston chain prices in 1.57 ms on Apple Silicon. The model is the distribution and the technique is the algorithm: `technique.price(option, stock, model, rate)`.
 
 The formulas are on the [Methods](guide/methods.md) page and the measured errors are on [Validation](guide/validation.md).
 

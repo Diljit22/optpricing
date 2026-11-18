@@ -1,89 +1,101 @@
 {
-  "timestamp": "2026-11-18T07:06:39+00:00",
-  "git": "8982010-dirty",
+  "timestamp": "2026-11-18T08:00:44+00:00",
+  "git": "ddcc4a9",
   "platform": "macOS-26.6.2-arm64-arm-64bit",
   "machine": "arm64",
   "python": "3.12.15",
   "numpy": "2.5.4",
   "scipy": "1.18.1",
   "numba": "0.68.1",
+  "quantlib": "1.44",
   "results": {
     "bsm_closed_form_x1000": {
-      "description": "1000 closed-form BSM prices",
-      "median_ms": 1.3408749946393073,
-      "min_ms": 1.308124978095293,
+      "description": "1,000 European calls, closed form, \u03c3 = 0.2",
+      "median_ms": 1.3660840049851686,
+      "min_ms": 1.3340419973246753,
       "repeats": 15,
-      "value": 9.826297782739111
+      "value": 9.826297782739111,
+      "quantlib_median_ms": 1.0005
     },
     "heston_fft": {
-      "description": "Carr-Madan FFT, N=4096",
-      "median_ms": 0.35666697658598423,
-      "min_ms": 0.35079100052826107,
+      "description": "one Heston call, Carr\u2013Madan FFT, default grid",
+      "median_ms": 0.35083299735561013,
+      "min_ms": 0.34574998426251113,
       "repeats": 15,
-      "value": 9.966521164343709
+      "value": 9.966521164343709,
+      "quantlib_median_ms": 0.16212501213885844
     },
     "heston_integration": {
-      "description": "Gil-Pelaez quadrature",
-      "median_ms": 0.06175000453367829,
-      "min_ms": 0.06104199565015733,
+      "description": "one Heston call, Gil\u2013Pelaez quadrature",
+      "median_ms": 0.06137500167824328,
+      "min_ms": 0.05941701238043606,
       "repeats": 15,
-      "value": 9.966521164343717
+      "value": 9.966521164343717,
+      "quantlib_median_ms": 0.16212501213885844
     },
     "cn_pde_200x200": {
-      "description": "Crank-Nicolson, 200 x 200 grid",
-      "median_ms": 0.279415980912745,
-      "min_ms": 0.27395901270210743,
+      "description": "one European call, Crank\u2013Nicolson, 200 spot \u00d7 200 time steps",
+      "median_ms": 0.2784999960567802,
+      "min_ms": 0.2738750190474093,
       "repeats": 15,
-      "value": 9.820854257004902
+      "value": 9.820854257004902,
+      "quantlib_median_ms": 0.5649170198012143
     },
     "crr_am_1000": {
-      "description": "American put, CRR, 1000 steps",
-      "median_ms": 11.119583010440692,
-      "min_ms": 9.969083999749273,
+      "description": "American put, CRR, 1,000 steps",
+      "median_ms": 9.947917016688734,
+      "min_ms": 9.86604200443253,
       "repeats": 15,
-      "value": 6.3662042757142325
+      "value": 6.3662042757142325,
+      "quantlib_median_ms": 1.6670000040903687
     },
     "crr_am_5000": {
-      "description": "American put, CRR, 5000 steps",
-      "median_ms": 161.43591699074022,
-      "min_ms": 159.9714999902062,
+      "description": "American put, CRR, 5,000 steps",
+      "median_ms": 160.64583402476273,
+      "min_ms": 159.95591701357625,
       "repeats": 15,
-      "value": 6.366872104746049
+      "value": 6.366872104746049,
+      "quantlib_median_ms": 38.76837500138208
     },
     "lr_am_5000": {
-      "description": "American put, Leisen-Reimer, 5000 steps (run as 5001)",
-      "median_ms": 160.49037501215935,
-      "min_ms": 160.13433298212476,
+      "description": "American put, Leisen\u2013Reimer, 5,001 steps",
+      "median_ms": 161.00129199912772,
+      "min_ms": 160.64579199883156,
       "repeats": 15,
-      "value": 6.367001724491194
+      "value": 6.367001724491194,
+      "quantlib_median_ms": 122.4777500028722
     },
     "mc_bsm_100k": {
-      "description": "Euler GBM, 100k paths x 100 steps, antithetic",
-      "median_ms": 3.1550410203635693,
-      "min_ms": 3.124750015558675,
+      "description": "European call, Euler on log S, 100k paths \u00d7 100 steps, antithetic",
+      "median_ms": 3.360916016390547,
+      "min_ms": 3.3115420083049685,
       "repeats": 15,
-      "value": 9.832225312170982
+      "value": 9.832225312170982,
+      "quantlib_median_ms": 1678.78383299103
     },
     "mc_heston_100k": {
-      "description": "Andersen QE, 100k paths x 100 steps, antithetic",
-      "median_ms": 23.343542008660734,
-      "min_ms": 21.976791991619393,
+      "description": "Heston call, Andersen QE, 100k paths \u00d7 100 steps, antithetic",
+      "median_ms": 23.097084020264447,
+      "min_ms": 21.990666980855167,
       "repeats": 15,
-      "value": 9.956869932199563
+      "value": 9.956869932199563,
+      "quantlib_median_ms": 2079.4924170186277
     },
     "lsmc_bsm_20k": {
-      "description": "Longstaff-Schwartz, 20k paths x 50 steps",
-      "median_ms": 11.816666985396296,
-      "min_ms": 11.530791991390288,
+      "description": "American put, Longstaff\u2013Schwartz degree 2, 20k paths \u00d7 50 steps",
+      "median_ms": 11.761125002522022,
+      "min_ms": 11.490417004097253,
       "repeats": 15,
-      "value": 6.323463221419955
+      "value": 6.323463221419955,
+      "quantlib_median_ms": 205.07854199968278
     },
     "heston_chain_400": {
-      "description": "vectorised COS chain, 400 options (5 maturities x 40 strikes x call/put)",
-      "median_ms": 1.553540991153568,
-      "min_ms": 1.4980419946368784,
+      "description": "400 Heston options, COS, 5 maturities \u00d7 40 strikes \u00d7 call and put",
+      "median_ms": 1.57125000259839,
+      "min_ms": 1.5230419812723994,
       "repeats": 15,
-      "value": 5134.3408990439275
+      "value": 5134.3408990439275,
+      "quantlib_median_ms": 83.66595799452625
     }
   }
 }

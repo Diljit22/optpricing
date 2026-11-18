@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "optpricing"
 dynamic = ["version"]
-description = "17 pricing models and 10 techniques. Heston matches QuantLib to 5e-10."
+description = "17 pricing models and 10 techniques. Heston's absolute price error against QuantLib is at most 5e-10."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

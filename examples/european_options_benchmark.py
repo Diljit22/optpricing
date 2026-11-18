@@ -284,7 +284,7 @@ def get_benchmark_configs() -> list[dict[str, Any]]:
             },
         },
         {
-            "model_name": "KOU",
+            "model_name": "Kou",
             "model_instance": KouModel(
                 params={
                     "sigma": 0.15,

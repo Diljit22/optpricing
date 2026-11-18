@@ -10,7 +10,7 @@
 
 **[Live dashboard](https://optpricing.streamlit.app/)** · **[Documentation](https://diljit22.github.io/optpricing/)**
 
-17 pricing models and 10 techniques. Heston matches QuantLib 1.44 to 5e-10, and a 400-option Heston chain prices in 1.55 ms.
+Python library for pricing, calibrating, and analyzing derivatives. 17 pricing models and 10 techniques. On the contracts in the validation table, Heston's absolute price error against QuantLib 1.44 is at most 5e-10, and a 400-option Heston chain prices in 1.57 ms.
 
 Diljit Singh · [LinkedIn](https://linkedin.com/in/singhdiljit/)
 
@@ -68,7 +68,14 @@ print(f"Heston  COS {cos:.4f}   FFT {fft:.4f}   MC {mc:.4f}")
 print(f"COS - FFT = {cos - fft:.2e}")
 ```
 
-`pip install "optpricing[ui]"` adds the Streamlit dashboard (`optpricing dashboard`). The CLI can price a live chain (`optpricing price --ticker AAPL ...`); that call downloads the chain and needs a network.
+```
+BSM price 9.8263
+delta    0.6118
+Heston  COS 10.2295   FFT 10.2295   MC 10.2258
+COS - FFT = 1.78e-15
+```
+
+The Monte Carlo line is fixed by `seed=1`. Delta, gamma, vega, and implied volatility for a Black–Scholes contract are in [Getting started](docs/guide/getting_started.md).
 
 ---
 
@@ -102,7 +109,7 @@ Maximum absolute error on the contracts in `tests/correctness/`. The reference i
 | VG | Gauss-Legendre | Fang and Oosterlee (2008) | 1 | 2.0e-10 |
 | CGMY | COS | Fang and Oosterlee (2008) | 2 | 4.8e-10 |
 | CGMY | Gauss-Legendre | Fang and Oosterlee (2008) | 2 | 4.8e-10 |
-| KOU | FFT | COS, N=2^18, on the paper characteristic function | 6 | 2.7e-11 |
+| Kou | FFT | COS, N=2^18, on the paper characteristic function | 6 | 2.7e-11 |
 | CGMY | FFT | COS, N=2^18, on the paper characteristic function | 4 | 5.3e-10 |
 | NIG | FFT | COS, N=2^18, on the paper characteristic function | 3 | 4.5e-11 |
 | VG | COS | COS, N=2^22, fixed range | 3 | 1.1e-07 |
@@ -164,23 +171,31 @@ Trees and Monte Carlo are in the table on purpose: an American CRR price is not 
 
 ## Performance
 
-Medians of 15 runs from `benchmarks/run_benchmarks.py`, committed in `benchmarks/results/2026-11-18-arm64.json`. Same machine, same git revision, warm start (the numba compile is not in the median). Descriptions of each case are in that file. `mc_bsm_100k` is Euler on the log-spot, 100k paths by 100 steps, not an exact terminal draw. `lr_am_5000` asks for 5000 steps and the kernel runs 5001, because Leisen–Reimer wants an odd count. `mc_heston_100k` is Andersen's quadratic-exponential scheme.
+Warm start: the numba compile is not in the median. Unless a row says otherwise, the contract is a spot of 100, a strike of 100, one year, a rate of 5%, and a dividend yield of 1%. Black–Scholes volatility is 20%. Heston is v0 = 0.04, κ = 2, θ = 0.05, ρ = −0.7, vol of vol = 0.5. Strikes in the chain run from 60 to 150. The QuantLib column is that library's engine for the same contract, not the same algorithm: `AnalyticEuropeanEngine`, `AnalyticHestonEngine` (the two single-option Heston rows share one timing; tolerance 1e-12 and 100k evaluations), `FdBlackScholesVanillaEngine`, binomial CRR or Leisen–Reimer, `MCEuropeanEngine`, `MCEuropeanHestonEngine`, and `MCAmericanEngine`. Its Monte Carlo engines step a generic path, which is why those rows are seconds. Leisen–Reimer is timed at 5,001 steps on both sides. Reprint from a clean tree, with QuantLib 1.44 available to the interpreter and not added to the project lock:
+
+```bash
+uv run --no-sync --with 'QuantLib==1.44' python benchmarks/run_benchmarks.py --repeats 15 --out benchmarks/results/2026-11-18-arm64.json
+```
 
 <!-- perf-table -->
-| Case | Median (ms) | Machine | git |
-| --- | ---: | --- | --- |
-| `bsm_closed_form_x1000` | 1.34 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `heston_fft` | 0.36 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `heston_integration` | 0.06 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `cn_pde_200x200` | 0.28 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `crr_am_1000` | 11.12 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `crr_am_5000` | 161.44 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `lr_am_5000` | 160.49 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `mc_bsm_100k` | 3.16 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `mc_heston_100k` | 23.34 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `lsmc_bsm_20k` | 11.82 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
-| `heston_chain_400` | 1.55 | macOS-26.6.2-arm64-arm-64bit | `8982010-dirty` |
+Medians of 15 runs on `macOS-26.6.2-arm64-arm-64bit`, git `ddcc4a9`, Python 3.12.15, NumPy 2.5.4, SciPy 1.18.1, Numba 0.68.1. QuantLib 1.44 times the same contract with its own engine.
+
+| Case | Prices | Median (ms) | QuantLib (ms) |
+| --- | --- | ---: | ---: |
+| `bsm_closed_form_x1000` | 1,000 European calls, closed form, σ = 0.2 | 1.37 | 1.00 |
+| `heston_fft` | one Heston call, Carr–Madan FFT, default grid | 0.35 | 0.16 |
+| `heston_integration` | one Heston call, Gil–Pelaez quadrature | 0.06 | 0.16 |
+| `cn_pde_200x200` | one European call, Crank–Nicolson, 200 spot × 200 time steps | 0.28 | 0.56 |
+| `crr_am_1000` | American put, CRR, 1,000 steps | 9.95 | 1.67 |
+| `crr_am_5000` | American put, CRR, 5,000 steps | 160.65 | 38.77 |
+| `lr_am_5000` | American put, Leisen–Reimer, 5,001 steps | 161.00 | 122.48 |
+| `mc_bsm_100k` | European call, Euler on log S, 100k paths × 100 steps, antithetic | 3.36 | 1678.78 |
+| `mc_heston_100k` | Heston call, Andersen QE, 100k paths × 100 steps, antithetic | 23.10 | 2079.49 |
+| `lsmc_bsm_20k` | American put, Longstaff–Schwartz degree 2, 20k paths × 50 steps | 11.76 | 205.08 |
+| `heston_chain_400` | 400 Heston options, COS, 5 maturities × 40 strikes × call and put | 1.57 | 83.67 |
 <!-- /perf-table -->
+
+QuantLib is faster on the CRR and Leisen–Reimer trees, and on one analytic Heston price. The Crank–Nicolson row is the same 200×200 grid. On one core the Black–Scholes Monte Carlo kernel takes 16.59 ms against QuantLib's 1.68 s: the kernel keeps the terminal log-spot, and `MCEuropeanEngine` stores the path. The 3.36 ms in the table is that kernel on 10 cores. The chain is five COS expansions, one per maturity. The 83.67 ms is 400 calls to `AnalyticHestonEngine`, about 0.21 ms each.
 
 ---
 
@@ -188,8 +203,7 @@ Medians of 15 runs from `benchmarks/run_benchmarks.py`, committed in `benchmarks
 
 * **Models.** Stochastic volatility (Heston, SABR), jumps (Merton, Bates, Kou, SABR with jumps), pure Lévy (VG, NIG, CGMY, Hyperbolic), local volatility (CEV, Dupire), rates (Vasicek, CIR), Black's approximation, the perpetual put, and parity / implied rate.
 * **Techniques.** Closed form, COS, Carr–Madan FFT, Gauss–Legendre, Crank–Nicolson, CRR, Leisen–Reimer, trinomial, European Monte Carlo, Longstaff–Schwartz.
-* **Offline chain.** Calibrate and walk a snapshot forward without a live download. `optpricing calibrate`, `backtest`, `tune`.
-* **Dashboard.** [optpricing.streamlit.app](https://optpricing.streamlit.app/).
+* **CLI and dashboard.** `optpricing price` prices one contract from the terminal (`--ticker` downloads a chain and needs a network), and `optpricing calibrate`, `backtest`, and `tune` walk a saved chain without a download; `optpricing dashboard` (the `ui` extra) is the Streamlit app in the gif, also hosted at [optpricing.streamlit.app](https://optpricing.streamlit.app/).
 
 Guides: [Introduction](https://diljit22.github.io/optpricing/guide/introduction/), [Installation](https://diljit22.github.io/optpricing/guide/installation/), [Getting started](https://diljit22.github.io/optpricing/guide/getting_started/), [Methods](docs/guide/methods.md), [Validation](docs/guide/validation.md), [API](https://diljit22.github.io/optpricing/guide/API/), [CLI](https://diljit22.github.io/optpricing/guide/CLI/), [Examples](https://diljit22.github.io/optpricing/guide/examples/).
 

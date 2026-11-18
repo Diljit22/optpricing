@@ -208,7 +208,7 @@
       "worst_label": "CGMY Y=1.5"
     },
     {
-      "model": "KOU",
+      "model": "Kou",
       "technique": "FFT",
       "reference": "COS, N=2^18, on the paper characteristic function",
       "family": "literature",
