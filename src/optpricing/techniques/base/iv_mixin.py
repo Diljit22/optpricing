@@ -10,6 +10,7 @@ from optpricing.models import BSMModel
 if TYPE_CHECKING:
     from optpricing.atoms import Option, Rate, Stock
     from optpricing.models import BaseModel
+    from optpricing.techniques.base.pricing_result import PricingResult
 
 __doc__ = """
 Provides a mixin class for calculating implied volatility.
@@ -24,6 +25,19 @@ class IVMixin:
     This implementation uses Brent's method for speed and precision, with a
     fallback to a more robust Secant method if the initial search fails.
     """
+
+    if TYPE_CHECKING:
+
+        def price(
+            self,
+            option: Option,
+            stock: Stock,
+            model: BaseModel,
+            rate: Rate,
+            **kwargs: Any,
+        ) -> PricingResult:
+            """Provided by the technique. The implied-vol search calls it."""
+            ...
 
     def implied_volatility(
         self,

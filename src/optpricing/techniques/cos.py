@@ -301,7 +301,13 @@ class COSTechnique(BaseTechnique, GreekMixin, IVMixin):
         return PricingResult(price=self._cached_results["price"])
 
     def delta(
-        self, option: Option, stock: Stock, model: BaseModel, rate: Rate, **kwargs: Any
+        self,
+        option: Option,
+        stock: Stock,
+        model: BaseModel,
+        rate: Rate,
+        h_frac: float = 1e-3,
+        **kwargs: Any,
     ) -> float:
         """
         Returns the delta computed with the price, pricing first if the inputs
@@ -316,4 +322,4 @@ class COSTechnique(BaseTechnique, GreekMixin, IVMixin):
         delta_val = self._cached_results.get("delta")
         if delta_val is not None and np.isfinite(delta_val):
             return delta_val
-        return super().delta(option, stock, model, rate, **kwargs)
+        return super().delta(option, stock, model, rate, h_frac=h_frac, **kwargs)

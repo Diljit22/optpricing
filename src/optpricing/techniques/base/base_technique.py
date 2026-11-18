@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-
-import numpy as np
+from typing import Any
 
 from optpricing.atoms import Option, Rate, Stock
 from optpricing.models import BaseModel
@@ -24,19 +23,22 @@ class BaseTechnique(ABC):
     @abstractmethod
     def price(
         self,
-        option: Option | np.ndarray,
+        option: Option,
         stock: Stock,
         model: BaseModel,
         rate: Rate,
-        **kwargs,
-    ) -> PricingResult | np.ndarray:
+        **kwargs: Any,
+    ) -> PricingResult:
         """
-        Calculate the price of an option.
+        Calculate the price of one option.
+
+        A chain is priced by ``price_options_vectorized``, not by passing an
+        array through this method.
 
         Parameters
         ----------
-        option : Option | np.ndarray
-            The option contract(s) to be priced.
+        option : Option
+            The option contract to be priced.
         stock : Stock
             The underlying asset's properties.
         model : BaseModel

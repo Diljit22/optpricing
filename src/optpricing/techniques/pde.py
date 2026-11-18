@@ -234,7 +234,8 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
-        **kwargs,
+        h_frac: float = 1e-3,
+        **kwargs: Any,
     ) -> float:
         """
         Returns the delta from the PDE grid.
@@ -251,7 +252,8 @@ class PDETechnique(BaseTechnique, GreekMixin, IVMixin):
         stock: Stock,
         model: BaseModel,
         rate: Rate,
-        **kwargs,
+        h_frac: float = 1e-3,
+        **kwargs: Any,
     ) -> float:
         """
         Returns the gamma from the PDE grid.

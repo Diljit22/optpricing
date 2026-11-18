@@ -41,6 +41,12 @@ vega = cf_technique.vega(option, stock, bsm_model, rate)
 print(f"Delta: {delta:.4f}")
 print(f"Gamma: {gamma:.4f}")
 print(f"Vega:  {vega:.4f}")
+
+# Implied volatility of that price. Black–Scholes at σ = 0.20 recovers 0.20.
+iv = cf_technique.implied_volatility(
+    option, stock, bsm_model, rate, target_price=result.price
+)
+print(f"Implied volatility: {iv:.4f}")
 ```
 
 ---

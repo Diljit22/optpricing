@@ -152,7 +152,7 @@ def _characteristic_function_chain(
             # Far-from-valid parameter sets can overflow or hit a removable
             # singularity (e.g. Heston at u=-i when rho*xi > kappa); the
             # resulting NaNs are handled by the caller (calibration penalty).
-            phi_all = model.cf(t=T, spot=S, r=r, q=q, **kwargs)(u_all)
+            phi_all = np.asarray(model.cf(t=T, spot=S, r=r, q=q, **kwargs)(u_all))
         twist = layout.twist(i)  # (n_strikes, n_nodes)
 
         # Gil-Pelaez probabilities on the composite Gauss-Legendre rule.
@@ -191,7 +191,9 @@ def _monte_carlo_terminal_spots(
 
     mc = MonteCarloTechnique(n_paths=n_paths, n_steps=n_steps, seed=seed)
     if getattr(model, "has_exact_sampler", False):
-        return model.sample_terminal_spot(S0, r, T, mc.n_paths, q=q, rng=mc.rng)
+        return getattr(model, "sample_terminal_spot")(
+            S0, r, T, mc.n_paths, q=q, rng=mc.rng
+        )
     if getattr(model, "is_pure_levy", False):
         return mc._simulate_levy_terminal(model, S0, r, q, T)
     return mc._simulate_sde_path(model, S0, r, q, T, **kwargs)

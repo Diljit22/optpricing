@@ -14,6 +14,7 @@ Provides a mixin class with default numerical implementations for option Greeks.
 if TYPE_CHECKING:
     from optpricing.atoms import Option, Rate, Stock
     from optpricing.models import BaseModel
+    from optpricing.techniques.base.pricing_result import PricingResult
 
 
 class GreekMixin:
@@ -25,6 +26,19 @@ class GreekMixin:
     It also supports Common Random Numbers (CRN) for variance reduction in
     Monte Carlo-based calculations by checking for a `self.rng` attribute.
     """
+
+    if TYPE_CHECKING:
+
+        def price(
+            self,
+            option: Option,
+            stock: Stock,
+            model: BaseModel,
+            rate: Rate,
+            **kwargs: Any,
+        ) -> PricingResult:
+            """Provided by the technique. Finite differences call it."""
+            ...
 
     def delta(
         self,

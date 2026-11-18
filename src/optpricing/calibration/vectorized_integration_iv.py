@@ -133,7 +133,7 @@ class VectorizedIntegrationIVSolver:
 
             integral_p2, _ = integrate.quad_vec(integrand_p2, 1e-15, self.upper_bound)
 
-            phi_minus_i = phi(-1j)
+            phi_minus_i = np.asarray(phi(-1j))
             phi_minus_i[np.abs(phi_minus_i) < 1e-12] = 1.0
             integral_p1, _ = integrate.quad_vec(integrand_p1, 1e-15, self.upper_bound)
 

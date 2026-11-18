@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from optpricing.models.base import BaseModel
 
@@ -34,7 +34,10 @@ class DupireLocalVolModel(BaseModel):
             A dictionary of model parameters. If None, a default constant
             volatility surface is used. Defaults to None.
         """
-        super().__init__(params or self.default_params)
+        # The surface is a callable. BaseModel.params is typed as floats
+        # because every other model stores numbers; the Monte Carlo kernel
+        # casts vol_surface back to a callable.
+        super().__init__(cast("dict[str, float]", params or self.default_params))
 
     def _validate_params(self) -> None:
         if "vol_surface" not in self.params or not callable(self.params["vol_surface"]):
