@@ -6,6 +6,10 @@ references. Each test pins a bug that was found in the Phase 2 audit.
 from __future__ import annotations
 
 import math
+import os
+import subprocess
+import sys
+import textwrap
 
 import numba
 import numpy as np
@@ -247,9 +251,10 @@ def test_lsmc_is_homogeneous_in_spot_and_strike(degree, rel):
     The paths scale with the spot, so P(cS, cK) = c P(S, K) path by path.
     Regression: on raw powers of S the normal equations break down at high
     spot levels; the pre-fix code gave 287.3 instead of ~318 for S = K = 5000
-    at degree 9 (-10 %), while degrees 2-7 still looked fine. The monomial
-    basis in S/K is itself ill-conditioned from degree ~7 (Hilbert-like Gram
-    matrix): rounding moves the degree-9 price by ~0.1 %, hence the tolerance.
+    at degree 9 (-10 %), while degrees 2-7 still looked fine. Monomials in
+    S/K are a Hilbert-like Gram and, once the reduction was split into 64
+    chunks, moved the degree-5 ratio by 2e-4. The basis is now S/K - 1,
+    the same polynomial span; these tolerances still cover that failure.
     """
     bsm, rate = BSMModel(params={"sigma": 0.2}), Rate(rate=0.05)
 
@@ -268,6 +273,60 @@ def test_lsmc_is_homogeneous_in_spot_and_strike(degree, rel):
         )
 
     assert price(5000.0) / 50.0 == pytest.approx(price(100.0), rel=rel)
+
+
+_LSMC_THREAD_PROBE = textwrap.dedent(
+    """
+    from optpricing.atoms import Option, OptionType, Rate, Stock
+    from optpricing.models import BSMModel
+    from optpricing.techniques import AmericanMonteCarloTechnique
+
+    price = (
+        AmericanMonteCarloTechnique(
+            n_paths=60_000, n_steps=50, seed=4, lsm_degree=5
+        )
+        .price(
+            Option(strike=100.0, maturity=1.0, option_type=OptionType.PUT),
+            Stock(spot=100.0, dividend=0.01),
+            BSMModel(params={"sigma": 0.2}),
+            Rate(rate=0.05),
+        )
+        .price
+    )
+    print(f"LSMC_PRICE {price!r}")
+    """
+)
+
+
+def test_lsmc_price_is_independent_of_thread_count():
+    """
+    The regression sums were split into one chunk per numba thread, so the
+    float association — and the exercise decision — followed the machine.
+    Seed 4, 60_000 paths, degree 5, S = K = 100, q = 1 % priced at
+    6.36300194 / 6.36254914 / 6.36301707 / 6.36421551 for 1/2/4/8 threads
+    (10-core Apple Silicon), and the homogeneity check above failed its
+    1e-4 tolerance at 2 and 8 threads. The sums are now 64 fixed chunks
+    added in chunk order, so the thread count cannot change the association.
+    Each thread count is a fresh interpreter because numba reads
+    NUMBA_NUM_THREADS at import.
+    """
+    prices = []
+    for threads in (1, 2, 8):
+        env = os.environ.copy()
+        env["NUMBA_NUM_THREADS"] = str(threads)
+        out = subprocess.run(
+            [sys.executable, "-c", _LSMC_THREAD_PROBE],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert out.returncode == 0, out.stderr
+        line = next(
+            ln for ln in out.stdout.splitlines() if ln.startswith("LSMC_PRICE ")
+        )
+        prices.append(line.removeprefix("LSMC_PRICE "))
+    assert prices[0] == prices[1] == prices[2], prices
 
 
 def test_sabr_kernel_terminal_spots_are_non_negative():

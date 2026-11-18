@@ -9,6 +9,11 @@ __doc__ = """
 JIT-compiled Longstaff-Schwartz (2001) pricing algorithm.
 """
 
+# Partial sums of the regression. The count is fixed: sizing it from
+# NUMBA_NUM_THREADS changes the order of the float sum, and with it the
+# exercise decision. Chunks run in parallel; the reduction is in chunk order.
+_LSMC_CHUNKS = 64
+
 
 @numba.njit(cache=True, nogil=True, parallel=True)
 def longstaff_schwartz_pricer(
@@ -37,11 +42,11 @@ def longstaff_schwartz_pricer(
     is_call : bool
         True for a call, False for a put.
     degree : int
-        Polynomial degree of the regression basis (monomials in ``S/K``).
+        Polynomial degree of the regression basis (monomials in ``S/K - 1``).
     n_threads : int, optional
-        Number of chunks the paths are split into for the parallel passes
-        (pass ``numba.get_num_threads()``; querying it inside the kernel would
-        disable caching). Results do not depend on it.
+        Ignored. Kept so existing callers still run. The regression is always
+        split into a fixed number of chunks and reduced in chunk order, so the
+        price does not depend on this argument or on ``NUMBA_NUM_THREADS``.
 
     Returns
     -------
@@ -51,9 +56,11 @@ def longstaff_schwartz_pricer(
     Notes
     -----
     At each exercise date the continuation value is regressed on monomials of
-    the moneyness ``S/K`` over the in-the-money paths. The normal equations are
-    accumulated as power sums in a single pass (no design matrix), which is
-    well conditioned for ``degree <= 6`` because ``S/K = O(1)``.
+    the centred moneyness ``S/K - 1`` over the in-the-money paths. That is the
+    same polynomial span as monomials in ``S/K``. The normal equations are
+    accumulated as power sums in a single pass (no design matrix). Centring
+    keeps the Gram matrix from the Hilbert scaling that moved a degree-5 price
+    by about 1e-4 between two spots that differ only by a scale factor.
     """
     n_steps_plus_1, n_paths = stock_paths.shape
     n_steps = n_steps_plus_1 - 1
@@ -62,17 +69,19 @@ def longstaff_schwartz_pricer(
     discount = math.exp(-r * dt)
     sign = 1.0 if is_call else -1.0
 
-    n_threads = max(1, min(n_threads, n_paths))
-    chunk = (n_paths + n_threads - 1) // n_threads
+    # ``n_threads`` used to be this partition. A caller-supplied value must
+    # not change the sum, so it is not read.
+    n_chunks = _LSMC_CHUNKS
+    chunk = (n_paths + n_chunks - 1) // n_chunks
 
     cashflow = np.empty(n_paths)
     for p in numba.prange(n_paths):
         payoff = sign * (stock_paths[n_steps, p] - K)
         cashflow[p] = payoff if payoff > 0.0 else 0.0
 
-    part_sums = np.zeros((n_threads, n_sums))
-    part_moments = np.zeros((n_threads, n_basis))
-    part_counts = np.zeros(n_threads, dtype=np.int64)
+    part_sums = np.zeros((n_chunks, n_sums))
+    part_moments = np.zeros((n_chunks, n_basis))
+    part_counts = np.zeros(n_chunks, dtype=np.int64)
     gram = np.empty((n_basis, n_basis))
     moments = np.empty(n_basis)
     power_sums = np.empty(n_sums)
@@ -80,7 +89,7 @@ def longstaff_schwartz_pricer(
     for i in range(n_steps - 1, 0, -1):
         # Pass 1 (parallel over path chunks): discount and accumulate the
         # normal equations of the regression on the in-the-money paths.
-        for t in numba.prange(n_threads):
+        for t in numba.prange(n_chunks):
             lo = t * chunk
             hi = min(n_paths, lo + chunk)
             for d in range(n_sums):
@@ -93,7 +102,7 @@ def longstaff_schwartz_pricer(
                 intrinsic = sign * (stock_paths[i, p] - K)
                 if intrinsic > 0.0:
                     count += 1
-                    x = stock_paths[i, p] / K
+                    x = stock_paths[i, p] / K - 1.0
                     y = cashflow[p]
                     x_pow = 1.0
                     for d in range(n_sums):
@@ -104,19 +113,19 @@ def longstaff_schwartz_pricer(
             part_counts[t] = count
 
         n_itm = 0
-        for t in range(n_threads):
+        for t in range(n_chunks):
             n_itm += part_counts[t]
         # The regression needs more points than basis functions to be meaningful.
         if n_itm <= n_basis:
             continue
         for d in range(n_sums):
             total = 0.0
-            for t in range(n_threads):
+            for t in range(n_chunks):
                 total += part_sums[t, d]
             power_sums[d] = total
         for d in range(n_basis):
             total = 0.0
-            for t in range(n_threads):
+            for t in range(n_chunks):
                 total += part_moments[t, d]
             moments[d] = total
         for a in range(n_basis):
@@ -128,7 +137,7 @@ def longstaff_schwartz_pricer(
         for p in numba.prange(n_paths):
             intrinsic = sign * (stock_paths[i, p] - K)
             if intrinsic > 0.0:
-                x = stock_paths[i, p] / K
+                x = stock_paths[i, p] / K - 1.0
                 continuation = 0.0
                 x_pow = 1.0
                 for d in range(n_basis):

@@ -4,7 +4,6 @@ import math
 from collections.abc import Callable
 from typing import Any
 
-import numba
 import numpy as np
 
 from optpricing.atoms import Option, OptionType, Rate, Stock
@@ -44,7 +43,8 @@ Defines the American Monte Carlo pricing technique using Longstaff-Schwartz.
 class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
     """
     Prices American options by simulating full SDE paths and applying the
-    Longstaff-Schwartz algorithm.
+    Longstaff-Schwartz algorithm. The price depends on the seed and the
+    chunk size, not on how many threads run the regression.
     """
 
     def __init__(
@@ -105,7 +105,6 @@ class AmericanMonteCarloTechnique(BaseTechnique, GreekMixin, IVMixin):
             r=rate.get_rate(option.maturity),
             is_call=(option.option_type is OptionType.CALL),
             degree=self.lsm_degree,
-            n_threads=numba.get_num_threads(),
         )
         return PricingResult(price=price_val)
 
