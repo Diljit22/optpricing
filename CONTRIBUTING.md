@@ -43,6 +43,17 @@ uv run pytest --cov    # with coverage, as CI runs it
 
 CI runs the suite on Python 3.11–3.14 (3.15 experimental) and additionally against the minimum supported dependency versions, so keep new dependency floors honest.
 
+## Releasing
+
+Versions come from git tags (`vX.Y.Z`). Tag a normal commit on `main` and push the tag; `.github/workflows/publish.yml` builds that commit and publishes it to PyPI.
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+Never tag a `[skip ci]` commit. GitHub does not run push-triggered workflows for that commit, so the package is never published. The same applies to `[ci skip]`, `[no ci]`, `[skip actions]`, and `[actions skip]`. The daily snapshot commits are marked `[skip ci]` on purpose and must stay untagged. `v3.0.0` points at one of them; leave that tag where it is.
+
 ## Submitting Changes
 
 1. Create a **feature branch** (`git checkout -b feature/my-change`).

@@ -1,7 +1,11 @@
 name: Publish to PyPI
 
-# Release flow: `git tag vX.Y.Z && git push origin vX.Y.Z`. setuptools_scm turns the
-# tag into the package version, so the tag is the single source of truth.
+# Release flow: `git tag vX.Y.Z && git push origin vX.Y.Z` on a normal commit.
+# setuptools_scm turns the tag into the package version, so the tag is the
+# single source of truth. Never tag a commit whose message contains [skip ci]
+# (or the other GitHub skip phrases): push-triggered workflows do not run, so
+# this file never starts. v3.0.0 was such a tag and was not published. The step
+# below rejects those commits when the workflow is started by hand.
 on:
   push:
     tags: ["v*.*.*"]
@@ -26,6 +30,17 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0 # full history + tags for setuptools_scm
+
+      - name: Refuse a tag that points at a ci-skipped commit
+        run: |
+          msg=$(git log -1 --format=%B)
+          echo "Tagged commit message:"
+          printf '%s\n' "$msg"
+          # GitHub skips push-triggered workflows for any of these, case-insensitive.
+          if printf '%s\n' "$msg" | grep -Eiq '\[(skip ci|ci skip|no ci|skip actions|actions skip)\]'; then
+            echo "::error::This tag points at a commit whose message skips GitHub Actions, so a pushed tag is never published. Tag a normal commit instead. Leave v3.0.0 where it is."
+            exit 1
+          fi
 
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:

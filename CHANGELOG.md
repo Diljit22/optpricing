@@ -6,14 +6,22 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-11-18
+
+Publishes the Phase 5 library. `v3.0.0` points at a snapshot commit whose message
+skips GitHub Actions, so the publish workflow never ran and PyPI stayed on 2.7.0.
+That tag is left where it is.
+
 ### Fixed
 
+- Longstaff–Schwartz prices depended on `NUMBA_NUM_THREADS`. The regression sums were split into one chunk per thread and added in that order, so the same seed gave a different exercise decision on a different machine. Seed 4, 60,000 paths, degree 5, S = K = 100, q = 1 %: 6.36300194 / 6.36254914 / 6.36301707 / 6.36421551 at 1/2/4/8 threads, and the spot-strike homogeneity check (tolerance 1e-4) failed at 2 and 8 threads. The paths are now split into 64 chunks and reduced in chunk order, and the basis is monomials in `S/K - 1` (the same polynomials as `S/K`; 64 chunks alone still left a 2e-4 homogeneity gap). `n_threads` is accepted and ignored.
 - The daily snapshot named chains with the runner's UTC date. A job that started after midnight UTC, which is still the previous evening in New York, treated every contract as stale and committed only `IRX_risk_free_rates.parquet`. The file date and the freshness check are the New York session.
 
 ### Changed
 
 - The scheduled snapshot runs at 19:45 UTC (inside the cash session in both winter and summer) for the 25 `snapshot_tickers`, refreshes their 10-year stock history used as a jump-model prior, and commits `data/` to the `data` branch. The option spot stays `spot_price` on the chain.
 - When Yahoo has cleared the bid/ask book but the contract traded in the session, the stored price is that last trade (`price_source=last`) with bid and ask set equal to it, so the liquidity filters and the calibrator still see a price.
+- A release tag whose commit message would skip GitHub Actions is rejected if the publish workflow is run by hand. Push-triggered publishing never starts for those commits, which is why `v3.0.0` did not reach PyPI.
 
 ## [3.0.0] - 2026-11-07
 
